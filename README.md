@@ -1,120 +1,294 @@
 # UXConnector
 
-Plugin GLPI 11 permettant de **connecter un système tiers une seule fois**, puis
-d'activer les interactions nécessaires entre ce système et les objets GLPI.
+UXConnector est un plugin **GLPI 11** fournissant un moteur générique de connexions et de synchronisations entre GLPI et des systèmes tiers.
 
-UXConnector conserve un moteur HTTP générique : les particularités Jira,
-Intune, Graph, MDM, ServiceNow, etc. sont décrites par des manifests du
-catalogue et ne sont jamais codées en dur dans le runtime.
+Le principe est de configurer une **Connection** une seule fois (endpoint, méthode d'authentification, secret protégé), puis d'y associer une ou plusieurs **Interactions** entrantes ou sortantes : polling, webhook ou événement GLPI.
 
-## Statut
+Le runtime reste générique : les particularités d'un éditeur ou d'une API sont décrites principalement dans les manifests du catalogue `resources/connectors/*/connector.json` et dans des post-processors spécialisés lorsque le flux nécessite un traitement métier complémentaire.
 
-**Version 2.8.1 — Parcours Connection corrigé + édition/test/activation depuis la fiche.**
+## Version courante
 
-Le parcours produit est désormais :
+**2.17.1 — 16 septembre 2026**
 
-```text
-Créer une Connection
-      ↓
-Tester
-      ↓
-Activer
-      ↓
-Ouvrir la Connection
-      ↓
-Créer/activer ses Interactions
-      ├── polling externe → GLPI
-      ├── webhook externe → GLPI
-      └── événement GLPI → système externe
-```
+Principaux apports des versions récentes :
 
-Le catalogue reste disponible pour fournir les définitions standard, tandis
-que le formulaire REST très technique est réservé au mode **Advanced**.
+- migration Zendesk vers GLPI avec référentiels, tickets non clos, commentaires, pièces jointes, captures inline, catégories ITIL et delta incrémentiel ;
+- consolidation de parc **GLPI 11 → GLPI 11** via la High-Level API pour six familles d'assets ;
+- réconciliation multi-source et idempotence via `ObjectLink` ;
+- enrichissement des assets GLPI avec entité, statut, fabricant, lieu, type et modèle ;
+- pagination volumétrique page par page et gestion HTTP `429 / Retry-After` ;
+- optimisations 2.17.1 pour les imports de plusieurs milliers d'assets ;
+- Copilot Gateway en lecture pour exposer des données ITSM GLPI à des agents/clients autorisés.
 
-Voir `ARCHITECTURE_2.8.0.md`, `CORRECTIONS_2.8.0.md` et
-`VALIDATION_2.8.0.txt`.
+## Compatibilité
 
-## Prérequis
-
-| Composant | Version minimale |
+| Composant | Version |
 | --- | --- |
-| GLPI | 11.0.0 |
-| PHP | 8.2 |
+| GLPI | `>= 11.0.0` et `< 12.0.0` |
+| PHP | `>= 8.2` |
+| Clé plugin | `uxconnector` |
+| Licence | GPL-3.0-or-later |
 
 ## Concepts
 
 ```text
-ConnectorTemplate                définition fournie avec UXConnector
+ConnectorTemplate
         ↓
-Connection                       instance configurée chez le client
-(AuthConfig en interne)          endpoint + auth + secret protégé + statut
+Connection
+(AuthConfig en interne)
+endpoint + auth + secret protégé + statut
         ↓
-Interaction(s)                   comportements activables indépendamment
-(SyncJob en interne)             polling / webhook / événement GLPI
+Interaction(s)
+(SyncJob en interne)
+polling / webhook / événement GLPI
         ↓
-ObjectLink                       équivalence objet externe ↔ objet GLPI
+ObjectLink
+équivalence objet externe ↔ objet GLPI
         ↓
-SyncExecution                    historique d'exécution
+SyncExecution
+historique et résultat d'exécution
 ```
 
-Une Connection peut être créée manuellement en **Custom REST** ou à partir
-d'un connecteur standard. Une Connection `custom` existante peut être associée
-ultérieurement à Jira/Intune/etc. sans recréer ses identifiants.
+Une Connection peut être créée en **Custom REST** ou associée à un connecteur standard du catalogue.
 
-## Menu
+## Fonctionnalités principales
+
+### Moteur générique
+
+UXConnector fournit notamment :
+
+- authentifications `none`, Basic, API key, Bearer, OAuth2 Client Credentials et OAuth2 Password selon les connecteurs ;
+- moteur HTTP générique avec contrôle des destinations ;
+- mappings déclaratifs source → cible ;
+- lecture de chemins JSON imbriqués ;
+- transformations de valeurs ;
+- stratégies de pagination `none`, `offset`, `count_offset`, `cursor` et `next_link` ;
+- traitement des pages au fil de l'eau pour limiter la consommation mémoire ;
+- checkpoints persistants pour les flux incrémentiels ;
+- réconciliation et idempotence via `ObjectLink` ;
+- historique des exécutions ;
+- interactions entrantes et sortantes ;
+- webhooks stateless protégés par clé opaque ;
+- déclenchements sortants sur événements GLPI ;
+- protections anti-boucle pour éviter qu'une écriture inbound reparte immédiatement en outbound.
+
+## Catalogue de connecteurs
+
+Le package 2.17.1 embarque les définitions suivantes :
+
+| Connecteur | Authentification déclarée | Interactions présentes dans le catalogue |
+| --- | --- | --- |
+| **GLPI 11 High-Level API** | OAuth2 Password | Computers, Monitors, Phones, Peripherals, Printers, NetworkEquipment → GLPI |
+| **Zendesk Support** | OAuth2 Client Credentials, Bearer, Basic | utilisateurs, groupes, organisations, catégories ITIL, tickets non clos, delta incrémentiel |
+| **Jira Cloud** | Bearer | projets/issues inbound, webhook issue, projets/tickets outbound |
+| **Microsoft Intune** | OAuth2 Client Credentials | Managed Devices → GLPI Computers |
+| **Microsoft Graph** | OAuth2 Client Credentials | Users → GLPI Users |
+| **MDM générique REST** | Bearer, API key, Basic, OAuth2 Client Credentials | Devices → GLPI Computers |
+| **ServiceNow** | Basic, OAuth2 Client Credentials | Incidents → GLPI Tickets |
+| **Zabbix** | Bearer | Hosts → GLPI Computers |
+| **REST générique** | selon configuration | interaction REST avancée |
+| **API OpenAI compatible** | Bearer | provider utilisable par les fonctions Copilot/Semantic |
+
+La présence d'un template dans le catalogue signifie qu'UXConnector sait instancier cette interaction. La validation fonctionnelle et les mappings finaux restent à adapter au tenant/API réellement utilisé.
+
+---
+
+# Consolidation GLPI → GLPI
+
+Le connecteur **GLPI 11 High-Level API** est destiné à consolider plusieurs parcs GLPI dans une instance cible.
+
+## Assets pris en charge
+
+Six jobs standards sont fournis :
+
+1. GLPI source → Ordinateurs
+2. GLPI source → Moniteurs
+3. GLPI source → Téléphones
+4. GLPI source → Périphériques
+5. GLPI source → Imprimantes
+6. GLPI source → Équipements réseau
+
+Les ressources High-Level utilisées sont basées sur :
 
 ```text
-UXConnector
-├── Connections                 page d'entrée
-│   ├── New connection
-│   └── Manage
-│       ├── Test / Activate / Disable / Delete
-│       ├── standard interactions
-│       └── advanced custom REST interaction
-├── Connector catalog          découverte des définitions intégrées
-├── Interactions               supervision globale
-└── Advanced REST interaction  création totalement personnalisée
+/api.php/Assets/Computer
+/api.php/Assets/Monitor
+/api.php/Assets/Phone
+/api.php/Assets/Peripheral
+/api.php/Assets/Printer
+/api.php/Assets/NetworkEquipment
 ```
 
-## Catalogue 2.8.0
+## Réconciliation des assets
 
-| Connecteur | Interactions fournies |
-| --- | --- |
-| Jira Cloud | Projects → GLPI Projects ; Issues → GLPI Tickets ; Issue webhook → GLPI Ticket ; GLPI Projects → Jira Projects ; GLPI Tickets → Jira Issues |
-| Microsoft Intune | Managed devices → GLPI Computers |
-| Microsoft Graph | Users → GLPI Users |
-| MDM générique REST | Devices → GLPI Computers, paramétrable |
-| ServiceNow | Référencé ; interaction standard encore planifiée |
-| Zabbix | Référencé ; JSON-RPC standard encore planifié |
-| REST générique | Mode avancé libre |
+UXConnector conserve un lien stable entre la source et la cible avec `ObjectLink` et utilise une identité métier d'asset pour éviter les doublons lors des consolidations multi-sources.
 
-### Jira : principe bidirectionnel
-
-Le bidirectionnel est volontairement composé de **deux interactions** qui
-partagent le même `ObjectLink` :
+La stratégie `asset_identity` privilégie les identifiants disponibles tels que :
 
 ```text
-Jira Project 10000  ←→  ObjectLink  ←→  GLPI Project 42
-        ↑                                  ↓
-   Jira → GLPI                         GLPI → Jira
+UUID
+  ↓
+numéro de série
+  ↓
+numéro d'inventaire
+  ↓
+nom lorsque ce fallback est autorisé pour le type d'asset
 ```
 
-La désactivation d'une Connection suspend ses interactions actives sans les
-supprimer ni modifier leur statut.
+Les templates et assets supprimés logiquement dans la source sont ignorés.
 
-## Architecture
+## Référentiels GLPI
 
-Le plugin applique une Clean Architecture / DDD. Les définitions éditeur sont
-séparées du runtime :
+Depuis la 2.17.0, les assets importés sont enrichis avec :
+
+- entité ;
+- statut ;
+- fabricant ;
+- lieu ;
+- type d'asset ;
+- modèle d'asset.
+
+Les IDs numériques de la source ne sont **jamais copiés directement** vers la cible. UXConnector résout ou crée le référentiel dans le GLPI cible à partir de son nom, puis utilise l'ID cible.
+
+Les hiérarchies d'entités et de lieux utilisent `completename` lorsqu'il est fourni par l'API. Une correspondance ambiguë est refusée plutôt que résolue arbitrairement.
+
+## Performance 2.17.1
+
+La version 2.17.1 ajoute :
+
+- un cache en mémoire des référentiels déjà résolus pendant le run ;
+- la suppression des `update()` GLPI inutiles lorsque les références sont déjà correctes ;
+- le rafraîchissement du budget d'exécution PHP à chaque frontière de page pour les traitements multi-pages.
+
+Aucun changement de schéma ni recréation des jobs n'est nécessaire lors du passage de 2.17.0 à 2.17.1.
+
+## Limites actuelles du flux GLPI High-Level
+
+- utilisateurs et groupes ne sont pas automatiquement recréés dans le cadre de l'enrichissement des assets ;
+- les relations physiques entre assets ne sont pas reconstruites par UXConnector dans cette version ;
+- lorsque GLPI Inventory sera activé sur la cible finale, il pourra reprendre la maintenance des données techniques et reconstruire les relations observables par l'inventaire ;
+- la qualité des clés `uuid`, `serial`, `otherserial` et `name` reste déterminante pour éviter les doublons lors de la reprise par l'inventaire natif.
+
+---
+
+# Migration Zendesk → GLPI
+
+UXConnector 2.15.0 fournit un parcours dédié aux reprises Zendesk volumétriques.
+
+## Référentiels et tickets
+
+Le catalogue Zendesk contient notamment :
+
+```text
+1 - Zendesk Users → GLPI Users
+2 - Zendesk Groups → GLPI Groups
+3 - Zendesk Organizations → GLPI Entities
+4 - Zendesk Sujets utilisés → GLPI Catégories ITIL
+5 - Zendesk Reprise initiale non close → GLPI Tickets
+6 - Zendesk Delta incrémentiel → GLPI Tickets
+```
+
+Des interactions de compatibilité avec les versions antérieures restent présentes dans le catalogue.
+
+## Reprise initiale
+
+La reprise initiale s'appuie sur Zendesk Search Export avec le périmètre :
+
+```text
+status<closed
+```
+
+Elle traite donc les tickets `new`, `open`, `pending`, `hold` et `solved` et évite de parcourir tout l'historique déjà clos.
+
+La taille recommandée est de **100 tickets par page**.
+
+## Catégories ITIL
+
+Le champ tagger Zendesk **Sujet** est découvert dynamiquement. Les catégories réellement utilisées dans le périmètre migré sont reconstruites comme catégories ITIL hiérarchiques GLPI.
+
+Exemple :
+
+```text
+Logiciel::Microsoft 365::Outlook
+```
+
+est reconstruit sous forme d'une arborescence native GLPI.
+
+## Commentaires et pièces jointes
+
+Le traitement Zendesk prend en charge :
+
+- followups GLPI à partir des commentaires Zendesk ;
+- déduplication du commentaire initial lorsqu'il correspond à la description du ticket ;
+- documents GLPI pour les pièces jointes ;
+- captures/images inline ;
+- comportement idempotent lors des relances grâce aux `ObjectLink`.
+
+## Delta incrémentiel
+
+Le job de delta utilise l'API cursor-based Zendesk.
+
+Le checkpoint est persisté après chaque page entièrement réussie. En cas d'échec sur une page, le checkpoint reste positionné avant cette page afin qu'un run suivant puisse rejouer la séquence sans perte.
+
+Un ticket déjà repris puis fermé peut donc être mis à jour dans GLPI sans qu'il soit nécessaire de réimporter tout l'historique.
+
+## Volumétrie et rate limiting
+
+Le moteur :
+
+- traite les pages au fil de l'eau ;
+- respecte HTTP `429` et `Retry-After` ;
+- effectue jusqu'à 5 nouvelles tentatives ;
+- contient `tools/zendesk-volume-test.php` pour un test synthétique sans écriture.
+
+Exemple :
+
+```bash
+cd /var/www/glpi/plugins/uxconnector
+php tools/zendesk-volume-test.php 10000 100
+```
+
+---
+
+# AI Agents / Copilot Gateway
+
+UXConnector embarque également un **Copilot Gateway** orienté lecture.
+
+Deux types de provider sont prévus :
+
+- `local_glpi` lorsque UXConnector est installé dans le GLPI interrogé ;
+- `glpi_hl_api` pour interroger un GLPI distant via une Connection UXConnector.
+
+Les fonctions analytiques locales comprennent notamment :
+
+- recherche de tickets ;
+- contexte détaillé d'un ticket ;
+- volumes et synthèses ;
+- tendances ;
+- catégories ;
+- SLA ;
+- groupes ;
+- techniciens ;
+- comparaison de périodes ;
+- analyses d'incidentologie ;
+- fonctions de classification sémantique lorsqu'un provider compatible est configuré.
+
+Les clients Copilot utilisent leurs propres clés API et les endpoints machine sont enregistrés comme chemins stateless dédiés.
+
+---
+
+# Architecture
+
+Le plugin suit une approche Clean Architecture / DDD.
 
 ```text
 resources/connectors/*/connector.json
                   ↓
 ConnectorTemplate → JobTemplate
-                  ↓ instanciation unique des paramètres
-             SyncJob concret
                   ↓
-        moteur générique runtime
+              SyncJob
+                  ↓
+          moteur générique
         ├── GenericHttpEngine
         ├── JsonPathValueReader
         ├── CollectionExtractor
@@ -125,13 +299,11 @@ ConnectorTemplate → JobTemplate
         └── ObjectLink
 ```
 
-**Règle structurante : un JobTemplate peut connaître Jira ;
-`ExecuteSyncJobService` et `DispatchGlpiItemEventService` ne doivent jamais
-connaître Jira.**
+Principe structurant : le runtime générique ne doit pas dépendre directement d'un éditeur. Les particularités sont portées par les templates, transformations ou post-processors spécialisés.
 
-## Webhooks
+# Webhooks
 
-Une Interaction webhook reçoit une clé opaque aléatoire de 256 bits.
+Une interaction webhook reçoit une clé opaque aléatoire de 256 bits.
 
 Endpoint :
 
@@ -139,80 +311,98 @@ Endpoint :
 /plugins/uxconnector/front/webhook.php
 ```
 
-Méthode recommandée lorsque l'émetteur accepte des headers personnalisés :
+Méthode recommandée lorsque le système émetteur accepte les headers personnalisés :
 
 ```text
 X-UXConnector-Webhook-Key: <clé de l'interaction>
 ```
 
-Compatibilité pour les produits ne permettant pas de header personnalisé :
+Compatibilité URL :
 
 ```text
 /plugins/uxconnector/front/webhook.php?key=<clé>
 ```
 
-Le header est préférable, car un paramètre d'URL peut être enregistré par un
-reverse proxy dans ses journaux d'accès.
+Le header est préférable afin d'éviter l'enregistrement potentiel de la clé dans des logs d'accès HTTP.
 
-## Installation / mise à jour
+# Sécurité
 
-1. Sauvegarder la base GLPI et l'ancien dossier `plugins/uxconnector/`.
-2. Remplacer le dossier par le répertoire `uxconnector` de l'archive 2.8.0.
-3. **Ne pas désinstaller** le plugin : lancer **Mettre à jour** dans
-   **Configuration > Plugins** afin d'exécuter les migrations additives.
-4. Vider le cache :
+Les mécanismes de sécurité incluent notamment :
 
-   ```bash
-   php bin/console cache:clear
-   ```
+- stockage chiffré des secrets ;
+- interdiction d'envoyer des credentials sur HTTP non chiffré ;
+- contrôle des destinations contre les scénarios SSRF ;
+- blocage des credentials intégrés dans les URLs ;
+- validation des headers et des endpoints ;
+- droits GLPI sur les écrans et actions administratives ;
+- protection CSRF native GLPI ;
+- clé webhook 256 bits ;
+- liste blanche des champs GLPI inscriptibles via `TargetFieldPolicy` ;
+- pilotage de `entities_id` par la stratégie d'entité et non par un mapping libre ;
+- protection contre les boucles inbound/outbound ;
+- contrôle des périmètres d'entité pour les interactions sortantes ;
+- nettoyage contrôlé des credentials et des métadonnées lors des suppressions.
 
-5. Se déconnecter/reconnecter ou changer de profil si les droits/menu sont
-   encore présents en session.
-6. Ouvrir **UXConnector > Connections**.
+# Installation
 
-Les anciennes configurations d'authentification sont conservées comme
-Connections `Custom REST`. Il suffit d'ouvrir une connexion existante et de
-l'associer au type de connecteur voulu lorsqu'il est compatible avec sa méthode
-d'authentification.
+Le package de release doit contenir directement un répertoire `uxconnector/` installable dans :
 
-## Sécurité
+```text
+<GLPI_ROOT>/plugins/uxconnector
+```
 
-- secrets protégés avec le mécanisme de chiffrement GLPI / `glpicrypt.key` ;
-- test de Connection réussi uniquement sur HTTP 2xx ;
-- destinations HTTP contrôlées contre les scénarios SSRF ;
-- interactions administratives protégées par droits GLPI + CSRF natif ;
-- webhook stateless protégé par une clé d'interaction 256 bits ;
-- champs GLPI cibles bornés par `TargetFieldPolicy` ;
-- `entities_id` piloté par la stratégie d'entité, jamais par un mapping libre ;
-- garde runtime empêchant qu'une écriture inbound GLPI reparte immédiatement
-  vers une interaction outbound dans la même requête ;
-- les interactions d'une Connection ne sont pas révélées à un profil qui n'a
-  pas le droit `READ` sur les interactions ;
-- la clé d'authentification d'un webhook n'est affichée qu'aux profils disposant
-  du droit de modification des interactions ;
-- une interaction standard sortante exige une entité GLPI fixe comme périmètre
-  source afin d'éviter une émission involontaire depuis toutes les entités.
+Procédure recommandée :
 
-## Limites connues 2.8.0
+1. sauvegarder la base GLPI et le dossier actuel `plugins/uxconnector/` ;
+2. remplacer le dossier par celui de la nouvelle release ;
+3. ne pas désinstaller le plugin lors d'une mise à jour ;
+4. lancer **Mettre à jour** depuis **Configuration > Plugins** ;
+5. vider le cache GLPI si nécessaire ;
+6. se reconnecter ou changer de profil si les droits/menu sont encore en cache.
 
-- pas encore de vérification de signature native propre à chaque fournisseur de
-  webhook ;
-- pas encore de rattachement automatique Jira Issue → GLPI Ticket au projet
-  GLPI correspondant (`glpi_itils_projects`) ;
-- pas encore de résolution avancée des conflits concurrents ;
-- pas encore de backfill sortant de tous les objets GLPI existants : la sortie
-  fonctionne sur événements GLPI add/update ;
-- le mapping Jira Ticket → Issue sortant est volontairement minimal, car les
-  champs disponibles dépendent du projet, du type d'issue et des écrans Jira.
+Depuis le serveur GLPI :
 
-## Documentation
+```bash
+php bin/console cache:clear
+```
 
-- `ARCHITECTURE_2.8.0.md`
-- `CORRECTIONS_2.8.0.md`
-- `VALIDATION_2.8.0.txt`
-- historique : `ARCHITECTURE_2.7.0.md`, `CORRECTIONS_2.7.0.md`
-- ADR et documentation projet : `docs/`
+# Développement et contrôles
 
-## Licence
+Le dépôt source contient `composer.lock` afin de figer les dépendances de développement.
+
+Le dossier `vendor/` n'est pas versionné dans Git mais doit être présent dans le package de release installable lorsque les dépendances sont nécessaires à l'exécution ou aux contrôles de livraison.
+
+Commandes disponibles :
+
+```bash
+composer test
+composer analyse
+composer fix
+composer lint:glpi
+```
+
+# Documentation du dépôt
+
+Les principaux documents techniques disponibles dans le dépôt sont :
+
+- `CHANGELOG.md` — historique fonctionnel et technique ;
+- `GLPI_HL_ASSETS_2.16.0.md` — consolidation des assets GLPI High-Level ;
+- `GLPI_HL_ASSETS_2.16.1.md` — correctif `asset_identity` ;
+- `GLPI_HL_REFERENCES_2.17.0.md` — enrichissement des référentiels ;
+- `GLPI_HL_REFERENCES_2.17.1_HOTFIX.md` — correctif de performance ;
+- `ZENDESK_MIGRATION_2.14.0.md` — architecture de migration Zendesk ;
+- `ZENDESK_2.15.0.md` — stratégie de migration volumétrique et delta ;
+- `MARKETPLACE_COMPLIANCE_2026-09-02.md` — contrôles de conformité ;
+- `docs/` — architecture, ADR et documentation complémentaire.
+
+# Distribution
+
+Ce dépôt est destiné à une **distribution contrôlée** du plugin.
+
+La publication dans un catalogue public n'est pas requise pour une mise à disposition privée sur des instances GLPI sélectionnées. Le package soumis pour validation doit correspondre exactement au tag Git et à la release testée.
+
+Le descripteur `uxconnector.xml.dist` contient volontairement une URL de release générique/non renseignée tant qu'aucune publication publique n'est prévue.
+
+# Licence
 
 GPL-3.0-or-later — voir `LICENSE`.
