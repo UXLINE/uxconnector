@@ -1,11 +1,11 @@
-{
+﻿{
     "name": "helpline/uxconnector",
     "description": "UXConnector - Generic connector marketplace framework for GLPI (Engine + Sync bounded contexts)",
     "type": "glpi-plugin",
     "license": "GPL-3.0-or-later",
     "authors": [
         {
-            "name": "HELPLINE",
+            "name": "Alexandre THEBAUD - HELPLINE by EVERIENCE",
             "role": "Editor"
         }
     ],
@@ -43,3 +43,4 @@
         }
     }
 }
+

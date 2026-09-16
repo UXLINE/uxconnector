@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * -------------------------------------------------------------------------
@@ -36,7 +36,7 @@ function plugin_version_uxconnector(): array
     return [
         'name'         => 'UXConnector',
         'version'      => PLUGIN_UXCONNECTOR_VERSION,
-        'author'       => 'HELPLINE',
+        'author'       => 'Alexandre THEBAUD - HELPLINE by EVERIENCE',
         'license'      => 'GPL-3.0-or-later',
         'homepage'     => 'https://www.helpline.fr',
         'requirements' => [
@@ -104,3 +104,4 @@ function plugin_uxconnector_uninstall(): bool
 
     return Setup::uninstall($migration);
 }
+

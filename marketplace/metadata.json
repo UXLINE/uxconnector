@@ -1,8 +1,8 @@
-{
+﻿{
     "id": "uxconnector",
     "name": "UXConnector",
     "version": "2.17.1",
-    "author": "HELPLINE",
+    "author": "Alexandre THEBAUD - HELPLINE by EVERIENCE",
     "license": "GPL-3.0-or-later",
     "category": "Integration",
     "homepage": "https://www.helpline.fr",
@@ -14,3 +14,4 @@
         "min": "8.2"
     }
 }
+

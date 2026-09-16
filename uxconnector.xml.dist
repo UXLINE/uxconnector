@@ -1,21 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <root>
     <name>UXConnector</name>
     <key>uxconnector</key>
     <state>dev</state>
     <description>
         <short>
-            <fr>Moteur de connecteurs générique et configurable pour GLPI.</fr>
+            <fr>Moteur de connecteurs gÃ©nÃ©rique et configurable pour GLPI.</fr>
             <en>Generic, configurable connector engine for GLPI.</en>
         </short>
         <long>
-            <fr>UXConnector configure des connexions HTTP sécurisées et des interactions entrantes/sortantes contrôlées avec les objets GLPI.</fr>
+            <fr>UXConnector configure des connexions HTTP sÃ©curisÃ©es et des interactions entrantes/sortantes contrÃ´lÃ©es avec les objets GLPI.</fr>
             <en>UXConnector configures secured HTTP connections and controlled inbound/outbound interactions with GLPI objects.</en>
         </long>
     </description>
     <homepage>https://www.helpline.fr</homepage>
     <authors>
-        <author>HELPLINE</author>
+        <author>Alexandre THEBAUD - HELPLINE by EVERIENCE</author>
     </authors>
     <versions>
         <version>
@@ -34,3 +34,4 @@
         <fr><tag>integration</tag><tag>synchronisation</tag></fr>
     </tags>
 </root>
+
