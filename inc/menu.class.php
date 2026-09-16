@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * -------------------------------------------------------------------------
@@ -9,24 +9,24 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * DÉROGATION DOCUMENTÉE à l'arborescence officielle (Annexe J) et à
+ * DÃ‰ROGATION DOCUMENTÃ‰E Ã  l'arborescence officielle (Annexe J) et Ã 
  * AI-COMPOSER-005 (namespace obligatoire) :
  *
- * Contrairement à AuthConfigItem/SyncJobItem (namespacées, GLPI 11
- * résolvant nativement les itemtypes FQCN — voir leur doc-block), la
+ * Contrairement Ã  AuthConfigItem/SyncJobItem (namespacÃ©es, GLPI 11
+ * rÃ©solvant nativement les itemtypes FQCN â€” voir leur doc-block), la
  * classe de menu GLPI DOIT suivre la convention legacy :
  *
  *   - vivre dans inc/menu.class.php (jamais src/) ;
  *   - ne porter AUCUN namespace ;
- *   - être nommée PluginUxconnectorMenu (Plugin + NomTechnique + Rôle) ;
- *   - étendre CommonDBTM avec $notable = true.
+ *   - Ãªtre nommÃ©e PluginUxconnectorMenu (Plugin + NomTechnique + RÃ´le) ;
+ *   - Ã©tendre CommonDBTM avec $notable = true.
  *
- * Ceci est un REX empirique constaté en test réel sur l'instance
- * helpline-datawise : le mécanisme $PLUGIN_HOOKS['menu_toadd'] de
- * GLPI 11 n'a pas résolu correctement une classe de menu namespacée
- * lors des essais. Cette classe est donc une exception délibérée et
- * unique à la règle namespace-only du projet, pas un changement de
- * politique générale (RULE-COMPOSER-005 reste la norme pour tout le
+ * Ceci est un REX empirique constatÃ© en test rÃ©el sur l'instance
+ * shared-test-instance : le mÃ©canisme $PLUGIN_HOOKS['menu_toadd'] de
+ * GLPI 11 n'a pas rÃ©solu correctement une classe de menu namespacÃ©e
+ * lors des essais. Cette classe est donc une exception dÃ©libÃ©rÃ©e et
+ * unique Ã  la rÃ¨gle namespace-only du projet, pas un changement de
+ * politique gÃ©nÃ©rale (RULE-COMPOSER-005 reste la norme pour tout le
  * reste du plugin).
  * -------------------------------------------------------------------------
  */
@@ -38,7 +38,7 @@ declare(strict_types=1);
  *
  * $notable = true is required by GLPI's menu_toadd mechanism even
  * though this class is never actually used to store or list records
- * — it only provides getMenuName()/getMenuContent().
+ * â€” it only provides getMenuName()/getMenuContent().
  */
 class PluginUxconnectorMenu extends CommonDBTM
 {
@@ -57,7 +57,7 @@ class PluginUxconnectorMenu extends CommonDBTM
      * actually holding at least one of the plugin's rights.
      *
      * RULE-CTRL-004 (adapted to menus) : hiding an entry is not a
-     * security boundary by itself — front/authconfig.php and
+     * security boundary by itself â€” front/authconfig.php and
      * front/syncjob.php each re-check Session::checkRight()
      * independently. This method only avoids showing a dead-end link
      * to a visitor with no access at all.
@@ -130,3 +130,4 @@ class PluginUxconnectorMenu extends CommonDBTM
        return $menu;
    }
 }
+

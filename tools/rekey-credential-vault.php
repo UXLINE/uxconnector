@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * -------------------------------------------------------------------------
@@ -9,46 +9,46 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * Script opérationnel de rotation de clé pour les secrets AuthConfig,
- * à exécuter manuellement par un administrateur — jamais depuis un
+ * Script opÃ©rationnel de rotation de clÃ© pour les secrets AuthConfig,
+ * Ã  exÃ©cuter manuellement par un administrateur â€” jamais depuis un
  * navigateur, jamais automatiquement.
  *
- * PROCÉDURE :
+ * PROCÃ‰DURE :
  *   1. Conserver l'ancienne valeur de GLPI_INSTANCE_KEY (celle
- *      actuellement dans config/local_define.php) — noter-la avant
+ *      actuellement dans config/local_define.php) â€” noter-la avant
  *      toute modification.
  *   2. Choisir la nouvelle valeur, mais NE PAS encore l'appliquer
  *      dans config/local_define.php.
- *   3. Exécuter ce script avec les deux clés :
+ *   3. ExÃ©cuter ce script avec les deux clÃ©s :
  *
  *        php tools/rekey-credential-vault.php \
  *            --old-key="<ancienne valeur de GLPI_INSTANCE_KEY>" \
  *            --new-key="<nouvelle valeur>"
  *
- *   4. Une fois le script terminé sans échec (voir le résumé affiché),
+ *   4. Une fois le script terminÃ© sans Ã©chec (voir le rÃ©sumÃ© affichÃ©),
  *      appliquer la nouvelle valeur dans config/local_define.php.
  *
- * Tant que l'étape 4 n'a pas eu lieu, GLPI continue de fonctionner
- * normalement avec l'ancienne clé — ce script ne modifie que les
- * secrets stockés par UXConnector, jamais GLPI_INSTANCE_KEY
- * lui-même.
+ * Tant que l'Ã©tape 4 n'a pas eu lieu, GLPI continue de fonctionner
+ * normalement avec l'ancienne clÃ© â€” ce script ne modifie que les
+ * secrets stockÃ©s par UXConnector, jamais GLPI_INSTANCE_KEY
+ * lui-mÃªme.
  *
- * DÉROGATION DOCUMENTÉE — convention d'inclusion GLPI non vérifiée :
- * l'exact mécanisme d'amorçage attendu pour un script CLI de plugin
+ * DÃ‰ROGATION DOCUMENTÃ‰E â€” convention d'inclusion GLPI non vÃ©rifiÃ©e :
+ * l'exact mÃ©canisme d'amorÃ§age attendu pour un script CLI de plugin
  * GLPI 11 (bootstrap minimal vs contexte de session complet,
- * éventuel enregistrement en tant que commande Symfony Console) n'a
- * pas pu être vérifié dans ce bac à sable (aucun runtime GLPI
+ * Ã©ventuel enregistrement en tant que commande Symfony Console) n'a
+ * pas pu Ãªtre vÃ©rifiÃ© dans ce bac Ã  sable (aucun runtime GLPI
  * disponible). Ce script suit la convention `inc/includes.php`
- * utilisée par les front/*.php du plugin, à valider empiriquement sur
- * `helpline-datawise` avant utilisation en production — au même titre
- * que les autres REX déjà consignés pour ce projet.
+ * utilisÃ©e par les front/*.php du plugin, Ã  valider empiriquement sur
+ * `shared-test-instance` avant utilisation en production â€” au mÃªme titre
+ * que les autres REX dÃ©jÃ  consignÃ©s pour ce projet.
  * -------------------------------------------------------------------------
  */
 
 declare(strict_types=1);
 
-// tools/ est au même niveau que front/ sous la racine du plugin —
-// même chemin relatif vers GLPI que front/*.php.
+// tools/ est au mÃªme niveau que front/ sous la racine du plugin â€”
+// mÃªme chemin relatif vers GLPI que front/*.php.
 require __DIR__ . '/../../../inc/includes.php';
 
 use GlpiPlugin\Uxconnector\Application\Engine\Service\CredentialVaultRekeyService;
@@ -104,3 +104,4 @@ if (!$result->isFullySuccessful()) {
 
 echo "\nEvery secret rotated successfully. You may now update GLPI_INSTANCE_KEY\n";
 echo "in config/local_define.php to the new value.\n";
+
