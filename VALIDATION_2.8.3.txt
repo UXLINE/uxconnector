@@ -1,0 +1,19 @@
+UXConnector 2.8.3 validation
+Date: 2026-08-19
+
+Scope: navigation/UI correction only; no SQL schema change.
+
+Validated:
+- 270 PHP files pass php -l.
+- Connection list exposes direct Edit action when authconfig UPDATE is granted.
+- Connection list exposes direct Interactions action when syncjob READ is granted.
+- Interactions action targets connection.php?id=<id>#interactions.
+- Connection detail exposes a stable #interactions anchor.
+- Connection detail exposes an Interactions shortcut in its main action bar.
+- Existing Test / Activate / Disable / Delete behavior remains unchanged.
+- Connector catalog and Jira templates from 2.8.2 are preserved.
+- No vendor-specific Jira knowledge added to runtime engine.
+
+Not executed here:
+- Full PHPUnit suite (runtime dependencies unavailable in build environment).
+- GLPI browser integration test on the user's live container.

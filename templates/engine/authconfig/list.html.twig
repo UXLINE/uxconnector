@@ -1,0 +1,109 @@
+{# ---------------------------------------------------------------------
+   UXConnector plugin for GLPI
+   ---------------------------------------------------------------------
+   Fragment HTML pur : aucun {% extends %} (REX résolu — GLPI 11 ne
+   fournit pas de layout de plugin utilisable pour l'héritage Twig).
+   Le point d'entrée front/*.php appelle Html::header()/Html::footer()
+   autour de ce fragment.
+
+   Contexte attendu : `authconfigs` (list<AuthConfigDTO>) fourni par
+   AuthConfigController::index(). Vue passive uniquement (RULE-048) :
+   aucun accès Repository, aucun calcul métier, aucune Entité exposée.
+   --------------------------------------------------------------------- #}
+
+<div class="uxconnector-authconfig-list">
+    <h2>{{ __('Authentication configurations', 'uxconnector') }}</h2>
+
+    {% if can_create %}
+        <div class="mb-3">
+            <a href="authconfig.form.php" class="btn btn-primary">
+                <i class="ti ti-plus"></i>
+                {{ __('Add an authentication configuration', 'uxconnector') }}
+            </a>
+        </div>
+    {% endif %}
+
+    {% if authconfigs|length == 0 %}
+        <p class="uxconnector-empty-state">
+            {{ __('No authentication configuration has been created yet.', 'uxconnector') }}
+        </p>
+    {% else %}
+        <table class="table card-table">
+            <thead>
+                <tr>
+                    <th>{{ __('Name', 'uxconnector') }}</th>
+                    <th>{{ __('Endpoint', 'uxconnector') }}</th>
+                    <th>{{ __('Test path', 'uxconnector') }}</th>
+                    <th>{{ __('Authentication method', 'uxconnector') }}</th>
+                    <th>{{ __('Status', 'uxconnector') }}</th>
+                    <th>{{ __('Last update', 'uxconnector') }}</th>
+                    <th>{{ __('Actions', 'uxconnector') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for authconfig in authconfigs %}
+                    <tr>
+                        <td>{{ authconfig.name }}</td>
+                        <td><code>{{ authconfig.endpoint }}</code></td>
+                        <td><code>{{ authconfig.testPath }}</code></td>
+                        <td>{{ authconfig.authMethodLabel }}</td>
+                        <td>
+                            <span class="badge {{ authconfig.isUsable ? 'bg-green' : 'bg-secondary' }}">
+                                {{ authconfig.statusLabel }}
+                            </span>
+                        </td>
+                        <td>{{ authconfig.updatedAt }}</td>
+                        <td>
+                            {# ---------------------------------------------------
+                               CYCLE D'ACTIVATION (issu de deux relectures externes) :
+                               sans ces actions, un AuthConfig créé depuis l'UI
+                               restait bloqué en DRAFT pour toujours.
+                               --------------------------------------------------- #}
+                            {% if authconfig.status == 'draft' or authconfig.status == 'error' %}
+                                <form method="post" action="authconfig.php" class="d-inline">
+                                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="id" value="{{ authconfig.id }}">
+                                    <button type="submit" name="test" class="btn btn-sm btn-outline-primary">
+                                        {{ __('Test connection', 'uxconnector') }}
+                                    </button>
+                                </form>
+                            {% elseif authconfig.status == 'testing' %}
+                                <form method="post" action="authconfig.php" class="d-inline">
+                                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="id" value="{{ authconfig.id }}">
+                                    <button type="submit" name="activate" class="btn btn-sm btn-success">
+                                        {{ __('Activate', 'uxconnector') }}
+                                    </button>
+                                </form>
+                            {% endif %}
+                            {% if authconfig.status == 'active' %}
+                                <form method="post" action="authconfig.php" class="d-inline">
+                                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="id" value="{{ authconfig.id }}">
+                                    <button type="submit" name="disable" class="btn btn-sm btn-outline-secondary">
+                                        {{ __('Disable', 'uxconnector') }}
+                                    </button>
+                                </form>
+                            {% endif %}
+                            {% if can_delete %}
+                                <form method="post" action="authconfig.php" class="d-inline">
+                                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="id" value="{{ authconfig.id }}">
+                                    <button
+                                        type="submit"
+                                        name="delete"
+                                        class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('{{ __('Permanently delete this authentication configuration?', 'uxconnector')|e('js') }}');"
+                                    >
+                                        <i class="ti ti-trash"></i>
+                                        {{ __('Delete', 'uxconnector') }}
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>

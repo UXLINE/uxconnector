@@ -1,0 +1,11 @@
+{
+  "id": "rest",
+  "version": "1.0.0",
+  "name": "REST générique",
+  "description": "Point d'entrée pour les intégrations avancées. Les jobs personnalisés se créent depuis le menu Jobs.",
+  "icon": "ti ti-api",
+  "endpoint_hint": "https://api.example.tld",
+  "test_path_hint": "/",
+  "auth_methods": ["none", "basic", "api_key", "bearer_token", "oauth2_client_credentials"],
+  "jobs": []
+}

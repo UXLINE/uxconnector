@@ -1,0 +1,263 @@
+{
+  "id": "jira",
+  "version": "2.1.0",
+  "name": "Jira Cloud",
+  "description": "Interactions Jira Cloud prêtes à l’emploi pour projets et issues, en entrée et en sortie.",
+  "icon": "ti ti-brand-jira",
+  "endpoint_hint": "https://api.atlassian.com/ex/jira/{cloudId}",
+  "test_path_hint": "/rest/api/3/project/search?maxResults=1",
+  "auth_methods": [
+    "bearer_token"
+  ],
+  "jobs": [
+    {
+      "id": "jira.projects.inbound",
+      "version": "2.0.0",
+      "name": "Jira Projects → GLPI Projects",
+      "description": "Importe tous les projets Jira visibles par le compte technique et les réconcilie par code projet.",
+      "direction": "inbound",
+      "resource_path": "/rest/api/3/project/search?maxResults=50",
+      "collection_path": "values",
+      "pagination": {
+        "type": "offset",
+        "options": {
+          "offset_response_path": "startAt",
+          "offset_request_parameter": "startAt",
+          "page_size_response_path": "maxResults",
+          "total_response_path": "total",
+          "last_page_response_path": "isLast"
+        }
+      },
+      "target_itemtype": "project",
+      "match_field": "code",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "key",
+          "target": "code",
+          "required": true
+        },
+        {
+          "source": "name",
+          "target": "name",
+          "required": true
+        }
+      ],
+      "parameters": [],
+      "trigger_type": "polling",
+      "external_object_type": "project"
+    },
+    {
+      "id": "jira.issues.inbound",
+      "version": "2.0.0",
+      "name": "Jira {{project_key|upper}} Issues → GLPI Tickets",
+      "description": "Importe les issues d'un projet Jira dans GLPI. Le template reste volontairement minimal en phase A : identité, titre et date.",
+      "direction": "inbound",
+      "resource_path": "/rest/api/3/search/jql?jql=project%20%3D%20{{project_key|upper|urlencode}}&maxResults=50&fields=summary,created,project",
+      "collection_path": "issues",
+      "pagination": {
+        "type": "cursor",
+        "options": {
+          "cursor_response_path": "nextPageToken",
+          "cursor_request_parameter": "nextPageToken",
+          "last_page_response_path": "isLast"
+        }
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "key",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "fields.summary",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "fields.created",
+          "target": "date",
+          "required": false,
+          "transform": "datetime_glpi"
+        },
+        {
+          "source": "@literal:\"Synchronisé depuis Jira\"",
+          "target": "content",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "project_key",
+          "label": "Clé du projet Jira",
+          "required": true,
+          "description": "Exemple : KAN"
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "issue"
+    },
+    {
+      "id": "jira.issues.webhook.inbound",
+      "version": "1.0.0",
+      "name": "Jira Issue event → GLPI Ticket",
+      "description": "Reçoit un webhook Jira et crée/met à jour le ticket GLPI correspondant via ObjectLink.",
+      "direction": "inbound",
+      "trigger_type": "webhook",
+      "external_object_type": "issue",
+      "resource_path": "/webhook",
+      "collection_path": "$",
+      "pagination": {
+        "type": "none",
+        "options": {}
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "issue.id",
+      "field_mappings": [
+        {
+          "source": "issue.key",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "issue.fields.summary",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "@literal:\"Synchronisé depuis un événement Jira\"",
+          "target": "content",
+          "required": false
+        }
+      ],
+      "parameters": []
+    },
+    {
+      "id": "jira.projects.outbound",
+      "version": "1.0.0",
+      "name": "GLPI Projects → Jira Projects",
+      "description": "Sur création/modification d’un projet GLPI dans l’entité choisie, crée le projet Jira ou met à jour le projet déjà lié. Le projet GLPI doit avoir un code et un nom.",
+      "direction": "outbound",
+      "trigger_type": "glpi_event",
+      "external_object_type": "project",
+      "resource_path": "/rest/api/3/project",
+      "collection_path": "$",
+      "pagination": {
+        "type": "none",
+        "options": {}
+      },
+      "target_itemtype": "project",
+      "match_field": "code",
+      "external_id_field": "id",
+      "field_mappings": [],
+      "outbound": {
+        "create": {
+          "method": "POST",
+          "path": "/rest/api/3/project",
+          "body": {
+            "key": "@field:code",
+            "name": "@field:name",
+            "leadAccountId": "{{lead_account_id}}",
+            "projectTypeKey": "{{project_type_key}}",
+            "projectTemplateKey": "{{project_template_key}}"
+          }
+        },
+        "update": {
+          "method": "PUT",
+          "path": "/rest/api/3/project/{{external_id}}",
+          "body": {
+            "name": "@field:name"
+          }
+        },
+        "response_external_id_path": "id"
+      },
+      "parameters": [
+        {
+          "name": "lead_account_id",
+          "label": "Jira lead account ID",
+          "required": true,
+          "description": "Atlassian accountId du chef de projet utilisé lors de la création d’un projet Jira."
+        },
+        {
+          "name": "project_type_key",
+          "label": "Jira project type",
+          "required": true,
+          "default": "business",
+          "description": "Exemple : business, software ou service_desk selon les produits Jira disponibles."
+        },
+        {
+          "name": "project_template_key",
+          "label": "Jira project template",
+          "required": true,
+          "default": "com.atlassian.jira-core-project-templates:jira-core-simplified-project-management",
+          "description": "Template Jira utilisé uniquement lors de la création."
+        }
+      ]
+    },
+    {
+      "id": "jira.issues.outbound",
+      "version": "1.0.0",
+      "name": "GLPI Tickets → Jira Issues",
+      "description": "Sur création/modification d’un ticket GLPI dans l’entité choisie, crée une issue Jira ou met à jour l’issue déjà liée. Le mapping standard reste volontairement minimal (titre).",
+      "direction": "outbound",
+      "trigger_type": "glpi_event",
+      "external_object_type": "issue",
+      "resource_path": "/rest/api/3/issue",
+      "collection_path": "$",
+      "pagination": {
+        "type": "none",
+        "options": {}
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "id",
+      "field_mappings": [],
+      "outbound": {
+        "create": {
+          "method": "POST",
+          "path": "/rest/api/3/issue",
+          "body": {
+            "fields": {
+              "project": {
+                "key": "{{project_key|upper}}"
+              },
+              "summary": "@field:name",
+              "issuetype": {
+                "name": "{{issue_type_name}}"
+              }
+            }
+          }
+        },
+        "update": {
+          "method": "PUT",
+          "path": "/rest/api/3/issue/{{external_id}}",
+          "body": {
+            "fields": {
+              "summary": "@field:name"
+            }
+          }
+        },
+        "response_external_id_path": "id"
+      },
+      "parameters": [
+        {
+          "name": "project_key",
+          "label": "Clé du projet Jira cible",
+          "required": true,
+          "description": "Exemple : KAN"
+        },
+        {
+          "name": "issue_type_name",
+          "label": "Type d’issue Jira à créer",
+          "required": true,
+          "default": "Task",
+          "description": "Exemple : Task, Bug. Le type doit être disponible dans le projet Jira cible."
+        }
+      ]
+    }
+  ]
+}

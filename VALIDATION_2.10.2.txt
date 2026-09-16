@@ -1,0 +1,7 @@
+UXConnector 2.10.2 validation
+
+- Analytics TTR coverage semantics corrected.
+- Partial-period comparison warning added.
+- Normalized daily comparison rates added.
+- No database schema change.
+- PHP lint executed on all 310 plugin PHP files: 310/310 passed.

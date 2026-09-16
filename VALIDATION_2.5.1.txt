@@ -1,0 +1,25 @@
+UXConnector 2.5.1 validation
+==============================
+
+PHP syntax: 196/196 PASS
+composer.json: JSON PASS
+marketplace/metadata.json: JSON PASS
+uxconnector.xml.dist: XML PASS
+Version coherence: PASS (2.5.1)
+PSR-4 namespace casing: PASS
+Stale UxConnector namespace in src: 0
+front rights checks: 4/4 PASS
+front manual inc/includes.php: 0
+Controller CSRF guard calls: 8
+Runtime raw SQL executors: 0
+Schema DATETIME declarations: 0
+Schema signed id/*_id declarations: 0
+Plugin::getWebDir production usages: 0
+Hardcoded profile-ID patterns: 0
+Legacy plugin.xml present: NO
+PHP test files present: 50
+Manual pure-domain/security smoke scenarios: 11/11 PASS
+PHPUnit/PHPStan/PHPCS execution: NOT RUN (tooling dependencies not installed in this build environment)
+Real GLPI 11 + MariaDB runtime validation: NOT RUN
+
+Overall static/build validation: PASS

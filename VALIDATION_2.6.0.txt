@@ -1,0 +1,36 @@
+UXConnector 2.6.0 — validation statique / smoke tests
+Date: 2026-08-18
+
+Périmètre de cette livraison
+- Jira Projects -> GLPI Projects (INBOUND / GET)
+- Jira Issues -> GLPI Tickets (INBOUND / GET)
+- JSON paths et constantes typées
+- Jira ADF -> texte GLPI
+- mappings de valeurs configurables
+- pagination Jira nextPageToken et startAt/maxResults/total
+- presets UI pour les deux jobs Jira
+
+Contrôles exécutés
+- Version déclarée: 2.6.0
+- Fichiers PHP analysés par php -l: 206
+- Résultat php -l: OK (aucune erreur de syntaxe)
+- Smoke test JsonPathValueReader: OK
+- Smoke test @literal typé: OK
+- Smoke test map priorité/statut: OK
+- Smoke test ADF Jira -> texte: OK
+- Smoke test datetime Jira -> GLPI: OK
+- Smoke test TargetItemtype Project/Ticket + TargetFieldPolicy: OK
+- Smoke test pagination Jira issues nextPageToken: OK
+- Smoke test pagination Jira project search startAt avec isLast=false: OK
+- Smoke test pagination fin de page projet: OK
+- Résultat smoke: UXCONNECTOR_2_6_0_SMOKE_OK
+
+Tests PHPUnit
+- Non exécutés dans le bac à sable: les dépendances require-dev (PHPUnit) ne sont pas installées dans l'archive fournie.
+- Les tests unitaires du dépôt ont été complétés pour les nouveaux comportements; la syntaxe PHP de ces tests est validée.
+
+Limites volontaires 2.6.0
+- INBOUND uniquement: aucun POST/PUT/PATCH vers Jira.
+- Les projets et tickets sont importés séparément.
+- Aucun ProjectTask GLPI n'est créé automatiquement pour matérialiser un lien Ticket <-> Projet.
+- Les mappings Jira -> GLPI de type/statut/priorité fournis par le preset sont des valeurs initiales à valider selon le workflow Jira et le référentiel GLPI cible.

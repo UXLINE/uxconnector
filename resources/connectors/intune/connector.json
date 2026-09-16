@@ -1,0 +1,37 @@
+{
+  "id": "intune",
+  "version": "1.0.0",
+  "name": "Microsoft Intune",
+  "description": "Synchronisation des terminaux gérés Intune via Microsoft Graph.",
+  "icon": "ti ti-brand-windows",
+  "endpoint_hint": "https://graph.microsoft.com",
+  "test_path_hint": "/v1.0/deviceManagement/managedDevices?$top=1",
+  "auth_methods": ["oauth2_client_credentials"],
+  "jobs": [
+    {
+      "id": "intune.managed-devices.inbound",
+      "version": "1.0.0",
+      "name": "Intune Managed Devices → GLPI Computers",
+      "description": "Importe les managedDevice Intune dans les ordinateurs GLPI avec pagination Microsoft Graph.",
+      "direction": "inbound",
+      "resource_path": "/v1.0/deviceManagement/managedDevices?$top=100",
+      "collection_path": "value",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "$['@odata.nextLink']"
+        }
+      },
+      "target_itemtype": "computer",
+      "match_field": "uuid",
+      "external_id_field": "id",
+      "field_mappings": [
+        {"source": "deviceName", "target": "name", "required": true},
+        {"source": "azureADDeviceId", "target": "uuid", "required": true},
+        {"source": "serialNumber", "target": "serial", "required": false},
+        {"source": "notes", "target": "comment", "required": false}
+      ],
+      "parameters": []
+    }
+  ]
+}

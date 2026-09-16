@@ -1,0 +1,18 @@
+UXConnector 2.13.0 - validation locale
+Date: 2026-09-14
+
+Version plugin: 2.13.0
+Provider Zendesk: OK
+Templates Zendesk: 2 (all + active_only)
+JSON connector: OK
+Smoke test catalogue: OK
+Smoke test cursor start_time -> cursor: OK
+PHP syntax lint: OK (358 fichiers/entrées)
+PHP-CS-Fixer changed files dry-run: OK
+PHPStan level 8 (classes Zendesk/cursor indépendantes de GLPI): OK
+PHPCS GlpiStandard local: NON EXECUTABLE dans ce runtime (rc=3) - extensions PHP XML manquantes
+PHPUnit local: NON EXECUTABLE dans ce runtime (rc=1) - extensions PHP DOM/XML/mbstring manquantes
+
+Important:
+- Le ZIP contient le code et peut être validé dans le conteneur GLPI 11 du client.
+- Les commentaires, notes internes et pièces jointes Zendesk ne sont pas encore importés par ce build template-level 2.13.0; voir ZENDESK_2.13.0.md.

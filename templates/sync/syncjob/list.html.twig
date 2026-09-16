@@ -1,0 +1,211 @@
+{# ---------------------------------------------------------------------
+   UXConnector plugin for GLPI
+   ---------------------------------------------------------------------
+   Fragment HTML pur : aucun {% extends %} (REX résolu — cf.
+   AbstractController et templates/engine/authconfig/list.html.twig
+   pour le même principe appliqué au bounded context Engine).
+
+   Contexte attendu : `syncjobs` (list<SyncJobDTO>) fourni par
+   SyncJobController::index(). Vue passive uniquement (RULE-048) :
+   aucun accès Repository, aucun calcul métier, aucune Entité exposée.
+   --------------------------------------------------------------------- #}
+
+<div class="uxconnector-syncjob-list">
+    <h2>{{ __('Synchronization jobs', 'uxconnector') }}</h2>
+
+    <div class="mb-3 d-flex gap-2 align-items-center">
+        {% if can_create %}
+            <a href="syncjob.form.php" class="btn btn-primary">
+                <i class="ti ti-plus"></i>
+                {{ __('Add a synchronization job', 'uxconnector') }}
+            </a>
+        {% endif %}
+    </div>
+
+    {% if can_update and syncjobs|length > 0 %}
+        <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3" role="region" aria-label="{{ __('Bulk job actions', 'uxconnector') }}">
+            <div class="d-flex align-items-center gap-3">
+                <label class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input" id="uxconnector-select-all-jobs-toolbar">
+                    <span class="form-check-label fw-bold">{{ __('Select all jobs', 'uxconnector') }}</span>
+                </label>
+                <span class="badge bg-blue-lt" id="uxconnector-selected-count">0 {{ __('selected', 'uxconnector') }}</span>
+            </div>
+            <form id="uxconnector-bulk-jobs" method="post" action="syncjob.php" class="d-flex flex-wrap gap-2 mb-0">
+                <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                <div id="uxconnector-bulk-selected-inputs"></div>
+                <button type="submit" name="bulk_activate" class="btn btn-success" disabled>
+                    <i class="ti ti-player-play"></i> {{ __('Activate selected jobs', 'uxconnector') }}
+                </button>
+                <button type="submit" name="bulk_pause" class="btn btn-outline-secondary" disabled>
+                    <i class="ti ti-player-pause"></i> {{ __('Pause selected jobs', 'uxconnector') }}
+                </button>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if syncjobs|length == 0 %}
+        <p class="uxconnector-empty-state">
+            {{ __('No synchronization job has been created yet.', 'uxconnector') }}
+        </p>
+    {% else %}
+        <table class="table card-table">
+            <thead>
+                <tr>
+                    {% if can_update %}
+                        <th style="width: 32px">
+                            <input type="checkbox" class="form-check-input" id="uxconnector-select-all-jobs" aria-label="{{ __('Select all', 'uxconnector') }}">
+                        </th>
+                    {% endif %}
+                    <th>{{ __('Name', 'uxconnector') }}</th>
+                    <th>{{ __('Source', 'uxconnector') }}</th>
+                    <th>{{ __('Direction', 'uxconnector') }}</th>
+                    <th>{{ __('Resource', 'uxconnector') }}</th>
+                    <th>{{ __('Target', 'uxconnector') }}</th>
+                    <th>{{ __('Field mappings', 'uxconnector') }}</th>
+                    <th>{{ __('Entity', 'uxconnector') }}</th>
+                    <th>{{ __('Status', 'uxconnector') }}</th>
+                    <th>{{ __('Last update', 'uxconnector') }}</th>
+                    <th>{{ __('Actions', 'uxconnector') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for syncjob in syncjobs %}
+                    <tr>
+                        {% if can_update %}
+                            <td>
+                                <input type="checkbox" class="form-check-input uxconnector-job-checkbox" value="{{ syncjob.id }}" aria-label="{{ __('Select job', 'uxconnector') }} {{ syncjob.name }}">
+                            </td>
+                        {% endif %}
+                        <td>
+    <a href="syncjob.view.php?id={{ syncjob.id }}">
+        {{ syncjob.name }}
+    </a>
+</td>
+                        <td>
+                            {% if syncjob.templateId %}
+                                <span class="badge bg-blue-lt">{{ __('Catalog', 'uxconnector') }}</span><br>
+                                <small><code>{{ syncjob.templateId }}</code>{% if syncjob.templateVersion %} · v{{ syncjob.templateVersion }}{% endif %}</small>
+                            {% else %}
+                                <span class="badge bg-secondary-lt">{{ __('Custom', 'uxconnector') }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ syncjob.directionLabel }}</td>
+                        <td><code>{{ syncjob.resourcePath }}</code><br><small class="text-muted">{{ __('Collection', 'uxconnector') }}: <code>{{ syncjob.collectionPath }}</code> · {{ __('Pagination', 'uxconnector') }}: {{ syncjob.paginationType }}</small></td>
+                        <td>{{ syncjob.targetItemtypeLabel }}</td>
+                        <td>{{ syncjob.fieldMappingsCount }}</td>
+                        <td>{{ syncjob.entityAssignmentSummary }}</td>
+                        <td>
+                            <span class="badge {{ syncjob.isRunnable ? 'bg-green' : 'bg-secondary' }}">
+                                {{ syncjob.statusLabel }}
+                            </span>
+                        </td>
+                        <td>{{ syncjob.updatedAt }}</td>
+                        <td>
+                            {# ---------------------------------------------------
+                               CYCLE D'ACTIVATION (issu de deux relectures externes) :
+                               sans ces actions, un SyncJob créé depuis l'UI
+                               restait bloqué en DRAFT pour toujours — le CronTask
+                               ne reprend que les jobs retournés par findRunnable().
+                               --------------------------------------------------- #}
+                            {% if syncjob.status == 'draft' or syncjob.status == 'paused' %}
+                                <form method="post" action="syncjob.php" class="d-inline">
+                                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="id" value="{{ syncjob.id }}">
+                                    <button type="submit" name="activate" class="btn btn-sm btn-success">
+                                        {{ __('Activate', 'uxconnector') }}
+                                    </button>
+                                </form>
+                            {% endif %}
+                            {% if syncjob.status == 'active' %}
+                                <form method="post" action="syncjob.php" class="d-inline">
+                                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="id" value="{{ syncjob.id }}">
+                                    <button type="submit" name="pause" class="btn btn-sm btn-outline-secondary">
+                                        {{ __('Pause', 'uxconnector') }}
+                                    </button>
+                                </form>
+                                <form method="post" action="syncjob.php" class="d-inline">
+                                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="id" value="{{ syncjob.id }}">
+                                    <button type="submit" name="run_now" class="btn btn-sm btn-outline-primary">
+                                        {{ __('Run now', 'uxconnector') }}
+                                    </button>
+                                </form>
+                            {% endif %}
+                            <a href="syncjob.php?history=1&amp;id={{ syncjob.id }}" class="btn btn-sm btn-outline-secondary">
+                                {{ __('History', 'uxconnector') }}
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const rowSelectAll = document.getElementById('uxconnector-select-all-jobs');
+    const toolbarSelectAll = document.getElementById('uxconnector-select-all-jobs-toolbar');
+    const checkboxes = Array.from(document.querySelectorAll('.uxconnector-job-checkbox'));
+    const bulkForm = document.getElementById('uxconnector-bulk-jobs');
+    const selectedInputs = document.getElementById('uxconnector-bulk-selected-inputs');
+    const selectedCount = document.getElementById('uxconnector-selected-count');
+    const bulkButtons = bulkForm ? Array.from(bulkForm.querySelectorAll('button[type="submit"]')) : [];
+
+    const refresh = () => {
+        const selected = checkboxes.filter((checkbox) => checkbox.checked);
+        const allChecked = checkboxes.length > 0 && selected.length === checkboxes.length;
+        if (rowSelectAll) {
+            rowSelectAll.checked = allChecked;
+            rowSelectAll.indeterminate = selected.length > 0 && !allChecked;
+        }
+        if (toolbarSelectAll) {
+            toolbarSelectAll.checked = allChecked;
+            toolbarSelectAll.indeterminate = selected.length > 0 && !allChecked;
+        }
+        if (selectedCount) {
+            selectedCount.textContent = `${selected.length} {{ __('selected', 'uxconnector')|e('js') }}`;
+        }
+        bulkButtons.forEach((button) => {
+            button.disabled = selected.length === 0;
+        });
+    };
+
+    const toggleAll = (checked) => {
+        checkboxes.forEach((checkbox) => {
+            checkbox.checked = checked;
+        });
+        refresh();
+    };
+
+    if (rowSelectAll) {
+        rowSelectAll.addEventListener('change', () => toggleAll(rowSelectAll.checked));
+    }
+    if (toolbarSelectAll) {
+        toolbarSelectAll.addEventListener('change', () => toggleAll(toolbarSelectAll.checked));
+    }
+    checkboxes.forEach((checkbox) => checkbox.addEventListener('change', refresh));
+
+    if (bulkForm && selectedInputs) {
+        bulkForm.addEventListener('submit', (event) => {
+            selectedInputs.innerHTML = '';
+            const selected = checkboxes.filter((checkbox) => checkbox.checked);
+            if (selected.length === 0) {
+                event.preventDefault();
+                return;
+            }
+            selected.forEach((checkbox) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = checkbox.value;
+                selectedInputs.appendChild(input);
+            });
+        });
+    }
+
+    refresh();
+});
+</script>

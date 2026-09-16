@@ -1,0 +1,32 @@
+{
+  "id": "microsoft-graph",
+  "version": "1.0.0",
+  "name": "Microsoft Graph",
+  "description": "Templates génériques Microsoft Graph distincts du périmètre Intune.",
+  "icon": "ti ti-brand-microsoft",
+  "endpoint_hint": "https://graph.microsoft.com",
+  "test_path_hint": "/v1.0/users?$top=1",
+  "auth_methods": ["oauth2_client_credentials"],
+  "jobs": [
+    {
+      "id": "graph.users.inbound",
+      "version": "1.0.0",
+      "name": "Microsoft Graph Users → GLPI Users",
+      "description": "Importe les utilisateurs Entra/Graph vers GLPI avec pagination @odata.nextLink.",
+      "direction": "inbound",
+      "resource_path": "/v1.0/users?$top=100&$select=id,userPrincipalName,givenName,surname,mobilePhone",
+      "collection_path": "value",
+      "pagination": {"type": "next_link", "options": {"next_link_response_path": "$['@odata.nextLink']"}},
+      "target_itemtype": "user",
+      "match_field": "name",
+      "external_id_field": "id",
+      "field_mappings": [
+        {"source": "userPrincipalName", "target": "name", "required": true},
+        {"source": "givenName", "target": "firstname", "required": false},
+        {"source": "surname", "target": "realname", "required": false},
+        {"source": "mobilePhone", "target": "mobile", "required": false}
+      ],
+      "parameters": []
+    }
+  ]
+}

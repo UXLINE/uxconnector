@@ -1,0 +1,35 @@
+UXConnector 2.7.0 — validation technique
+Date: 2026-08-18
+
+Contrôles réalisés avant empaquetage :
+- PHP syntax lint : 236 fichiers PHP contrôlés, aucune erreur de syntaxe.
+- 7 manifests ConnectorTemplate JSON chargés et validés.
+- 7 identifiants JobTemplate uniques contrôlés.
+- Smoke test JsonPathValueReader : chemin imbriqué + clé bracket/quoted.
+- Smoke test CollectionExtractor avec collection_path déclaré.
+- Smoke tests pagination : cursor, offset et next_link.
+- Smoke test instanciation JobTemplate -> SyncJob persistant :
+  * résolution unique des paramètres ;
+  * collection_path persisté ;
+  * pagination persistée ;
+  * template_id/template_version persistés.
+- Smoke test PageReferenceNormalizer :
+  * lien absolu de même origine accepté/normalisé ;
+  * lien cross-origin refusé.
+- Recherche statique dans Domain/Sync + Application/Sync + Infrastructure/Sync :
+  aucune connaissance éditeur (Jira/Intune/Microsoft/ServiceNow/Zabbix ni clés
+  spécifiques de leurs protocoles) dans le runtime générique.
+- Test d'intégration de migration mis à jour pour collection_path,
+  pagination_config, template_id, template_version et l'index template_id.
+
+Limite de validation :
+Le binaire vendor/bin/phpunit n'est pas présent dans l'archive de travail ; la
+suite PHPUnit complète n'a donc pas pu être exécutée dans ce conteneur. Les
+tests unitaires/integration ont été mis à jour/ajoutés et devront être lancés
+dans l'environnement de développement avec les dépendances dev installées ou
+sur l'instance GLPI de test.
+
+Note environnement smoke :
+Le conteneur de construction utilisé pour les smoke tests ne charge pas
+l'extension PHP mbstring. Un polyfill temporaire a été utilisé uniquement par
+le script smoke ; aucun polyfill n'a été ajouté au plugin.

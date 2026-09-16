@@ -1,0 +1,50 @@
+UXConnector 2.8.0 — validation de construction
+================================================
+
+Contrôles réalisés avant empaquetage final :
+
+[OK] php -l : 265 fichiers PHP valides
+[OK] 7 manifests resources/connectors/*/connector.json valides
+[OK] composer.json et marketplace/metadata.json valides
+[OK] uxconnector.xml.dist parse correctement et annonce 2.8.0
+[OK] cohérence de version : setup.php / src/Setup.php / VERSION / metadata Marketplace / XML = 2.8.0
+[OK] autoload des nouvelles classes pures
+[OK] catalogue chargé : 7 connecteurs
+[OK] Jira : 5 interactions standard présentes
+     - jira.projects.inbound
+     - jira.issues.inbound
+     - jira.issues.webhook.inbound
+     - jira.projects.outbound
+     - jira.issues.outbound
+[OK] résolution de paramètres JobTemplate -> configuration concrète
+[OK] résolution du chemin Jira de test : project_key=KAN injecté une seule fois
+[OK] résolution outbound générique : @field / @field_optional / @literal / placeholders de chemin
+[OK] parsing de la configuration REST outbound create/update
+[OK] garde anti-boucle SyncRuntimeGuard
+[OK] migration paresseuse ObjectLink legacy record -> type externe demandé
+[OK] absence de connaissance Jira/Atlassian dans ExecuteSyncJobService
+[OK] absence de connaissance Jira/Atlassian dans DispatchGlpiItemEventService
+[OK] endpoint webhook basé sur les mécanismes stateless/firewall GLPI 11 utilisés par les plugins officiels
+[OK] clés webhook masquées aux profils sans droit UPDATE sur les interactions
+[OK] interaction standard outbound : périmètre d'entité GLPI fixe obligatoire
+
+Tests unitaires ajoutés au dépôt :
+- OutboundRuntimeValueResolverTest
+- ObjectLinkPersistenceMapperTest
+- SyncRuntimeGuardTest
+- OutboundConfigRequestParserTest
+- JsonConnectorTemplateRepositoryTest enrichi pour les interactions Jira 2.8.0
+
+Validation non réalisable dans l'environnement de construction :
+- PHPUnit complet : vendor/bin/phpunit absent de l'archive de travail.
+- exécution réelle dans une instance GLPI 11 + MariaDB : à valider après installation.
+
+Validation post-installation recommandée :
+1. mise à jour 2.7.0 -> 2.8.0 sans désinstallation ;
+2. vérifier les nouvelles colonnes connector_id / trigger_type / external_object_type / outbound_config / webhook_key ;
+3. associer la Connection Jira existante au type Jira Cloud ;
+4. tester puis activer la Connection ;
+5. créer Jira Projects -> GLPI Projects depuis la fiche Connection et exécuter Run now ;
+6. activer GLPI Projects -> Jira Projects sur une entité de test ;
+7. valider la création/réutilisation d'ObjectLink dans les deux sens ;
+8. créer et appeler un webhook de test avec X-UXConnector-Webhook-Key.

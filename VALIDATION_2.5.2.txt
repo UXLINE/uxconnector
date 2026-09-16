@@ -1,0 +1,11 @@
+UXConnector 2.5.2 validation
+============================
+
+- PHP syntax lint: all plugin/test PHP files pass `php -l`.
+- New AuthConfig `test_path` field is present in fresh-install DDL and additive upgrade migration.
+- Legacy `testing` AuthConfigs are reset to `draft` when upgrading from a schema without `test_path`.
+- TestAuthConfigService sends GET to the configured TestPath.
+- Only HTTP 200..299 is accepted as a successful connection/authentication test.
+- HTTP 401/403/404/5xx mark the AuthConfig as ERROR.
+- Jira Cloud recommended test path: /rest/api/3/project.
+- Prior GLPI 11 fixes retained: native Kernel CSRF only, CommonDBTM::find() array handling, AuthConfig delete action.

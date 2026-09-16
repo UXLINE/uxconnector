@@ -1,0 +1,71 @@
+<div class="uxconnector-connection-form">
+    <div class="mb-3">
+        {% if mode == 'edit' %}
+            <a href="connection.php?id={{ connection_id }}" class="btn btn-link px-0">← {{ __('Back to connection', 'uxconnector') }}</a>
+            <h2>{{ __('Edit connection', 'uxconnector') }}</h2>
+            <div class="alert alert-info">
+                {{ __('Changing the endpoint, authentication method, test resource or credential invalidates the previous test. The connection must then be tested again before activation.', 'uxconnector') }}
+            </div>
+        {% else %}
+            <a href="connections.php" class="btn btn-link px-0">← {{ __('Back to connections', 'uxconnector') }}</a>
+            <h2>{{ __('New connection', 'uxconnector') }}</h2>
+            <div class="alert alert-info">{{ __('Choose a standard connector to get recommended endpoint/authentication values, or Custom REST for a fully manual connection.', 'uxconnector') }}</div>
+        {% endif %}
+    </div>
+
+    <form method="post" action="connection.form.php{% if mode == 'edit' %}?id={{ connection_id }}{% endif %}">
+        <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+        {% if mode == 'edit' %}<input type="hidden" name="id" value="{{ connection_id }}">{% endif %}
+
+        <div class="card mb-3"><div class="card-body">
+            {% if mode == 'create' %}
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Connection type', 'uxconnector') }}</label>
+                    <select name="connector_id" class="form-select" onchange="if(this.value !== '{{ defaults.connector_id }}'){ window.location='connection.form.php?connector='+encodeURIComponent(this.value); }">
+                        <option value="custom" {% if defaults.connector_id == 'custom' %}selected{% endif %}>{{ __('Custom REST', 'uxconnector') }}</option>
+                        {% for connector in connectors %}<option value="{{ connector.id }}" {% if defaults.connector_id == connector.id %}selected{% endif %}>{{ connector.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                {% if selected_connector %}<p class="text-muted">{{ selected_connector.description }}</p>{% endif %}
+            {% else %}
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Connection type', 'uxconnector') }}</label>
+                    <input class="form-control" value="{{ selected_connector.name ?? __('Custom REST', 'uxconnector') }}" disabled>
+                    <div class="form-text">{{ __('Change the connector type from the connection management screen. Associating a standard connector also applies its recommended test resource.', 'uxconnector') }}</div>
+                </div>
+            {% endif %}
+
+            <div class="mb-3"><label class="form-label">{{ __('Name', 'uxconnector') }}</label><input name="name" class="form-control" maxlength="128" required value="{{ defaults.name }}" placeholder="JIRA COAXIS"></div>
+            <div class="mb-3"><label class="form-label">{{ __('Endpoint', 'uxconnector') }}</label><input name="endpoint" type="url" class="form-control" required value="{{ defaults.endpoint }}"><div class="form-text">{{ __('Replace placeholders such as {cloudId} with the value for this environment.', 'uxconnector') }}</div></div>
+            <div class="mb-3"><label class="form-label">{{ __('Test path', 'uxconnector') }}</label><input name="test_path" class="form-control" required value="{{ defaults.test_path }}"><div class="form-text">{{ __('Authenticated resource used only by the Test action. It must return HTTP 2xx when credentials are valid.', 'uxconnector') }}</div></div>
+            <div class="mb-3"><label class="form-label">{{ __('Authentication method', 'uxconnector') }}</label><select name="auth_method" class="form-select" required>{% for method in authMethods %}<option value="{{ method.value }}" {% if defaults.auth_method == method.value %}selected{% endif %}>{{ method.label() }}</option>{% endfor %}</select></div>
+            <div class="mb-3"><label class="form-label">{{ mode == 'edit' ? __('New credential', 'uxconnector') : __('Credential', 'uxconnector') }}</label><input name="secret" type="password" autocomplete="new-password" class="form-control"><div class="form-text">{% if mode == 'edit' %}{{ __('Leave blank to keep the currently stored credential. Entering a new value replaces it and requires a new connection test.', 'uxconnector') }}{% else %}{{ __('Bearer token, API key or Basic credential depending on the selected method. Secrets are stored protected by GLPI.', 'uxconnector') }}{% endif %}</div></div>
+        </div></div>
+
+        <details class="card mb-3"><summary class="card-header">{{ __('OAuth2 Password Grant (GLPI 11 HL API)', 'uxconnector') }}</summary><div class="card-body">
+            {% if mode == 'edit' %}<div class="alert alert-secondary py-2">{{ __('Leave all Password Grant fields blank to keep the current OAuth2 credential. Fill the complete set to replace it.', 'uxconnector') }}</div>{% endif %}
+            <div class="alert alert-info py-2">{{ __('For GLPI 11 High-Level API use /api.php/token and scope api. GLPI requires a real user identity for normal API access.', 'uxconnector') }}</div>
+            <div class="mb-2"><label class="form-label">Token URL</label><input name="oauth2_password_token_url" type="url" class="form-control" placeholder="https://glpi.example.tld/api.php/token"></div>
+            <div class="mb-2"><label class="form-label">Client ID</label><input name="oauth2_password_client_id" class="form-control"></div>
+            <div class="mb-2"><label class="form-label">Client secret</label><input name="oauth2_password_client_secret" type="password" autocomplete="new-password" class="form-control"></div>
+            <div class="mb-2"><label class="form-label">GLPI username</label><input name="oauth2_password_username" autocomplete="off" class="form-control"></div>
+            <div class="mb-2"><label class="form-label">GLPI password</label><input name="oauth2_password_password" type="password" autocomplete="new-password" class="form-control"></div>
+            <div><label class="form-label">Scope</label><input name="oauth2_password_scope" class="form-control" value="api"></div>
+        </div></details>
+
+        <details class="card mb-3"><summary class="card-header">{{ __('OAuth2 Client Credentials', 'uxconnector') }}</summary><div class="card-body">
+            {% if mode == 'edit' %}<div class="alert alert-secondary py-2">{{ __('Leave all OAuth2 fields blank to keep the current OAuth2 credential. Fill the complete set to replace it.', 'uxconnector') }}</div>{% endif %}
+            <div class="mb-2"><label class="form-label">Token URL</label><input name="oauth2_token_url" type="url" class="form-control"></div>
+            <div class="mb-2"><label class="form-label">Client ID</label><input name="oauth2_client_id" class="form-control"></div>
+            <div class="mb-2"><label class="form-label">Client secret</label><input name="oauth2_client_secret" type="password" class="form-control"></div>
+            <div><label class="form-label">Scope</label><input name="oauth2_scope" class="form-control"></div>
+        </div></details>
+
+        {% if mode == 'edit' %}
+            <button type="submit" name="update_connection" value="1" class="btn btn-primary">{{ __('Save changes', 'uxconnector') }}</button>
+            <a href="connection.php?id={{ connection_id }}" class="btn btn-outline-secondary">{{ __('Cancel', 'uxconnector') }}</a>
+        {% else %}
+            <button type="submit" name="create_connection" value="1" class="btn btn-primary">{{ __('Create connection', 'uxconnector') }}</button>
+        {% endif %}
+    </form>
+</div>

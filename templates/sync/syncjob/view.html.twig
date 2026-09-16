@@ -1,0 +1,84 @@
+<div class="uxconnector-syncjob-view">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ __('Synchronization job', 'uxconnector') }} ? {{ syncjob.name }}</h2>
+
+        <a href="syncjob.php" class="btn btn-outline-secondary">
+            {{ __('Back to synchronizations', 'uxconnector') }}
+        </a>
+    </div>
+
+    <table class="tab_cadre_fixe">
+        <tr class="tab_bg_1"><td><strong>ID</strong></td><td>{{ syncjob.id }}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Name', 'uxconnector') }}</strong></td><td>{{ syncjob.name }}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Status', 'uxconnector') }}</strong></td><td>{{ syncjob.statusLabel }}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Connection', 'uxconnector') }}</strong></td><td>#{{ syncjob.authConfigReference }}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Direction', 'uxconnector') }}</strong></td><td>{{ syncjob.directionLabel }}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Trigger', 'uxconnector') }}</strong></td><td>{{ syncjob.triggerTypeLabel }}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Resource path', 'uxconnector') }}</strong></td><td><code>{{ syncjob.resourcePath }}</code></td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Collection path', 'uxconnector') }}</strong></td><td><code>{{ syncjob.collectionPath }}</code></td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('GLPI object', 'uxconnector') }}</strong></td><td>{{ syncjob.targetItemtypeLabel }}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Match field', 'uxconnector') }}</strong></td><td><code>{{ syncjob.matchField }}</code></td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('External ID field', 'uxconnector') }}</strong></td><td><code>{{ syncjob.externalIdField }}</code></td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('External object type', 'uxconnector') }}</strong></td><td><code>{{ syncjob.externalObjectType }}</code></td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Webhook', 'uxconnector') }}</strong></td><td>{{ syncjob.webhookConfigured ? __('Configured', 'uxconnector') : __('No', 'uxconnector') }}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Template', 'uxconnector') }}</strong></td><td>{% if syncjob.templateId %}<code>{{ syncjob.templateId }}</code>{% if syncjob.templateVersion %} ? v{{ syncjob.templateVersion }}{% endif %}{% else %}{{ __('Custom', 'uxconnector') }}{% endif %}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Created at', 'uxconnector') }}</strong></td><td>{{ syncjob.createdAt }}</td></tr>
+        <tr class="tab_bg_1"><td><strong>{{ __('Last update', 'uxconnector') }}</strong></td><td>{{ syncjob.updatedAt }}</td></tr>
+    </table>
+
+    <h3 class="mt-4">{{ __('Field mappings', 'uxconnector') }}</h3>
+
+    {% if syncjob.fieldMappings|length == 0 %}
+        <p>{{ __('No field mapping configured.', 'uxconnector') }}</p>
+    {% else %}
+        <table class="table card-table">
+            <thead>
+                <tr>
+                    <th>{{ __('Source', 'uxconnector') }}</th>
+                    <th>{{ __('Target', 'uxconnector') }}</th>
+                    <th>{{ __('Transform', 'uxconnector') }}</th>
+                    <th>{{ __('Required', 'uxconnector') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mapping in syncjob.fieldMappings %}
+                    <tr>
+                        <td><code>{{ mapping.sourceField }}</code></td>
+                        <td><code>{{ mapping.targetField }}</code></td>
+                        <td><code>{{ mapping.transform ?? '' }}</code></td>
+                        <td>{{ mapping.required ? __('Yes', 'uxconnector') : __('No', 'uxconnector') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <h3 class="mt-4">{{ __('Pagination configuration', 'uxconnector') }}</h3>
+    <pre class="p-3 border rounded">{{ syncjob.paginationJson }}</pre>
+
+    <h3 class="mt-4">{{ __('Entity assignment', 'uxconnector') }}</h3>
+    <pre class="p-3 border rounded">{{ syncjob.entityAssignmentJson }}</pre>
+
+    <h3 class="mt-4">{{ __('Outbound configuration', 'uxconnector') }}</h3>
+    <pre class="p-3 border rounded">{{ syncjob.outboundJson }}</pre>
+</div>
+
+
+{# UXCONNECTOR_SYNCJOB_EDIT_ACTION #}
+{% if can_update %}
+    <div class="mt-4">
+        {% if syncjob.status == 'active' %}
+            <div class="alert alert-warning">
+                {{ __('Pause this interaction before modifying its configuration.', 'uxconnector') }}
+            </div>
+        {% else %}
+            <a
+                href="syncjob.edit.php?id={{ syncjob.id }}"
+                class="btn btn-primary"
+            >
+                <i class="ti ti-edit"></i>
+                {{ __('Edit interaction', 'uxconnector') }}
+            </a>
+        {% endif %}
+    </div>
+{% endif %}

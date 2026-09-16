@@ -1,0 +1,520 @@
+{
+  "id": "glpi-hl",
+  "version": "2.17.1",
+  "name": "GLPI 11 High-Level API",
+  "description": "Lecture d'un GLPI 11 distant via l'API High-Level et consolidation de son parc. Les assets sont réconciliés par ObjectLink puis enrichis automatiquement avec entité, statut, fabricant, lieu, type et modèle à partir des noms renvoyés par l'API source.",
+  "icon": "ti ti-brand-tabler",
+  "endpoint_hint": "https://glpi.example.tld",
+  "test_path_hint": "/api.php/Assets/Computer?start=0&limit=1",
+  "auth_methods": [
+    "oauth2_password"
+  ],
+  "jobs": [
+    {
+      "id": "glpi-hl.assets.computers.inbound",
+      "version": "2.17.1",
+      "name": "1 - GLPI source → Ordinateurs",
+      "description": "Lit les ordinateurs du GLPI distant et les crée/met à jour dans le GLPI de consolidation. Réconciliation initiale par UUID, puis numéro de série, numéro d'inventaire et enfin nom ; les relectures utilisent ObjectLink. Référentiels GLPI (entité, statut, fabricant, lieu, type et modèle) résolus/créés automatiquement puis rattachés à l'actif.",
+      "direction": "inbound",
+      "resource_path": "/api.php/Assets/Computer?start=0&limit={{page_size}}",
+      "collection_path": "$",
+      "pagination": {
+        "type": "count_offset",
+        "options": {
+          "offset_request_parameter": "start",
+          "page_size": "{{page_size}}"
+        }
+      },
+      "target_itemtype": "computer",
+      "match_field": "asset_identity",
+      "external_id_field": "id",
+      "external_object_type": "glpi_hl_computer",
+      "field_mappings": [
+        {
+          "source": "name",
+          "target": "name",
+          "required": false
+        },
+        {
+          "source": "serial",
+          "target": "serial",
+          "required": false
+        },
+        {
+          "source": "otherserial",
+          "target": "otherserial",
+          "required": false
+        },
+        {
+          "source": "uuid",
+          "target": "uuid",
+          "required": false
+        },
+        {
+          "source": "comment",
+          "target": "comment",
+          "required": false
+        },
+        {
+          "source": "contact",
+          "target": "contact",
+          "required": false
+        },
+        {
+          "source": "contact_num",
+          "target": "contact_num",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page_size",
+          "label": "Taille de page API",
+          "required": true,
+          "default": "100",
+          "description": "Nombre d'ordinateurs lus par appel High-Level API. 100 est recommandé pour le premier atelier."
+        }
+      ]
+    },
+    {
+      "id": "glpi-hl.assets.monitors.inbound",
+      "version": "2.17.1",
+      "name": "2 - GLPI source → Moniteurs",
+      "description": "Lit les moniteurs du GLPI distant. La réconciliation privilégie UUID, numéro de série puis numéro d'inventaire ; un nom seul n'est pas utilisé pour fusionner deux moniteurs. Référentiels GLPI (entité, statut, fabricant, lieu, type et modèle) résolus/créés automatiquement puis rattachés à l'actif.",
+      "direction": "inbound",
+      "resource_path": "/api.php/Assets/Monitor?start=0&limit={{page_size}}",
+      "collection_path": "$",
+      "pagination": {
+        "type": "count_offset",
+        "options": {
+          "offset_request_parameter": "start",
+          "page_size": "{{page_size}}"
+        }
+      },
+      "target_itemtype": "monitor",
+      "match_field": "asset_identity",
+      "external_id_field": "id",
+      "external_object_type": "glpi_hl_monitor",
+      "field_mappings": [
+        {
+          "source": "name",
+          "target": "name",
+          "required": false
+        },
+        {
+          "source": "serial",
+          "target": "serial",
+          "required": false
+        },
+        {
+          "source": "otherserial",
+          "target": "otherserial",
+          "required": false
+        },
+        {
+          "source": "uuid",
+          "target": "uuid",
+          "required": false
+        },
+        {
+          "source": "comment",
+          "target": "comment",
+          "required": false
+        },
+        {
+          "source": "contact",
+          "target": "contact",
+          "required": false
+        },
+        {
+          "source": "contact_num",
+          "target": "contact_num",
+          "required": false
+        },
+        {
+          "source": "size",
+          "target": "size",
+          "required": false
+        },
+        {
+          "source": "have_micro",
+          "target": "have_micro",
+          "required": false
+        },
+        {
+          "source": "have_speaker",
+          "target": "have_speaker",
+          "required": false
+        },
+        {
+          "source": "have_hdmi",
+          "target": "have_hdmi",
+          "required": false
+        },
+        {
+          "source": "have_displayport",
+          "target": "have_displayport",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page_size",
+          "label": "Taille de page API",
+          "required": true,
+          "default": "100"
+        }
+      ]
+    },
+    {
+      "id": "glpi-hl.assets.phones.inbound",
+      "version": "2.17.1",
+      "name": "3 - GLPI source → Téléphones",
+      "description": "Lit les téléphones du GLPI distant et les consolide sans fusion sur le seul nom lorsque les identifiants matériels sont absents. Référentiels GLPI (entité, statut, fabricant, lieu, type et modèle) résolus/créés automatiquement puis rattachés à l'actif.",
+      "direction": "inbound",
+      "resource_path": "/api.php/Assets/Phone?start=0&limit={{page_size}}",
+      "collection_path": "$",
+      "pagination": {
+        "type": "count_offset",
+        "options": {
+          "offset_request_parameter": "start",
+          "page_size": "{{page_size}}"
+        }
+      },
+      "target_itemtype": "phone",
+      "match_field": "asset_identity",
+      "external_id_field": "id",
+      "external_object_type": "glpi_hl_phone",
+      "field_mappings": [
+        {
+          "source": "name",
+          "target": "name",
+          "required": false
+        },
+        {
+          "source": "serial",
+          "target": "serial",
+          "required": false
+        },
+        {
+          "source": "otherserial",
+          "target": "otherserial",
+          "required": false
+        },
+        {
+          "source": "uuid",
+          "target": "uuid",
+          "required": false
+        },
+        {
+          "source": "comment",
+          "target": "comment",
+          "required": false
+        },
+        {
+          "source": "contact",
+          "target": "contact",
+          "required": false
+        },
+        {
+          "source": "contact_num",
+          "target": "contact_num",
+          "required": false
+        },
+        {
+          "source": "brand",
+          "target": "brand",
+          "required": false
+        },
+        {
+          "source": "number_line",
+          "target": "number_line",
+          "required": false
+        },
+        {
+          "source": "have_headset",
+          "target": "have_headset",
+          "required": false
+        },
+        {
+          "source": "have_hp",
+          "target": "have_hp",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page_size",
+          "label": "Taille de page API",
+          "required": true,
+          "default": "100"
+        }
+      ]
+    },
+    {
+      "id": "glpi-hl.assets.peripherals.inbound",
+      "version": "2.17.1",
+      "name": "4 - GLPI source → Périphériques",
+      "description": "Lit les périphériques du GLPI distant et les consolide en conservant l'identité source dans ObjectLink. Référentiels GLPI (entité, statut, fabricant, lieu, type et modèle) résolus/créés automatiquement puis rattachés à l'actif.",
+      "direction": "inbound",
+      "resource_path": "/api.php/Assets/Peripheral?start=0&limit={{page_size}}",
+      "collection_path": "$",
+      "pagination": {
+        "type": "count_offset",
+        "options": {
+          "offset_request_parameter": "start",
+          "page_size": "{{page_size}}"
+        }
+      },
+      "target_itemtype": "peripheral",
+      "match_field": "asset_identity",
+      "external_id_field": "id",
+      "external_object_type": "glpi_hl_peripheral",
+      "field_mappings": [
+        {
+          "source": "name",
+          "target": "name",
+          "required": false
+        },
+        {
+          "source": "serial",
+          "target": "serial",
+          "required": false
+        },
+        {
+          "source": "otherserial",
+          "target": "otherserial",
+          "required": false
+        },
+        {
+          "source": "uuid",
+          "target": "uuid",
+          "required": false
+        },
+        {
+          "source": "comment",
+          "target": "comment",
+          "required": false
+        },
+        {
+          "source": "contact",
+          "target": "contact",
+          "required": false
+        },
+        {
+          "source": "contact_num",
+          "target": "contact_num",
+          "required": false
+        },
+        {
+          "source": "brand",
+          "target": "brand",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page_size",
+          "label": "Taille de page API",
+          "required": true,
+          "default": "100"
+        }
+      ]
+    },
+    {
+      "id": "glpi-hl.assets.printers.inbound",
+      "version": "2.17.1",
+      "name": "5 - GLPI source → Imprimantes",
+      "description": "Lit les imprimantes du GLPI distant. Ce job est disponible séparément afin de pouvoir être activé uniquement si ce type d'actif fait partie du périmètre INDIGO. Référentiels GLPI (entité, statut, fabricant, lieu, type et modèle) résolus/créés automatiquement puis rattachés à l'actif.",
+      "direction": "inbound",
+      "resource_path": "/api.php/Assets/Printer?start=0&limit={{page_size}}",
+      "collection_path": "$",
+      "pagination": {
+        "type": "count_offset",
+        "options": {
+          "offset_request_parameter": "start",
+          "page_size": "{{page_size}}"
+        }
+      },
+      "target_itemtype": "printer",
+      "match_field": "asset_identity",
+      "external_id_field": "id",
+      "external_object_type": "glpi_hl_printer",
+      "field_mappings": [
+        {
+          "source": "name",
+          "target": "name",
+          "required": false
+        },
+        {
+          "source": "serial",
+          "target": "serial",
+          "required": false
+        },
+        {
+          "source": "otherserial",
+          "target": "otherserial",
+          "required": false
+        },
+        {
+          "source": "uuid",
+          "target": "uuid",
+          "required": false
+        },
+        {
+          "source": "comment",
+          "target": "comment",
+          "required": false
+        },
+        {
+          "source": "contact",
+          "target": "contact",
+          "required": false
+        },
+        {
+          "source": "contact_num",
+          "target": "contact_num",
+          "required": false
+        },
+        {
+          "source": "have_serial",
+          "target": "have_serial",
+          "required": false
+        },
+        {
+          "source": "have_parallel",
+          "target": "have_parallel",
+          "required": false
+        },
+        {
+          "source": "have_usb",
+          "target": "have_usb",
+          "required": false
+        },
+        {
+          "source": "have_wifi",
+          "target": "have_wifi",
+          "required": false
+        },
+        {
+          "source": "have_ethernet",
+          "target": "have_ethernet",
+          "required": false
+        },
+        {
+          "source": "memory_size",
+          "target": "memory_size",
+          "required": false
+        },
+        {
+          "source": "init_pages_counter",
+          "target": "init_pages_counter",
+          "required": false
+        },
+        {
+          "source": "last_pages_counter",
+          "target": "last_pages_counter",
+          "required": false
+        },
+        {
+          "source": "sysdescr",
+          "target": "sysdescr",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page_size",
+          "label": "Taille de page API",
+          "required": true,
+          "default": "100"
+        }
+      ]
+    },
+    {
+      "id": "glpi-hl.assets.network-equipment.inbound",
+      "version": "2.17.1",
+      "name": "6 - GLPI source → Équipements réseau",
+      "description": "Lit les équipements réseau du GLPI distant. La réconciliation peut utiliser le nom en dernier recours après UUID, série et numéro d'inventaire. Référentiels GLPI (entité, statut, fabricant, lieu, type et modèle) résolus/créés automatiquement puis rattachés à l'actif.",
+      "direction": "inbound",
+      "resource_path": "/api.php/Assets/NetworkEquipment?start=0&limit={{page_size}}",
+      "collection_path": "$",
+      "pagination": {
+        "type": "count_offset",
+        "options": {
+          "offset_request_parameter": "start",
+          "page_size": "{{page_size}}"
+        }
+      },
+      "target_itemtype": "network_equipment",
+      "match_field": "asset_identity",
+      "external_id_field": "id",
+      "external_object_type": "glpi_hl_network_equipment",
+      "field_mappings": [
+        {
+          "source": "name",
+          "target": "name",
+          "required": false
+        },
+        {
+          "source": "serial",
+          "target": "serial",
+          "required": false
+        },
+        {
+          "source": "otherserial",
+          "target": "otherserial",
+          "required": false
+        },
+        {
+          "source": "uuid",
+          "target": "uuid",
+          "required": false
+        },
+        {
+          "source": "comment",
+          "target": "comment",
+          "required": false
+        },
+        {
+          "source": "contact",
+          "target": "contact",
+          "required": false
+        },
+        {
+          "source": "contact_num",
+          "target": "contact_num",
+          "required": false
+        },
+        {
+          "source": "ram",
+          "target": "ram",
+          "required": false
+        },
+        {
+          "source": "sysdescr",
+          "target": "sysdescr",
+          "required": false
+        },
+        {
+          "source": "cpu",
+          "target": "cpu",
+          "required": false
+        },
+        {
+          "source": "uptime",
+          "target": "uptime",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page_size",
+          "label": "Taille de page API",
+          "required": true,
+          "default": "100"
+        }
+      ]
+    }
+  ]
+}

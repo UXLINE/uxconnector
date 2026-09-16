@@ -1,0 +1,30 @@
+{
+  "id": "zabbix",
+  "version": "1.0.0",
+  "name": "Zabbix",
+  "description": "Connecteur référencé dans le catalogue. L'API Zabbix JSON-RPC nécessite un transport requête/réponse distinct du GET REST actuellement exécuté par SyncJob.",
+  "icon": "ti ti-activity",
+  "endpoint_hint": "https://zabbix.example.tld/api_jsonrpc.php",
+  "test_path_hint": "/api_jsonrpc.php",
+  "auth_methods": ["bearer_token"],
+  "jobs": [
+    {
+      "id": "zabbix.hosts.inbound",
+      "version": "0.1.0",
+      "name": "Zabbix Hosts → GLPI Computers",
+      "description": "Référencé mais non activable avant l'ajout du transport JSON-RPC déclaratif.",
+      "direction": "inbound",
+      "resource_path": "/api_jsonrpc.php",
+      "collection_path": "result",
+      "pagination": {"type": "none", "options": {}},
+      "target_itemtype": "computer",
+      "match_field": "name",
+      "external_id_field": "hostid",
+      "field_mappings": [
+        {"source": "host", "target": "name", "required": true}
+      ],
+      "parameters": [],
+      "available": false
+    }
+  ]
+}

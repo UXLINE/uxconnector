@@ -1,0 +1,36 @@
+{
+  "id": "mdm",
+  "version": "1.0.0",
+  "name": "MDM générique (REST)",
+  "description": "Blueprint paramétrable pour une API MDM REST non couverte par un template éditeur dédié.",
+  "icon": "ti ti-devices",
+  "endpoint_hint": "https://mdm.example.tld",
+  "test_path_hint": "/",
+  "auth_methods": ["bearer_token", "api_key", "basic", "oauth2_client_credentials"],
+  "jobs": [
+    {
+      "id": "mdm.devices.inbound",
+      "version": "1.0.0",
+      "name": "MDM Devices → GLPI Computers",
+      "description": "Crée un job MDM de base. Les chemins REST/JSON sont injectés une seule fois puis le SyncJob peut être affiné dans l'écran avancé.",
+      "direction": "inbound",
+      "resource_path": "{{resource_path}}",
+      "collection_path": "{{collection_path}}",
+      "pagination": {"type": "none", "options": {}},
+      "target_itemtype": "computer",
+      "match_field": "serial",
+      "external_id_field": "{{external_id_path}}",
+      "field_mappings": [
+        {"source": "{{name_path}}", "target": "name", "required": true},
+        {"source": "{{serial_path}}", "target": "serial", "required": true}
+      ],
+      "parameters": [
+        {"name": "resource_path", "label": "Chemin REST des équipements", "required": true, "default": "/devices"},
+        {"name": "collection_path", "label": "Chemin JSON de la collection", "required": true, "default": "$"},
+        {"name": "external_id_path", "label": "Chemin JSON de l'identifiant externe", "required": true, "default": "id"},
+        {"name": "name_path", "label": "Chemin JSON du nom", "required": true, "default": "name"},
+        {"name": "serial_path", "label": "Chemin JSON du numéro de série", "required": true, "default": "serialNumber"}
+      ]
+    }
+  ]
+}

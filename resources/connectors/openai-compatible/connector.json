@@ -1,0 +1,13 @@
+{
+  "id": "openai-compatible",
+  "version": "1.0.0",
+  "name": "IA - API OpenAI compatible",
+  "description": "Connexion a un service d'inference compatible avec une API de type OpenAI pour les analyses semantiques UXConnector.",
+  "icon": "ti ti-brain",
+  "endpoint_hint": "https://api.openai.com",
+  "test_path_hint": "/v1/models",
+  "auth_methods": [
+    "bearer_token"
+  ],
+  "jobs": []
+}

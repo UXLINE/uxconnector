@@ -1,0 +1,9 @@
+parameters:
+    level: 8
+    paths:
+        - src
+    excludePaths:
+        - src/**/*.gitkeep
+    scanFiles:
+        - ../../src/GLPIKey.php
+    treatPhpDocTypesAsCertain: false

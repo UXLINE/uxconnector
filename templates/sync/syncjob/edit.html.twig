@@ -1,0 +1,280 @@
+<div class="uxconnector-syncjob-edit">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>
+            {{ __('Edit interaction', 'uxconnector') }}
+            #{{ syncjob.id }}
+        </h2>
+
+        <a
+            href="syncjob.view.php?id={{ syncjob.id }}"
+            class="btn btn-outline-secondary"
+        >
+            {{ __('Back to details', 'uxconnector') }}
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        {{ __('The interaction remains in its current Draft or Paused status after saving. Activation is a separate action.', 'uxconnector') }}
+    </div>
+
+    <form method="post" action="syncjob.edit.php">
+        <input
+            type="hidden"
+            name="_glpi_csrf_token"
+            value="{{ csrf_token }}"
+        >
+        <input
+            type="hidden"
+            name="id"
+            value="{{ syncjob.id }}"
+        >
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>{{ __('General configuration', 'uxconnector') }}</strong>
+            </div>
+
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ __('Name', 'uxconnector') }}
+                    </label>
+                    <input
+                        type="text"
+                        name="name"
+                        required
+                        maxlength="128"
+                        class="form-control"
+                        value="{{ syncjob.name }}"
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ __('Connection', 'uxconnector') }}
+                    </label>
+                    <select
+                        name="auth_config_reference"
+                        required
+                        class="form-select"
+                    >
+                        {% for authconfig in authConfigs %}
+                            <option
+                                value="{{ authconfig.id }}"
+                                {% if syncjob.authConfigReference == authconfig.id %}selected{% endif %}
+                            >
+                                {{ authconfig.name }} ? {{ authconfig.statusLabel }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ __('Mode', 'uxconnector') }}
+                    </label>
+                    <select
+                        name="interaction_mode"
+                        required
+                        class="form-select"
+                    >
+                        <option
+                            value="inbound_polling"
+                            {% if syncjob.interactionMode == 'inbound_polling' %}selected{% endif %}
+                        >
+                            {{ __('External system ? GLPI ? scheduled REST polling', 'uxconnector') }}
+                        </option>
+
+                        <option
+                            value="inbound_webhook"
+                            {% if syncjob.interactionMode == 'inbound_webhook' %}selected{% endif %}
+                        >
+                            {{ __('External system ? GLPI ? incoming webhook/event', 'uxconnector') }}
+                        </option>
+
+                        <option
+                            value="outbound_glpi_event"
+                            {% if syncjob.interactionMode == 'outbound_glpi_event' %}selected{% endif %}
+                        >
+                            {{ __('GLPI ? external system ? on GLPI object change', 'uxconnector') }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ __('GLPI object', 'uxconnector') }}
+                    </label>
+                    <select
+                        name="target_itemtype"
+                        required
+                        class="form-select"
+                    >
+                        {% for itemtype in targetItemtypes %}
+                            <option
+                                value="{{ itemtype.value }}"
+                                {% if syncjob.targetItemtype == itemtype.value %}selected{% endif %}
+                            >
+                                {{ itemtype.label() }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ __('External object type', 'uxconnector') }}
+                    </label>
+                    <input
+                        type="text"
+                        name="external_object_type"
+                        class="form-control"
+                        value="{{ syncjob.externalObjectType }}"
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ __('Resource path', 'uxconnector') }}
+                    </label>
+                    <input
+                        type="text"
+                        name="resource_path"
+                        class="form-control"
+                        value="{{ syncjob.resourcePath }}"
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ __('Collection JSON path', 'uxconnector') }}
+                    </label>
+                    <input
+                        type="text"
+                        name="collection_path"
+                        class="form-control"
+                        value="{{ syncjob.collectionPath }}"
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ __('GLPI match field', 'uxconnector') }}
+                    </label>
+                    <input
+                        type="text"
+                        name="match_field"
+                        required
+                        class="form-control"
+                        value="{{ syncjob.matchField }}"
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ __('External ID JSON path', 'uxconnector') }}
+                    </label>
+                    <input
+                        type="text"
+                        name="external_id_field"
+                        required
+                        class="form-control"
+                        value="{{ syncjob.externalIdField }}"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>{{ __('Field mappings', 'uxconnector') }}</strong>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    {{ __('One JSON object per mapping: source_field, target_field, required and transform.', 'uxconnector') }}
+                </p>
+
+                <textarea
+                    name="field_mappings_json"
+                    rows="14"
+                    class="form-control font-monospace"
+                >{{ syncjob.fieldMappingsJson }}</textarea>
+
+                <details class="mt-3">
+                    <summary>
+                        {{ __('Allowed GLPI target fields', 'uxconnector') }}
+                    </summary>
+
+                    <ul class="mt-2">
+                        {% for entry in targetFieldCatalog %}
+                            <li>
+                                <strong>{{ entry.label }}</strong><br>
+                                {{ __('Match fields', 'uxconnector') }}:
+                                <code>{{ entry.matchable|join(', ') }}</code><br>
+                                {{ __('Writable fields', 'uxconnector') }}:
+                                <code>{{ entry.writable|join(', ') }}</code>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>{{ __('Pagination', 'uxconnector') }}</strong>
+            </div>
+            <div class="card-body">
+                <textarea
+                    name="pagination_json"
+                    rows="10"
+                    class="form-control font-monospace"
+                >{{ syncjob.paginationJson }}</textarea>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>{{ __('Entity assignment / source scope', 'uxconnector') }}</strong>
+            </div>
+            <div class="card-body">
+                <textarea
+                    name="entity_assignment_json"
+                    rows="10"
+                    class="form-control font-monospace"
+                >{{ syncjob.entityAssignmentJson }}</textarea>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>{{ __('Outbound REST configuration', 'uxconnector') }}</strong>
+            </div>
+            <div class="card-body">
+                <textarea
+                    name="outbound_json"
+                    rows="16"
+                    class="form-control font-monospace"
+                >{{ syncjob.outboundJson }}</textarea>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button
+                type="submit"
+                name="update"
+                class="btn btn-primary"
+            >
+                <i class="ti ti-device-floppy"></i>
+                {{ __('Save changes', 'uxconnector') }}
+            </button>
+
+            <a
+                href="syncjob.view.php?id={{ syncjob.id }}"
+                class="btn btn-outline-secondary"
+            >
+                {{ __('Cancel', 'uxconnector') }}
+            </a>
+        </div>
+    </form>
+</div>

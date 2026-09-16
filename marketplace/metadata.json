@@ -1,0 +1,16 @@
+{
+    "id": "uxconnector",
+    "name": "UXConnector",
+    "version": "2.17.1",
+    "author": "HELPLINE",
+    "license": "GPL-3.0-or-later",
+    "category": "Integration",
+    "homepage": "https://www.helpline.fr",
+    "glpi": {
+        "min": "11.0.0",
+        "max": "12.0.0"
+    },
+    "php": {
+        "min": "8.2"
+    }
+}

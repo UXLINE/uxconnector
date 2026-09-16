@@ -1,0 +1,34 @@
+<div class="uxconnector-catalog">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">{{ __('Connector catalog', 'uxconnector') }}</h2>
+            <p class="text-muted mb-0">{{ __('Choose a connector definition, create a connection, then activate only the interactions you need.', 'uxconnector') }}</p>
+        </div>
+        <a href="connection.form.php" class="btn btn-outline-secondary">{{ __('New manual connection', 'uxconnector') }}</a>
+    </div>
+
+    <div class="row g-3">
+        {% for connector in connectors %}
+            <div class="col-xl-4 col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="{{ connector.icon }} fs-2"></i>
+                            <div>
+                                <h3 class="card-title mb-0">{{ connector.name }}</h3>
+                                <small class="text-muted">Template {{ connector.version }}</small>
+                            </div>
+                        </div>
+                        <p>{{ connector.description }}</p>
+                        <div class="small mb-3">
+                            <strong>{{ __('Endpoint', 'uxconnector') }}:</strong> <code>{{ connector.endpointHint }}</code><br>
+                            <strong>{{ __('Jobs available', 'uxconnector') }}:</strong> {{ connector.jobCount }}
+                            {% if connector.plannedCount > 0 %} · {{ connector.plannedCount }} {{ __('planned', 'uxconnector') }}{% endif %}
+                        </div>
+                        <a href="catalog.php?connector={{ connector.id|url_encode }}" class="btn btn-primary">{{ __('Open connector', 'uxconnector') }}</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>

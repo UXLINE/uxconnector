@@ -1,0 +1,93 @@
+{
+    "version": "2.0.0",
+    "read_only": true,
+    "tools": [
+        {
+            "id": "searchTickets",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-search.php",
+            "description": "Search enriched GLPI tickets by keyword, date period and status."
+        },
+        {
+            "id": "getTicketContext",
+            "method": "GET",
+            "path": "/plugins/uxconnector/front/copilot-context.php?id={id}",
+            "description": "Get one ticket with named actors, groups, canonical timeline, tasks, final solution, validations, knowledge and assets."
+        },
+        {
+            "id": "analyzeTicketVolume",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-ticket-summary.php",
+            "description": "Summarize ticket volume, types, backlog, pending and average handling times."
+        },
+        {
+            "id": "analyzeTicketTrends",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-ticket-trends.php",
+            "description": "Analyze ticket trends by day, week or month."
+        },
+        {
+            "id": "analyzeCategories",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-categories.php",
+            "description": "Rank ITIL categories and compare their volumes and resolution time."
+        },
+        {
+            "id": "analyzeSlaPerformance",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-sla.php",
+            "description": "Analyze TTO/TTR compliance where GLPI deadlines are evaluable."
+        },
+        {
+            "id": "analyzeSlaBreaches",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-sla-breaches.php",
+            "description": "List tickets with evaluable TTO/TTR breaches."
+        },
+        {
+            "id": "analyzeGroupPerformance",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-groups.php",
+            "description": "Compare assigned volume, backlog and average resolution time by group."
+        },
+        {
+            "id": "analyzeTechnicianWorkload",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-technicians.php",
+            "description": "Compare ticket workload, task count and cumulative action time by technician."
+        },
+        {
+            "id": "comparePeriods",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-compare.php",
+            "description": "Compare two periods and calculate absolute and percentage deltas."
+        },
+        {
+            "id": "listIncidentologyGroups",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-incidentology-groups.php",
+            "description": "Resolve a user-facing GLPI technical support group name to its GLPI group ID before Incidentologue analysis."
+        },
+        {
+            "id": "analyzeIncidentologyGlobal",
+            "method": "POST",
+            "path": "/plugins/uxconnector/front/copilot-incidentology-global.php",
+            "description": "Analyze one support group using Incidentologue semantics: internal resolution rate, categories, parent incidents, channels, locations and temporal distribution."
+        }
+    ],
+    "planned": [
+        "detectRecurringIncidents",
+        "detectAnomalies",
+        "analyzeTechnicianPerformance",
+        "searchAssets",
+        "getAssetContext",
+        "analyzeAssetReliability",
+        "analyzeProblems",
+        "findProblemCandidates",
+        "analyzeChanges",
+        "correlateChangesAndIncidents",
+        "searchKnowledge",
+        "analyzeKnowledgeCoverage",
+        "findKnowledgeGaps"
+    ]
+}

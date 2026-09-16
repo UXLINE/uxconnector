@@ -1,0 +1,101 @@
+{# ---------------------------------------------------------------------
+   UXConnector plugin for GLPI
+   ---------------------------------------------------------------------
+   Fragment HTML pur : aucun {% extends %} (même REX que
+   templates/engine/authconfig/list.html.twig).
+
+   Contexte attendu : `authMethods` (list<AuthMethod>) fourni par
+   AuthConfigController::showCreateForm(). Vue passive uniquement
+   (RULE-048) : la validation métier vit exclusivement dans les Value
+   Objects consommés par AuthConfigController::create(), jamais ici.
+   --------------------------------------------------------------------- #}
+
+<div class="uxconnector-authconfig-form">
+    <h2>{{ __('New authentication configuration', 'uxconnector') }}</h2>
+
+    <form method="post" action="authconfig.form.php">
+        <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="connector_id" value="{{ defaults.connector_id ?? 'custom' }}">
+        <table class="tab_cadre_fixe">
+            <tr class="tab_bg_1">
+                <td><label for="name">{{ __('Name', 'uxconnector') }}</label></td>
+                <td><input type="text" id="name" name="name" value="{{ defaults.name ?? '' }}" required maxlength="128" class="form-control"></td>
+            </tr>
+            <tr class="tab_bg_1">
+                <td><label for="endpoint">{{ __('Endpoint', 'uxconnector') }}</label></td>
+                <td><input type="url" id="endpoint" name="endpoint" required value="{{ defaults.endpoint ?? '' }}" placeholder="https://api.example.com" class="form-control"></td>
+            </tr>
+            <tr class="tab_bg_1">
+                <td><label for="test_path">{{ __('Test path', 'uxconnector') }}</label></td>
+                <td>
+                    <input type="text" id="test_path" name="test_path" value="{{ defaults.test_path ?? '/' }}" required maxlength="255" placeholder="/health" class="form-control">
+                    <p class="form-text">
+                        {{ __('Relative authenticated resource used by Test connection.', 'uxconnector') }}
+                    </p>
+                </td>
+            </tr>
+            <tr class="tab_bg_1">
+                <td><label for="auth_method">{{ __('Authentication method', 'uxconnector') }}</label></td>
+                <td>
+                    <select id="auth_method" name="auth_method" required class="form-select">
+                        {% for method in authMethods %}
+                            <option value="{{ method.value }}" {% if defaults.auth_method is defined and defaults.auth_method == method.value %}selected{% endif %}>{{ method.label() }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+            <tr class="tab_bg_1">
+                <td><label for="secret">{{ __('Credential', 'uxconnector') }}</label></td>
+                <td>
+                    <input type="password" id="secret" name="secret" autocomplete="new-password" class="form-control">
+                    <p class="form-text">
+                        {{ __('Used for Basic / API Key / Bearer Token. Leave empty for "No authentication" or OAuth2 (see below).', 'uxconnector') }}
+                    </p>
+                </td>
+            </tr>
+        </table>
+
+        <h3>{{ __('OAuth2 Password Grant (GLPI 11 HL API)', 'uxconnector') }}</h3>
+        <p class="form-text">{{ __('Use /api.php/token and scope api for GLPI 11 High-Level API.', 'uxconnector') }}</p>
+        <table class="tab_cadre_fixe">
+            <tr class="tab_bg_1"><td>Token URL</td><td><input type="url" name="oauth2_password_token_url" class="form-control" placeholder="https://glpi.example.tld/api.php/token"></td></tr>
+            <tr class="tab_bg_1"><td>Client ID</td><td><input type="text" name="oauth2_password_client_id" class="form-control"></td></tr>
+            <tr class="tab_bg_1"><td>Client secret</td><td><input type="password" name="oauth2_password_client_secret" class="form-control"></td></tr>
+            <tr class="tab_bg_1"><td>GLPI username</td><td><input type="text" name="oauth2_password_username" class="form-control"></td></tr>
+            <tr class="tab_bg_1"><td>GLPI password</td><td><input type="password" name="oauth2_password_password" class="form-control"></td></tr>
+            <tr class="tab_bg_1"><td>Scope</td><td><input type="text" name="oauth2_password_scope" value="api" class="form-control"></td></tr>
+        </table>
+
+        <h3>{{ __('OAuth2 Client Credentials', 'uxconnector') }}</h3>
+        <p class="form-text">
+            {{ __('Only used when the authentication method above is "OAuth2 - Client Credentials".', 'uxconnector') }}
+        </p>
+        <table class="tab_cadre_fixe">
+            <tr class="tab_bg_1">
+                <td><label for="oauth2_token_url">{{ __('Token URL', 'uxconnector') }}</label></td>
+                <td><input type="url" id="oauth2_token_url" name="oauth2_token_url" placeholder="https://login.example.com/oauth2/token" class="form-control"></td>
+            </tr>
+            <tr class="tab_bg_1">
+                <td><label for="oauth2_client_id">{{ __('Client ID', 'uxconnector') }}</label></td>
+                <td><input type="text" id="oauth2_client_id" name="oauth2_client_id" class="form-control"></td>
+            </tr>
+            <tr class="tab_bg_1">
+                <td><label for="oauth2_client_secret">{{ __('Client secret', 'uxconnector') }}</label></td>
+                <td><input type="password" id="oauth2_client_secret" name="oauth2_client_secret" autocomplete="new-password" class="form-control"></td>
+            </tr>
+            <tr class="tab_bg_1">
+                <td><label for="oauth2_scope">{{ __('Scope', 'uxconnector') }}</label></td>
+                <td>
+                    <input type="text" id="oauth2_scope" name="oauth2_scope" placeholder="api.read api.write" class="form-control">
+                    <p class="form-text">{{ __('Optional.', 'uxconnector') }}</p>
+                </td>
+            </tr>
+        </table>
+
+        <div class="uxconnector-form-actions">
+            <button type="submit" name="add" class="btn btn-primary">
+                {{ __('Create', 'uxconnector') }}
+            </button>
+        </div>
+    </form>
+</div>

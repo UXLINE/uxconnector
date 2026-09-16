@@ -1,0 +1,31 @@
+{
+  "id": "servicenow",
+  "version": "1.0.0",
+  "name": "ServiceNow",
+  "description": "Connecteur référencé dans le catalogue. Les jobs standards seront livrés après validation des mappings ITSM et de la pagination cible.",
+  "icon": "ti ti-cloud",
+  "endpoint_hint": "https://instance.service-now.com",
+  "test_path_hint": "/api/now/table/sys_user?sysparm_limit=1",
+  "auth_methods": ["basic", "oauth2_client_credentials"],
+  "jobs": [
+    {
+      "id": "servicenow.incidents.inbound",
+      "version": "0.1.0",
+      "name": "ServiceNow Incidents → GLPI Tickets",
+      "description": "Référencé mais non activable tant que les mappings ITSM cibles n'ont pas été validés.",
+      "direction": "inbound",
+      "resource_path": "/api/now/table/incident",
+      "collection_path": "result",
+      "pagination": {"type": "none", "options": {}},
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "sys_id",
+      "field_mappings": [
+        {"source": "number", "target": "externalid", "required": true},
+        {"source": "short_description", "target": "name", "required": true}
+      ],
+      "parameters": [],
+      "available": false
+    }
+  ]
+}

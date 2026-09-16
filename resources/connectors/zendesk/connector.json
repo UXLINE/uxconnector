@@ -1,0 +1,533 @@
+{
+  "id": "zendesk",
+  "version": "2.15.0",
+  "name": "Zendesk Support",
+  "description": "Migration Zendesk vers GLPI optimisée pour les reprises volumétriques : bootstrap des référentiels, catégories ITIL depuis le champ Sujet, import initial des tickets non clos via Search Export, puis delta incrémentiel par curseur.",
+  "icon": "ti ti-brand-zendesk",
+  "endpoint_hint": "https://{subdomain}.zendesk.com",
+  "test_path_hint": "/api/v2/users/me.json",
+  "auth_methods": [
+    "oauth2_client_credentials",
+    "bearer_token",
+    "basic"
+  ],
+  "jobs": [
+    {
+      "id": "zendesk.users.bootstrap",
+      "version": "2.15.0",
+      "name": "1 - Zendesk Users → GLPI Users",
+      "description": "Crée ou rapproche les utilisateurs Zendesk avant l'import des tickets. L'adresse e-mail devient le login GLPI et l'ID Zendesk est conservé dans ObjectLink.",
+      "direction": "inbound",
+      "resource_path": "/api/v2/users.json?per_page={{per_page}}",
+      "collection_path": "users",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "next_page"
+        }
+      },
+      "target_itemtype": "user",
+      "match_field": "name",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "email",
+          "target": "name",
+          "required": true,
+          "transform": "lowercase"
+        },
+        {
+          "source": "name",
+          "target": "realname",
+          "required": false
+        },
+        {
+          "source": "active",
+          "target": "is_active",
+          "required": false,
+          "transform": "boolean_int"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "per_page",
+          "label": "Utilisateurs par page",
+          "required": true,
+          "default": "100"
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "zendesk_user"
+    },
+    {
+      "id": "zendesk.groups.bootstrap",
+      "version": "2.15.0",
+      "name": "2 - Zendesk Groups → GLPI Groups",
+      "description": "Crée ou rapproche les groupes Zendesk par nom avant l'import des tickets.",
+      "direction": "inbound",
+      "resource_path": "/api/v2/groups.json?per_page={{per_page}}",
+      "collection_path": "groups",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "next_page"
+        }
+      },
+      "target_itemtype": "group",
+      "match_field": "name",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "name",
+          "target": "name",
+          "required": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "per_page",
+          "label": "Groupes par page",
+          "required": true,
+          "default": "100"
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "zendesk_group"
+    },
+    {
+      "id": "zendesk.organizations.bootstrap",
+      "version": "2.15.0",
+      "name": "3 - Zendesk Organizations → GLPI Entities",
+      "description": "Crée ou rapproche les organisations Zendesk sous forme d'entités GLPI. À utiliser uniquement si cette correspondance fait partie du modèle cible.",
+      "direction": "inbound",
+      "resource_path": "/api/v2/organizations.json?per_page={{per_page}}",
+      "collection_path": "organizations",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "next_page"
+        }
+      },
+      "target_itemtype": "entity",
+      "match_field": "name",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "name",
+          "target": "name",
+          "required": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "per_page",
+          "label": "Organisations par page",
+          "required": true,
+          "default": "100"
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "zendesk_organization"
+    },
+    {
+      "id": "zendesk.itilcategories.bootstrap",
+      "version": "2.15.0",
+      "name": "4 - Zendesk Sujets utilisés → GLPI Catégories ITIL",
+      "description": "Parcourt uniquement les tickets Zendesk non clos via Search Export, détecte dynamiquement le champ tagger Sujet (topic__), crée uniquement les catégories réellement utilisées et reconstruit l’arborescence Zendesk séparée par ::.",
+      "direction": "inbound",
+      "resource_path": "/api/v2/search/export.json?filter[type]=ticket&query=status%3Cclosed&page[size]={{page_size}}",
+      "collection_path": "results",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "links.next"
+        }
+      },
+      "target_itemtype": "itil_category",
+      "match_field": "name",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "subject",
+          "target": "name",
+          "required": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page_size",
+          "label": "Tickets analysés par page",
+          "required": true,
+          "default": "100",
+          "description": "Zendesk recommande 100 résultats par page pour Search Export. Seuls les tickets non clos sont récupérés."
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "zendesk_topic"
+    },
+    {
+      "id": "zendesk.ticket-forms.bootstrap",
+      "version": "2.15.0",
+      "name": "Compatibilité 2.14.5 - Zendesk Ticket Forms → GLPI ITIL Categories",
+      "description": "Ancien bootstrap par formulaire Zendesk. Conservé pour compatibilité mais remplacé par zendesk.itilcategories.bootstrap qui utilise le champ Sujet.",
+      "direction": "inbound",
+      "resource_path": "/api/v2/ticket_forms.json?per_page={{per_page}}",
+      "collection_path": "ticket_forms",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "next_page"
+        }
+      },
+      "target_itemtype": "itil_category",
+      "match_field": "name",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "name",
+          "target": "name",
+          "required": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "per_page",
+          "label": "Formulaires par page",
+          "required": true,
+          "default": "100"
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "zendesk_ticket_form",
+      "available": false
+    },
+    {
+      "id": "zendesk.tickets.nonclosed.inbound",
+      "version": "2.15.0",
+      "name": "5 - Zendesk Reprise initiale non close → GLPI Tickets",
+      "description": "Import initial volumétrique des tickets Zendesk new/open/pending/hold/solved via Search Export status<closed. Traitement page par page (100 recommandé) sans accumulation mémoire. Demandeurs, assignés, groupes, entités, catégorie Sujet, suivis et pièces jointes sont reconstruits.",
+      "direction": "inbound",
+      "resource_path": "/api/v2/search/export.json?filter[type]=ticket&query=status%3Cclosed&page[size]={{page_size}}",
+      "collection_path": "results",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "links.next"
+        }
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "id",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "subject",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "description",
+          "target": "content",
+          "required": false
+        },
+        {
+          "source": "status",
+          "target": "status",
+          "required": false,
+          "transform": "map:new=1|open=2|pending=4|hold=4|solved=5|closed=6|*=1"
+        },
+        {
+          "source": "priority",
+          "target": "priority",
+          "required": false,
+          "transform": "map:low=2|normal=3|high=4|urgent=5|*=3"
+        },
+        {
+          "source": "type",
+          "target": "type",
+          "required": false,
+          "transform": "map:incident=1|problem=1|question=2|task=2|*=2"
+        },
+        {
+          "source": "created_at",
+          "target": "date",
+          "required": false,
+          "transform": "datetime_glpi"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page_size",
+          "label": "Tickets par page",
+          "required": true,
+          "default": "100",
+          "description": "Taille de page pour la reprise initiale. Zendesk recommande 100 résultats/page sur Search Export."
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "ticket"
+    },
+    {
+      "id": "zendesk.tickets.delta.inbound",
+      "version": "2.15.0",
+      "name": "6 - Zendesk Delta incrémentiel → GLPI Tickets",
+      "description": "À activer après la reprise initiale. Récupère uniquement les tickets créés ou modifiés depuis le checkpoint Zendesk. Un ticket déjà importé qui devient closed est mis à jour dans GLPI ; un ticket closed jamais importé est ignoré. Le curseur est sauvegardé page par page tant que la page est sans erreur.",
+      "direction": "inbound",
+      "resource_path": "/api/v2/incremental/tickets/cursor.json?start_time={{start_time}}&per_page={{per_page}}&exclude_deleted={{exclude_deleted}}",
+      "collection_path": "tickets",
+      "pagination": {
+        "type": "cursor",
+        "options": {
+          "cursor_response_path": "after_cursor",
+          "cursor_request_parameter": "cursor",
+          "last_page_response_path": "end_of_stream",
+          "persist_cursor": true,
+          "initial_parameter_to_remove_on_resume": "start_time"
+        }
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "id",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "subject",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "description",
+          "target": "content",
+          "required": false
+        },
+        {
+          "source": "status",
+          "target": "status",
+          "required": false,
+          "transform": "map:new=1|open=2|pending=4|hold=4|solved=5|closed=6|*=1"
+        },
+        {
+          "source": "priority",
+          "target": "priority",
+          "required": false,
+          "transform": "map:low=2|normal=3|high=4|urgent=5|*=3"
+        },
+        {
+          "source": "type",
+          "target": "type",
+          "required": false,
+          "transform": "map:incident=1|problem=1|question=2|task=2|*=2"
+        },
+        {
+          "source": "created_at",
+          "target": "date",
+          "required": false,
+          "transform": "datetime_glpi"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "start_time",
+          "label": "Début du delta (Unix UTC)",
+          "required": true,
+          "default": "1262304000",
+          "description": "À régler sur le point de départ du delta (idéalement juste avant la reprise initiale). Après le premier succès, le curseur persistant prend le relais."
+        },
+        {
+          "name": "per_page",
+          "label": "Tickets par page",
+          "required": true,
+          "default": "1000"
+        },
+        {
+          "name": "exclude_deleted",
+          "label": "Exclure les tickets supprimés",
+          "required": true,
+          "default": "true"
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "ticket"
+    },
+    {
+      "id": "zendesk.tickets.active.inbound",
+      "version": "2.15.0",
+      "name": "Compatibilité 2.13 - Zendesk Tickets actifs/non clos",
+      "description": "Alias de compatibilité pour les interactions 2.13 existantes. Les nouveaux projets doivent utiliser zendesk.tickets.nonclosed.inbound.",
+      "available": false,
+      "direction": "inbound",
+      "resource_path": "/api/v2/incremental/tickets/cursor.json?start_time={{start_time}}&per_page={{per_page}}&exclude_deleted={{exclude_deleted}}",
+      "collection_path": "tickets",
+      "pagination": {
+        "type": "cursor",
+        "options": {
+          "cursor_response_path": "after_cursor",
+          "cursor_request_parameter": "cursor",
+          "last_page_response_path": "end_of_stream",
+          "persist_cursor": true,
+          "initial_parameter_to_remove_on_resume": "start_time"
+        }
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "id",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "subject",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "description",
+          "target": "content",
+          "required": false
+        },
+        {
+          "source": "status",
+          "target": "status",
+          "required": false,
+          "transform": "map:new=1|open=2|pending=4|hold=4|solved=5|closed=6|*=1"
+        },
+        {
+          "source": "priority",
+          "target": "priority",
+          "required": false,
+          "transform": "map:low=2|normal=3|high=4|urgent=5|*=3"
+        },
+        {
+          "source": "type",
+          "target": "type",
+          "required": false,
+          "transform": "map:incident=1|problem=1|question=2|task=2|*=2"
+        },
+        {
+          "source": "created_at",
+          "target": "date",
+          "required": false,
+          "transform": "datetime_glpi"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "start_time",
+          "label": "Début de la reprise (Unix UTC)",
+          "required": true,
+          "default": "1262304000"
+        },
+        {
+          "name": "per_page",
+          "label": "Tickets par page",
+          "required": true,
+          "default": "1000"
+        },
+        {
+          "name": "exclude_deleted",
+          "label": "Exclure les tickets supprimés",
+          "required": true,
+          "default": "true"
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "ticket"
+    },
+    {
+      "id": "zendesk.tickets.inbound",
+      "version": "2.15.0",
+      "name": "Zendesk Tous les tickets → GLPI Tickets",
+      "description": "Flux complet conservé pour compatibilité et usages hors projet. Désactivé dans le catalogue de ce scénario de migration afin d'éviter l'import accidentel des tickets closed.",
+      "available": false,
+      "direction": "inbound",
+      "resource_path": "/api/v2/incremental/tickets/cursor.json?start_time={{start_time}}&per_page={{per_page}}&exclude_deleted={{exclude_deleted}}",
+      "collection_path": "tickets",
+      "pagination": {
+        "type": "cursor",
+        "options": {
+          "cursor_response_path": "after_cursor",
+          "cursor_request_parameter": "cursor",
+          "last_page_response_path": "end_of_stream",
+          "persist_cursor": true,
+          "initial_parameter_to_remove_on_resume": "start_time"
+        }
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "id",
+      "field_mappings": [
+        {
+          "source": "id",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "subject",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "description",
+          "target": "content",
+          "required": false
+        },
+        {
+          "source": "status",
+          "target": "status",
+          "required": false,
+          "transform": "map:new=1|open=2|pending=4|hold=4|solved=5|closed=6|*=1"
+        },
+        {
+          "source": "priority",
+          "target": "priority",
+          "required": false,
+          "transform": "map:low=2|normal=3|high=4|urgent=5|*=3"
+        },
+        {
+          "source": "type",
+          "target": "type",
+          "required": false,
+          "transform": "map:incident=1|problem=1|question=2|task=2|*=2"
+        },
+        {
+          "source": "created_at",
+          "target": "date",
+          "required": false,
+          "transform": "datetime_glpi"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "start_time",
+          "label": "Début de la reprise (Unix UTC)",
+          "required": true,
+          "default": "1262304000"
+        },
+        {
+          "name": "per_page",
+          "label": "Tickets par page",
+          "required": true,
+          "default": "1000"
+        },
+        {
+          "name": "exclude_deleted",
+          "label": "Exclure les tickets supprimés",
+          "required": true,
+          "default": "true"
+        }
+      ],
+      "trigger_type": "polling",
+      "external_object_type": "ticket"
+    }
+  ]
+}

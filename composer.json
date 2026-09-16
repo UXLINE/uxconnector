@@ -1,0 +1,45 @@
+{
+    "name": "helpline/uxconnector",
+    "description": "UXConnector - Generic connector marketplace framework for GLPI (Engine + Sync bounded contexts)",
+    "type": "glpi-plugin",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "HELPLINE",
+            "role": "Editor"
+        }
+    ],
+    "require": {
+        "php": "^8.2"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "glpi-project/coding-standard": "*",
+        "glpi-project/phpstan-glpi": "^1.3",
+        "phpstan/phpstan": "^2.2",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "GlpiPlugin\\Uxconnector\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "GlpiPlugin\\Uxconnector\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse",
+        "fix": "php-cs-fixer fix",
+        "lint:glpi": "phpcs --standard=GlpiStandard src setup.php hook.php front"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

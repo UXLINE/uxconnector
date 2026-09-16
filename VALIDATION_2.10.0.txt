@@ -1,0 +1,21 @@
+UXConnector 2.10.0 validation
+==============================
+
+Static validation performed during build:
+- 309 PHP files linted successfully with php -l.
+- setup.php version: 2.10.0.
+- src/Setup.php version: 2.10.0.
+- VERSION: 2.10.0.
+- Existing Copilot search/context endpoints retained.
+- Seven Lot 2 analytics endpoints added.
+- Machine endpoint firewall/stateless patterns extended explicitly to the new endpoints.
+- Connections page now contains a direct AI Agents / Copilot navigation action.
+
+Runtime checks to perform in GLPI Docker:
+1. Open UXConnector > Connections and verify the AI Agents / Copilot button is visible.
+2. Open AI Agents from that button (no direct URL entry).
+3. Reuse the existing Copilot API key.
+4. Test POST copilot-ticket-summary.php with a date period.
+5. Test POST copilot-technicians.php with the same period.
+6. Test ticket 9624 context and confirm actor names, assigned_groups, human durations, final_solution and canonical timeline.
+7. Review SLA output: compliance only includes tickets with parseable deadline timestamps.

@@ -1,0 +1,31 @@
+UXConnector 2.8.1 — validation de construction
+Date: 2026-08-19
+
+Contrôles exécutés dans l'environnement de construction :
+
+[OK] 269 fichiers PHP analysés avec `php -l` sans erreur de syntaxe.
+[OK] 7 manifests JSON de connecteurs parsés avec succès.
+[OK] uxconnector.xml.dist parsé avec Python xml.etree.ElementTree.
+[OK] cohérence de version : setup.php / src/Setup.php / VERSION / metadata Marketplace / XML = 2.8.1.
+[OK] constructeur ConnectionController = 18 dépendances et ConnectionControllerFactory = 18 arguments.
+[OK] smoke test autonome : association d'une ancienne Connection `custom` au template Jira applique `/rest/api/3/project/search?maxResults=1`, passe le connector_id à `jira` et invalide la validation précédente.
+[OK] smoke test autonome : édition du nom sans nouveau secret conserve le secret protégé.
+[OK] smoke test autonome : remplacement d'un secret le protège/remplace et remet la Connection en Brouillon.
+[OK] les templates connection/list, connection/detail et connection/form ont des délimiteurs Twig équilibrés.
+
+Tests ajoutés au dépôt :
+- tests/Unit/Application/Engine/Service/UpdateAuthConfigServiceTest.php
+- tests/Unit/Application/Engine/Service/AssignConnectorTemplateServiceTest.php
+- nouveaux cas dans tests/Unit/Domain/Engine/Entity/AuthConfigTest.php
+
+Non exécuté dans l'environnement de construction :
+- PHPUnit complet : dépendance `vendor/bin/phpunit` absente.
+- rendu Twig réel dans GLPI : nécessite l'instance GLPI 11 cible.
+- test HTTP Jira réel : aucun secret utilisateur n'est disponible dans l'environnement de construction.
+
+Comportement attendu sur l'instance cible après mise à jour 2.8.0 -> 2.8.1 :
+1. Ouvrir l'ancienne Connection Jira affichée `Custom REST`.
+2. Sélectionner `Jira Cloud` dans Connector type puis `Apply connector type`.
+3. La ressource de test devient automatiquement `/rest/api/3/project/search?maxResults=1` et l'état passe à Brouillon.
+4. Cliquer `Test` : HTTP 2xx => état `En cours de test` et bouton `Activate` disponible.
+5. Cliquer `Activate` : les interactions standard Jira peuvent alors être créées/activées depuis la même fiche.

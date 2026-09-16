@@ -1,0 +1,17 @@
+UXConnector 2.10.1 validation
+
+Static package validation:
+- PHP syntax lint: 310/310 PHP files passed.
+- setup.php version: 2.10.1
+- src/Setup.php version: 2.10.1
+- VERSION: 2.10.1
+- marketplace metadata: 2.10.1
+- uxconnector.xml.dist: 2.10.1
+
+Runtime validation to perform after upgrade:
+1. Re-run August ticket summary and verify sample-size fields.
+2. Re-run July/August compare and verify July TTR is not a false 0-second average when solvedate/creation dates are available.
+3. Re-run trends and confirm zero-activity days are present and resolved events are grouped by solvedate/closedate.
+4. Re-run group analytics and inspect unique_tickets_with_group / tickets_without_group / multi_group_tickets.
+5. Re-run technician analytics and inspect intervened_tickets / average_task_duration.
+6. Re-run SLA analytics and verify not_evaluable/currently_breached/currently_within_deadline.

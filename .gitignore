@@ -1,0 +1,18 @@
+/vendor/
+/.phpunit.cache/
+/.php-cs-fixer.cache
+/build/
+/coverage/
+.idea/
+.vscode/
+*.log
+
+# Local/private files
+.env
+.env.*
+!.env.example
+*.sql.gz
+*.zip
+*.tar.gz
+credentials*
+secrets*

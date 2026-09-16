@@ -1,0 +1,17 @@
+<div class="uxconnector-catalog-detail">
+    <a href="catalog.php" class="btn btn-link px-0">← {{ __('Back to catalog', 'uxconnector') }}</a>
+    <div class="d-flex align-items-center gap-2 mb-2"><i class="{{ connector.icon }} fs-1"></i><div><h2 class="mb-0">{{ connector.name }}</h2><small class="text-muted">Template {{ connector.version }}</small></div></div>
+    <p>{{ connector.description }}</p>
+    <div class="card mb-3"><div class="card-body">
+        <h3>{{ __('Create a connection', 'uxconnector') }}</h3>
+        <p class="text-muted">{{ __('The catalog defines standard interactions. Create a connection first; then activate the interactions you need from that connection.', 'uxconnector') }}</p>
+        <div><strong>{{ __('Endpoint model', 'uxconnector') }}:</strong> <code>{{ connector.endpointHint }}</code></div>
+        <div><strong>{{ __('Test path', 'uxconnector') }}:</strong> <code>{{ connector.testPathHint }}</code></div>
+        <a class="btn btn-primary mt-3" href="connection.form.php?connector={{ connector.id|url_encode }}">{{ __('Create connection from this connector', 'uxconnector') }}</a>
+    </div></div>
+
+    <h3>{{ __('Available interactions', 'uxconnector') }}</h3>
+    {% for job in connector.jobs %}
+        <div class="card mb-2"><div class="card-body d-flex justify-content-between align-items-start"><div><strong>{{ job.name }}</strong><div class="text-muted">{{ job.description }}</div><small>{{ job.direction }} · {{ job.triggerType }} · {{ job.targetItemtype }}</small></div><span class="badge {% if job.available %}bg-success{% else %}bg-secondary{% endif %}">{% if job.available %}{{ __('Available', 'uxconnector') }}{% else %}{{ __('Planned', 'uxconnector') }}{% endif %}</span></div></div>
+    {% else %}<div class="alert alert-secondary">{{ __('No standard interaction bundled yet.', 'uxconnector') }}</div>{% endfor %}
+</div>

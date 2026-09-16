@@ -1,0 +1,203 @@
+<div class="uxconnector-connection-detail">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <a href="connections.php" class="btn btn-link px-0">← {{ __('Back to connections', 'uxconnector') }}</a>
+            <h2 class="mb-1">{{ connection.name }}</h2>
+            <div class="text-muted">{{ connector.name ?? __('Custom REST', 'uxconnector') }} · <code>{{ connection.endpoint }}</code></div>
+        </div>
+        <span class="badge {% if connection.status == 'active' %}bg-success{% elseif connection.status == 'error' %}bg-danger{% elseif connection.status == 'testing' %}bg-info{% else %}bg-secondary{% endif %} fs-6">{{ connection.statusLabel }}</span>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4"><div class="text-muted small">{{ __('Connector type', 'uxconnector') }}</div><strong>{{ connector.name ?? __('Custom REST', 'uxconnector') }}</strong></div>
+                <div class="col-md-4"><div class="text-muted small">{{ __('Authentication', 'uxconnector') }}</div><strong>{{ connection.authMethodLabel }}</strong></div>
+                <div class="col-md-4"><div class="text-muted small">{{ __('Test resource', 'uxconnector') }}</div><code>{{ connection.testPath }}</code></div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                {% if can_update_connection %}
+                    <a class="btn btn-outline-secondary" href="connection.form.php?id={{ connection.id }}"><i class="ti ti-pencil"></i> {{ __('Edit', 'uxconnector') }}</a>
+                    {% if can_read_jobs %}<a class="btn btn-outline-primary" href="#interactions"><i class="ti ti-arrows-exchange"></i> {{ __('Interactions', 'uxconnector') }}</a>{% endif %}
+                    <form method="post" action="connection.php">
+                        <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="id" value="{{ connection.id }}">
+                        <button class="btn btn-outline-primary" name="test" value="1"><i class="ti ti-plug"></i> {{ __('Test', 'uxconnector') }}</button>
+                    </form>
+                    {% if connection.status == 'testing' %}
+                        <form method="post" action="connection.php">
+                            <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="id" value="{{ connection.id }}">
+                            <button class="btn btn-success" name="activate" value="1">{{ __('Activate', 'uxconnector') }}</button>
+                        </form>
+                    {% endif %}
+                    {% if connection.status == 'active' %}
+                        <form method="post" action="connection.php">
+                            <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="id" value="{{ connection.id }}">
+                            <button class="btn btn-outline-warning" name="disable" value="1">{{ __('Disable', 'uxconnector') }}</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+                {% if can_delete_connection %}
+                    <form method="post" action="connection.php">
+                        <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="id" value="{{ connection.id }}">
+                        <button class="btn btn-outline-danger" name="delete" value="1" onclick="return confirm('{{ __('Permanently delete this connection?', 'uxconnector')|e('js') }}')">{{ __('Delete', 'uxconnector') }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h3>{{ __('Connector type', 'uxconnector') }}</h3>
+            <p class="text-muted">{{ __('Associate the connection with a standard connector to expose ready-to-use interactions. Custom REST remains available for fully manual integrations.', 'uxconnector') }}</p>
+            {% if can_update_connection %}
+                <form method="post" action="connection.php" class="row g-2 align-items-end">
+                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="id" value="{{ connection.id }}">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ __('Connector', 'uxconnector') }}</label>
+                        <select name="connector_id" class="form-select">
+                            <option value="custom" {% if connection.connectorId == 'custom' %}selected{% endif %}>{{ __('Custom REST', 'uxconnector') }}</option>
+                            {% for item in connectors %}<option value="{{ item.id }}" {% if connection.connectorId == item.id %}selected{% endif %}>{{ item.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto"><button class="btn btn-primary" name="assign_connector" value="1">{{ __('Apply connector type', 'uxconnector') }}</button></div>
+                </form>
+                <div class="form-text mt-2">{{ __('Applying a standard connector also applies its recommended test resource and requires a new successful test before activation.', 'uxconnector') }}</div>
+            {% else %}
+                <strong>{{ connector.name ?? __('Custom REST', 'uxconnector') }}</strong>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if can_read_jobs %}
+    <section id="interactions" class="uxconnector-interactions" style="scroll-margin-top: 5rem;">
+    <div class="d-flex justify-content-between align-items-center mb-2"><div><h3 class="mb-0">{{ __('Interactions', 'uxconnector') }}</h3><p class="text-muted mb-0">{{ __('Activate standard interactions for this connection. Technical REST/pagination/mapping details come from the connector template.', 'uxconnector') }}</p></div>{% if can_create_jobs %}<a class="btn btn-outline-secondary" href="syncjob.form.php?auth_config_id={{ connection.id }}">{{ __('Advanced custom REST interaction', 'uxconnector') }}</a>{% endif %}</div>
+
+    {% if can_manage_jobs %}
+        <div class="alert alert-info mb-3" role="region" aria-label="{{ __('Bulk interaction actions', 'uxconnector') }}">
+            <div class="fw-bold mb-2"><i class="ti ti-checklist"></i> {{ __('Bulk interaction actions', 'uxconnector') }}</div>
+            <form id="uxconnector-connection-bulk-jobs" method="post" action="connection.php" class="d-flex flex-wrap gap-2 align-items-center mb-0">
+                <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="connection_id" value="{{ connection.id }}">
+                <div id="uxconnector-connection-bulk-selected-inputs"></div>
+                <label class="form-check mb-0 me-2">
+                    <input type="checkbox" class="form-check-input" id="uxconnector-connection-select-all-jobs">
+                    <span class="form-check-label fw-bold">{{ __('Select all interactions', 'uxconnector') }}</span>
+                </label>
+                <span class="badge bg-blue-lt me-2" id="uxconnector-connection-selected-count">0 {{ __('selected', 'uxconnector') }}</span>
+                <button type="submit" name="bulk_activate_jobs" value="1" class="btn btn-success" disabled>
+                    <i class="ti ti-player-play"></i> {{ __('Activate selected interactions', 'uxconnector') }}
+                </button>
+                <button type="submit" name="bulk_pause_jobs" value="1" class="btn btn-outline-secondary" disabled>
+                    <i class="ti ti-player-pause"></i> {{ __('Pause selected interactions', 'uxconnector') }}
+                </button>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if connector %}
+        {% for template in connector.jobs %}
+            <div class="card mb-3"><div class="card-body">
+                <div class="d-flex justify-content-between"><div><h4 class="mb-1">{{ template.name }}</h4><div class="text-muted">{{ template.description }}</div><small>{{ template.direction }} · {{ template.triggerType }} · {{ template.targetItemtype }}</small></div>{% if not template.available %}<span class="badge bg-secondary">{{ __('Planned', 'uxconnector') }}</span>{% endif %}</div>
+                {% set existing = jobs_by_template[template.id] ?? [] %}
+                {% for job in existing %}
+                    <div class="border rounded p-2 mt-3 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-start gap-2">
+                            {% if can_manage_jobs %}<input type="checkbox" class="form-check-input mt-1 uxconnector-connection-job-checkbox" value="{{ job.id }}" aria-label="{{ __('Select interaction', 'uxconnector') }} {{ job.name }}">{% endif %}
+                            <div><strong>#{{ job.id }} {{ job.name }}</strong> — {{ job.statusLabel }}<br><small class="text-muted">{{ job.triggerTypeLabel }} · {{ job.directionLabel }} · {{ job.entityAssignmentSummary }}</small>{% if job.webhookKey %}<div class="mt-2 small"><div><strong>{{ __('Webhook endpoint', 'uxconnector') }}:</strong> <code>/plugins/uxconnector/front/webhook.php</code></div>{% if can_manage_jobs %}<div><strong>{{ __('Preferred header', 'uxconnector') }}:</strong> <code>X-UXConnector-Webhook-Key: {{ job.webhookKey }}</code></div><div class="text-muted">{{ __('Query-string compatibility', 'uxconnector') }}: <code>/plugins/uxconnector/front/webhook.php?key={{ job.webhookKey }}</code></div>{% else %}<div class="text-muted">{{ __('Webhook credential hidden: update permission is required to reveal it.', 'uxconnector') }}</div>{% endif %}</div>{% endif %}</div>
+                        </div>
+                        <div class="d-flex gap-1">
+                        {% if can_manage_jobs %}
+                            {% if job.status != 'active' %}
+                                {% if connection.status == 'active' %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-success" name="activate_job">{{ __('Activate', 'uxconnector') }}</button></form>{% else %}<span class="badge bg-secondary">{{ __('Activate connection first', 'uxconnector') }}</span>{% endif %}
+                            {% else %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-warning" name="pause_job">{{ __('Pause', 'uxconnector') }}</button></form>{% endif %}
+                            {% if job.triggerType == 'polling' and job.direction == 'inbound' %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-primary" name="run_job">{{ __('Run now', 'uxconnector') }}</button></form>{% endif %}
+                        {% endif %}
+                        <a class="btn btn-sm btn-outline-secondary" href="syncjob.php?history=1&id={{ job.id }}">{{ __('History', 'uxconnector') }}</a>
+                        {% if can_delete_jobs %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-danger" name="delete_job" onclick="return confirm('{{ __('Delete this interaction?', 'uxconnector')|e('js') }}')">{{ __('Delete', 'uxconnector') }}</button></form>{% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                {% if template.available and can_create_jobs %}
+                    <form method="post" action="connection.php" class="mt-3"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ connection.id }}"><input type="hidden" name="job_template_id" value="{{ template.id }}">
+                        <div class="row g-2"><div class="col-md-3"><label class="form-label">{{ __('GLPI entity ID / source scope', 'uxconnector') }}</label><input type="number" min="0" name="fixed_entity_id" class="form-control" value="{{ active_entity_id }}" {% if template.direction == 'outbound' %}required{% endif %}><div class="form-text">{% if template.direction == 'outbound' %}{{ __('Required safety scope: only objects from this GLPI entity are emitted.', 'uxconnector') }}{% else %}{{ __('Target GLPI entity for imported objects.', 'uxconnector') }}{% endif %}</div></div>
+                        {% for parameter in template.parameters %}<div class="col-md-3"><label class="form-label">{{ parameter.label }}</label><input class="form-control" name="parameters[{{ parameter.name }}]" value="{{ parameter.default ?? '' }}" {% if parameter.required %}required{% endif %}>{% if parameter.description %}<div class="form-text">{{ parameter.description }}</div>{% endif %}</div>{% endfor %}</div>
+                        <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="act_{{ loop.index }}" name="activate_immediately" value="1" {% if connection.status == 'active' %}checked{% endif %}><label class="form-check-label" for="act_{{ loop.index }}">{{ __('Activate immediately', 'uxconnector') }}</label></div>
+                        <button class="btn btn-primary btn-sm mt-2" name="instantiate" value="1">{{ __('Create interaction', 'uxconnector') }}</button>
+                    </form>
+                {% endif %}
+            </div></div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-secondary">{{ __('No standard interaction template is associated with this connection. Use the advanced REST interaction editor.', 'uxconnector') }}</div>
+    {% endif %}
+
+    {% if jobs|length > 0 %}<div class="text-muted small">{{ jobs|length }} {{ __('interaction(s) configured on this connection.', 'uxconnector') }}</div>{% endif %}
+    </section>
+    {% else %}
+        <div class="alert alert-secondary">{{ __('Your profile can view this connection but does not have permission to view its interactions.', 'uxconnector') }}</div>
+    {% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('uxconnector-connection-bulk-jobs');
+    if (!form) {
+        return;
+    }
+
+    const selectAll = document.getElementById('uxconnector-connection-select-all-jobs');
+    const count = document.getElementById('uxconnector-connection-selected-count');
+    const selectedInputs = document.getElementById('uxconnector-connection-bulk-selected-inputs');
+    const checkboxes = Array.from(document.querySelectorAll('.uxconnector-connection-job-checkbox'));
+    const buttons = Array.from(form.querySelectorAll('button[type="submit"]'));
+
+    const refresh = () => {
+        const selected = checkboxes.filter((checkbox) => checkbox.checked);
+        if (selectAll) {
+            selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
+            selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
+        }
+        if (count) {
+            count.textContent = `${selected.length} {{ __('selected', 'uxconnector')|e('js') }}`;
+        }
+        buttons.forEach((button) => {
+            button.disabled = selected.length === 0;
+        });
+    };
+
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = selectAll.checked;
+            });
+            refresh();
+        });
+    }
+
+    checkboxes.forEach((checkbox) => checkbox.addEventListener('change', refresh));
+
+    form.addEventListener('submit', (event) => {
+        selectedInputs.innerHTML = '';
+        const selected = checkboxes.filter((checkbox) => checkbox.checked);
+        if (selected.length === 0) {
+            event.preventDefault();
+            return;
+        }
+        selected.forEach((checkbox) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'job_ids[]';
+            input.value = checkbox.value;
+            selectedInputs.appendChild(input);
+        });
+    });
+
+    refresh();
+});
+</script>
+</div>

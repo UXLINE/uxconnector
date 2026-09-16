@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+use GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotGatewayResponder;
+
+try {
+    (new CopilotGatewayResponder())->analytics('semantic_ticket_classification');
+} catch (\JsonException|\InvalidArgumentException $e) {
+    \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(400);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'error' => 'invalid_request',
+        'message' => $e->getMessage(),
+    ]);
+} catch (\Throwable $e) {
+    Toolbox::logInFile(
+        'uxconnector',
+        sprintf(
+            "Copilot semantic classification failed: %s\n",
+            $e->getMessage()
+        )
+    );
+
+    \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(502);
+    header('Content-Type: application/json; charset=utf-8');
+
+    echo json_encode([
+        'error' => 'analytics_failure',
+    ]);
+}

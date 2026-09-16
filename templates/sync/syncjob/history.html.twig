@@ -1,0 +1,65 @@
+{# ---------------------------------------------------------------------
+   UXConnector plugin for GLPI
+   ---------------------------------------------------------------------
+   Fragment HTML pur : aucun {% extends %} (même REX que
+   templates/sync/syncjob/list.html.twig).
+
+   Contexte attendu : `syncJobId` (int), `executions` (list<SyncExecutionDTO>)
+   fourni par SyncJobController::history(). Vue passive uniquement
+   (RULE-048) : aucun accès Repository, aucun calcul métier, aucune
+   Entité exposée.
+   --------------------------------------------------------------------- #}
+
+<div class="uxconnector-syncexecution-history">
+    <h2>{{ __('Execution history', 'uxconnector') }}</h2>
+    <p>
+        <a href="syncjob.php" class="btn btn-sm btn-outline-secondary">
+            {{ __('← Back to synchronizations', 'uxconnector') }}
+        </a>
+    </p>
+
+    {% if executions|length == 0 %}
+        <p class="uxconnector-empty-state">
+            {{ __('No execution has been recorded yet for this synchronization job.', 'uxconnector') }}
+        </p>
+    {% else %}
+        <table class="table card-table">
+            <thead>
+                <tr>
+                    <th>{{ __('Started at', 'uxconnector') }}</th>
+                    <th>{{ __('Duration', 'uxconnector') }}</th>
+                    <th>{{ __('Status', 'uxconnector') }}</th>
+                    <th>{{ __('Processed', 'uxconnector') }}</th>
+                    <th>{{ __('Failed', 'uxconnector') }}</th>
+                    <th>{{ __('Error', 'uxconnector') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for execution in executions %}
+                    <tr>
+                        <td>{{ execution.startedAt }}</td>
+                        <td>
+                            {%- if execution.durationSeconds is not null -%}
+                                {{ execution.durationSeconds }}&nbsp;s
+                            {%- else -%}
+                                {{ __('In progress', 'uxconnector') }}
+                            {%- endif -%}
+                        </td>
+                        <td>
+                            <span class="badge {{ execution.status == 'success' ? 'bg-green' : (execution.status == 'partial' ? 'bg-orange' : (execution.status == 'failed' ? 'bg-red' : 'bg-secondary')) }}">
+                                {{ execution.statusLabel }}
+                            </span>
+                        </td>
+                        <td>{{ execution.itemsProcessed }}</td>
+                        <td>{{ execution.itemsFailed }}</td>
+                        <td>
+                            {% if execution.errorMessage %}
+                                <code>{{ execution.errorMessage }}</code>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>

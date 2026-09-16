@@ -1,0 +1,8 @@
+UXConnector 2.8.2 validation
+- Root cause reproduced on 2.8.1: TemplateServiceProvider repository returned 0 bundled connectors.
+- Root path corrected from dirname(__DIR__, 2) to dirname(__DIR__, 3).
+- Runtime smoke test after correction: 7 connectors loaded: intune, jira, mdm, microsoft-graph, rest, servicenow, zabbix.
+- Jira Cloud and Microsoft Intune are therefore available to the Connection connector-type selector.
+- All PHP files pass php -l.
+- All 7 connector JSON manifests parse successfully.
+- No SQL schema change.

@@ -1,0 +1,19 @@
+includes:
+    - vendor/glpi-project/phpstan-glpi/extension.neon
+
+parameters:
+    level: 5
+
+    scanDirectories:
+        - ../../inc
+        - ../../src
+
+    bootstrapFiles:
+        - /tmp/glpi-11.0.8-stubs/glpi_constants.php
+        - ../../vendor/autoload.php
+
+    glpi:
+        glpiPath: /var/www/glpi
+        glpiVersion: 11.0.8
+
+    treatPhpDocTypesAsCertain: false
