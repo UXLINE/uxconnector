@@ -406,3 +406,62 @@ Le descripteur `uxconnector.xml.dist` contient volontairement une URL de release
 # Licence
 
 GPL-3.0-or-later â€” voir `LICENSE`.
+
+# Architecture et principes de développement
+
+UXConnector repose sur une **Clean Architecture inspirée des principes de l’architecture hexagonale et du Domain-Driven Design (DDD)**.
+
+L’objectif est d’isoler au maximum la logique métier des dépendances techniques telles que GLPI, les API externes, OAuth, HTTP ou les mécanismes de persistance.
+
+L’architecture suit notamment les principes suivants :
+
+- séparation claire entre `Domain`, `Application`, `Infrastructure` et couches de présentation ;
+- dépendances orientées vers le domaine métier ;
+- application des principes **SOLID** et **Dependency Inversion** ;
+- isolation des connecteurs et intégrations externes derrière des composants dédiés ;
+- limitation du couplage direct entre la logique métier et GLPI ;
+- règles métier et politiques de sécurité placées dans les couches adaptées ;
+- architecture pensée pour rester testable, maintenable et extensible.
+
+Le projet applique une approche **DDD principalement tactique** : les règles métier, policies, services et objets du domaine sont séparés des implémentations techniques. UXConnector ne revendique toutefois pas l’application exhaustive de l’ensemble des patterns du DDD stratégique.
+
+## Stratégie de tests
+
+UXConnector ne se définit pas comme un projet développé intégralement selon un **TDD strict** historique.
+
+La stratégie actuelle repose sur une combinaison de :
+
+- tests unitaires ;
+- tests de sécurité et de non-régression ;
+- tests hors ligne des connecteurs à partir de fixtures ;
+- tests d’idempotence et de replay ;
+- tests de pagination et de volumétrie ;
+- tests d’intégration dans un environnement GLPI dédié lorsque celui-ci est disponible ;
+- validation live des connecteurs externes lorsque nécessaire ;
+- préflight de release reproductible avant publication.
+
+Pour les nouvelles fonctionnalités et les corrections critiques, l’approche tend vers un développement **test-first**, complété par une politique systématique de tests de non-régression.
+
+## DevSecOps et qualité
+
+Le cycle de développement intègre progressivement une démarche **DevSecOps** comprenant notamment :
+
+- contrôles SSRF et validation des destinations HTTP ;
+- authentification des webhooks ;
+- protection des credentials ;
+- allowlists sur les types d’objets et champs GLPI inscriptibles ;
+- recherche de secrets avant publication ;
+- contrôles Git et cohérence des versions ;
+- Quality Gates ;
+- préflight de release ;
+- génération reproductible des artefacts ;
+- traçabilité entre commit, tag, archive et release.
+
+L’objectif est de garantir qu’une version publiée soit à la fois :
+
+- fonctionnellement validée ;
+- sécurisée ;
+- testée ;
+- reproductible ;
+- traçable ;
+- directement exploitable dans un environnement GLPI supporté.
