@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * -------------------------------------------------------------------------
@@ -27,7 +27,7 @@ final class Setup
     /**
      * Single source of truth for the plugin version (SemVer).
      */
-    public const VERSION = '2.17.1';
+    public const VERSION = '2.18.3';
 
     /**
      * Minimum GLPI version supported by this plugin.
@@ -54,7 +54,7 @@ final class Setup
         return [
             'name'         => 'UXConnector',
             'version'      => self::VERSION,
-            'author'       => 'Alexandre THEBAUD - HELPLINE by EVERIENCE',
+            'author'       => 'HELPLINE',
             'license'      => 'GPL-3.0-or-later',
             'homepage'     => 'https://www.helpline.fr',
             'requirements' => [
@@ -73,7 +73,7 @@ final class Setup
      * Registers the plugin components at load time.
      *
      * RULE-HOOKMANAGER-002 : Setup delegates immediately and entirely
-     * to HookManager â€” it never registers a class, a menu, a right or
+     * to HookManager — it never registers a class, a menu, a right or
      * a CronTask itself.
      */
     public static function init(): void
@@ -110,7 +110,7 @@ final class Setup
     /**
      * Creates the database schema for a brand new installation.
      *
-     * RULE-SETUP-001/002 : this method only orchestrates â€” the actual
+     * RULE-SETUP-001/002 : this method only orchestrates — the actual
      * DDL lives in versioned, idempotent scripts under sql/install/.
      * No Repository, no Connector, no synchronization is ever invoked
      * from here.
@@ -124,7 +124,7 @@ final class Setup
 
         // ADR-10.10.02 : CronTask registration happens during
         // install/upgrade, never on every plugin_init() (HookManager
-        // never touches CronTask â€” see its class doc-block).
+        // never touches CronTask — see its class doc-block).
         Infrastructure\CronRegistry::register();
 
         return true;
@@ -184,4 +184,3 @@ final class Setup
         return dirname(__DIR__);
     }
 }
-

@@ -27,6 +27,7 @@ use GlpiPlugin\Uxconnector\Domain\Shared\Event\EventDispatcherInterface;
 use GlpiPlugin\Uxconnector\Domain\Shared\Persistence\TransactionManagerInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncExecution;
 use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncJob;
+use GlpiPlugin\Uxconnector\Domain\Sync\Policy\BuiltinTemplateTargetPolicy;
 use GlpiPlugin\Uxconnector\Domain\Sync\Policy\TargetFieldPolicy;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncCheckpointRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncExecutionRepositoryInterface;
@@ -43,6 +44,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Writer\SyncItemWriterInterface;
 final class ExecuteSyncJobService implements SyncJobExecutorInterface
 {
     private const MAX_PAGES_PER_RUN = 1000;
+    private const DEFAULT_MAX_RECORDS_PER_RUN = 50000;
 
     private readonly CollectionExtractor $collectionExtractor;
     private readonly PaginationStrategyResolver $paginationStrategyResolver;
@@ -103,6 +105,8 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
                 throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncDirectionNotSupportedException::forDirection($syncJob->direction());
             }
 
+            (new BuiltinTemplateTargetPolicy())->assertAllowed($syncJob->templateId(), $syncJob->targetItemtype());
+
             $this->targetFieldPolicy->assertConfiguration(
                 $syncJob->targetItemtype(),
                 $syncJob->matchField(),
@@ -153,6 +157,8 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
         $processedTotal = 0;
         $failedTotal = 0;
         $checkpointBlocked = false;
+        $recordsSeen = 0;
+        $maxRecords = $this->maxRecordsPerRun();
         $paginationConfig = $syncJob->paginationConfig();
         $pagination = $this->paginationStrategyResolver->resolve($paginationConfig);
 
@@ -194,6 +200,15 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
 
             $decoded = $this->decodeResponseObject($response);
             $pageItems = $this->collectionExtractor->extract($decoded, $syncJob->collectionPath());
+            $recordsSeen += count($pageItems);
+            if ($maxRecords > 0 && $recordsSeen > $maxRecords) {
+                throw new \RuntimeException(sprintf(
+                    'Record safety limit of %d items exceeded for "%s". '
+                    . 'Set UXCONNECTOR_MAX_RECORDS_PER_RUN to a higher value for an intentional large migration.',
+                    $maxRecords,
+                    $syncJob->resourcePath()->value()
+                ));
+            }
             [$pageProcessed, $pageFailed] = $this->inboundRecordProcessor->process($syncJob, $pageItems);
             $processedTotal += $pageProcessed;
             $failedTotal += $pageFailed;
@@ -230,6 +245,19 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
 
         $this->refreshExecutionTimeBudget();
         return [$processedTotal, $failedTotal];
+    }
+
+
+    private function maxRecordsPerRun(): int
+    {
+        $raw = getenv('UXCONNECTOR_MAX_RECORDS_PER_RUN');
+        if ($raw === false || trim($raw) === '') {
+            return self::DEFAULT_MAX_RECORDS_PER_RUN;
+        }
+
+        $value = filter_var($raw, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 10000000]]);
+
+        return $value === false ? self::DEFAULT_MAX_RECORDS_PER_RUN : (int) $value;
     }
 
     /**

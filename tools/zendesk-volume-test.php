@@ -154,7 +154,9 @@ $job = SyncJob::create(
     ],
     null,
     new CollectionPath('results'),
-    PaginationConfig::fromArray('next_link', ['next_link_response_path' => 'links.next'])
+    PaginationConfig::fromArray('next_link', ['next_link_response_path' => 'links.next']),
+    'zendesk.tickets.nonclosed.inbound',
+    '2.18.3'
 );
 $job->assignId(new SyncJobId(1));
 $job->activate();

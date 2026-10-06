@@ -1,0 +1,12 @@
+{
+  "id": 123,
+  "subject": "VPN inaccessible",
+  "description": "Le VPN ne fonctionne plus.",
+  "requester_id": 101,
+  "assignee_id": 102,
+  "group_id": 201,
+  "organization_id": 301,
+  "custom_fields": [
+    {"id": 999, "value": "topic__it__access"}
+  ]
+}

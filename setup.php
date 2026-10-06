@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * -------------------------------------------------------------------------
@@ -21,7 +21,7 @@ use GlpiPlugin\Uxconnector\Setup;
  * include setup.php to discover/check the plugin before registering the
  * plugin's PSR-4 autoloader.
  */
-define('PLUGIN_UXCONNECTOR_VERSION', '2.17.1');
+define('PLUGIN_UXCONNECTOR_VERSION', '2.18.3');
 define('PLUGIN_UXCONNECTOR_MIN_GLPI_VERSION', '11.0.0');
 define('PLUGIN_UXCONNECTOR_MAX_GLPI_VERSION', '12.0.0');
 define('PLUGIN_UXCONNECTOR_MIN_PHP_VERSION', '8.2');
@@ -36,7 +36,7 @@ function plugin_version_uxconnector(): array
     return [
         'name'         => 'UXConnector',
         'version'      => PLUGIN_UXCONNECTOR_VERSION,
-        'author'       => 'Alexandre THEBAUD - HELPLINE by EVERIENCE',
+        'author'       => 'Alexandre THEBAUD',
         'license'      => 'GPL-3.0-or-later',
         'homepage'     => 'https://www.helpline.fr',
         'requirements' => [
@@ -104,4 +104,3 @@ function plugin_uxconnector_uninstall(): bool
 
     return Setup::uninstall($migration);
 }
-

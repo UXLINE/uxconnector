@@ -35,7 +35,10 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
 
     public function supports(SyncJob $syncJob): bool
     {
-        return str_starts_with($syncJob->templateId(), 'glpi-hl.assets.')
+        $templateId = $syncJob->templateId();
+
+        return $templateId !== null
+            && str_starts_with($templateId, 'glpi-hl.assets.')
             && GlpiAssetReferenceDefinition::supports($syncJob->targetItemtype());
     }
 

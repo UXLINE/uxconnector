@@ -24,7 +24,7 @@ final class OpenApiDocumentFactory
             'openapi' => '3.0.3',
             'info' => [
                 'title' => 'UXConnector Copilot Gateway',
-                'version' => '2.17.1',
+                'version' => '2.18.3',
                 'description' => 'Read-only semantic and analytical ITSM tools for Microsoft Copilot Studio backed by GLPI.',
             ],
             'servers' => [['url' => rtrim($serverUrl, '/')]],

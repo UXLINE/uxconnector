@@ -1,3 +1,41 @@
+## 2.18.3 - 2026-10-05
+
+### Zendesk offline pre-release validation
+
+- Added a deterministic `ZendeskOffline` PHPUnit suite that exercises the real `ZendeskTicketPostProcessor` without a live Zendesk tenant.
+- Added representative Zendesk fixtures for ticket topic/category, requester, assignee, group, organization, public/private comments, ticket attachment and inline followup image.
+- Validates category hierarchy creation and assignment to the ticket.
+- Validates requester/assignee/group reconstruction.
+- Validates comments as GLPI followups while avoiding duplication of the initial ticket description.
+- Validates attachment/document reconciliation and conversion of inline Zendesk images to local GLPI document references.
+- Validates replay idempotence: no duplicate categories, actors, followups, documents or reconciliation links.
+- Added a targeted regression test proving that a missing Zendesk organization link no longer blocks category, comment or attachment import; the record remains retryable.
+- Synchronized all plugin version metadata to 2.18.3.
+- Keeps the 2.18.1/2.18.2 security hardening and Zendesk post-processing fixes unchanged.
+
+## 2.18.1 - 2026-09-17
+
+### Regression fixes / Zendesk migration hardening
+
+- Fixed a PHP 8.5 null-safety defect in generic inbound jobs: jobs without a template id no longer fail in the GLPI asset skip/post-processing checks. This addresses the nine `ExecuteSyncJobServiceTest` failures observed in Docker.
+- Decoupled Zendesk ticket enrichments: a missing organization/user/group reconciliation link no longer prevents category assignment, comments or attachments from being processed.
+- Split Zendesk entity and ITIL-category updates so one failed relation cannot suppress the other. Failed relations still mark the record partial/failed, preserving replay/checkpoint safety and allowing a later run to heal the missing link idempotently.
+- Improved PHPUnit integration bootstrap and skip guards so GLPI-dependent tests fail/skip cleanly when `GLPI_ROOT` is not provided.
+- Added empty Functional/EndToEnd suite directories so the full `phpunit -c phpunit.xml.dist` command is structurally valid.
+- Retains all 2.18.0 security hardening (webhook HMAC option, query-key disabled by default, host allowlist option, built-in Zendesk target locking, 50,000-record safety ceilings).
+
+## 2.18.0 - 2026-09-17
+
+### Security hardening
+
+- Hardened inbound webhook authentication with optional HMAC-SHA256 signatures and timestamp freshness validation.
+- Disabled webhook keys in query strings by default; temporary legacy opt-in remains available for migration.
+- Added optional outbound host allowlisting on top of the existing SSRF protections.
+- Locked built-in Zendesk template ids to their intended GLPI target types, preventing trusted template/post-processor reuse against another object type while preserving User/Group/Entity/ITILCategory/Ticket imports.
+- Added configurable 50,000-record safety ceilings for scheduled inbound runs and webhook batches without reducing Zendesk 20,000-ticket migration capacity.
+- Fixed the Zendesk synthetic volume harness so it carries the current Zendesk ticket template id.
+- Preserved existing Zendesk population of users, groups, entities, ITIL categories, tickets, follow-ups/comments and documents/attachments.
+
 ## 2.17.1 - 2026-09-16
 
 ### GLPI High-Level asset reference performance hotfix

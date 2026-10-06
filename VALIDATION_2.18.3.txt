@@ -1,0 +1,28 @@
+UXConnector 2.18.3 - pre-release validation summary
+Date: 2026-10-05
+
+Validated before packaging:
+- PHP syntax check on src/, front/, tools/, tests/ and setup.php: PASS
+- Zendesk synthetic volume test: 20,000 records / 200 pages / 0 failed: PASS
+- Existing Unit suite previously validated in Docker PHP 8.5.9: 365 tests / 783 assertions: PASS on 2.18.2 baseline
+- New ZendeskOffline regression suite executed against plugin-local stubs and real ZendeskTicketPostProcessor: PASS
+  * category hierarchy + ticket assignment
+  * requester + assignee + group
+  * public + private followups
+  * initial description not duplicated as followup
+  * ticket attachment + inline followup attachment
+  * replay without duplicate categories/actors/followups/documents/ObjectLinks
+  * missing organization link does not block category/comments/attachments
+
+Important environment note:
+- GLPI Integration suite requires a GLPI source/development tree containing /tests/bootstrap.php and a dedicated testing database.
+- The runtime Docker image used by the user does not contain GLPI core tests/bootstrap.php, therefore Integration tests are intentionally not executed against the runtime database.
+
+Recommended client preflight in Docker:
+1. php tools/zendesk-volume-test.php 20000 100
+2. php vendor/bin/phpunit -c phpunit.xml.dist --testsuite Unit
+3. php vendor/bin/phpunit -c phpunit.xml.dist --testsuite ZendeskOffline
+
+Release stance:
+- 2.18.3 is suitable as the client candidate after the three preflight commands above are green.
+- A live Zendesk end-to-end tenant validation could not be repeated because the temporary Zendesk tenant expired; this limitation is explicitly documented rather than hidden.

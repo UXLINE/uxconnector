@@ -21,6 +21,12 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(OpenSslCredentialVault::class)]
 final class OpenSslCredentialVaultTest extends TestCase
 {
+   protected function setUp(): void {
+      if (!class_exists(\GLPIKey::class)) {
+         self::markTestSkipped('Requires GLPI bootstrap. Run with GLPI_ROOT=/var/www/glpi.');
+      }
+   }
+
    public function testProtectThenRevealReturnsOriginalSecret(): void {
        $vault = new OpenSslCredentialVault('test-instance-key-1234567890');
 

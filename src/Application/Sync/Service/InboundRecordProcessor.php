@@ -134,7 +134,8 @@ final class InboundRecordProcessor
      */
     private function mustSkipGlpiAssetRecord(SyncJob $syncJob, array $item): bool
     {
-        if (!str_starts_with($syncJob->templateId(), 'glpi-hl.assets.')) {
+        $templateId = $syncJob->templateId();
+        if ($templateId === null || !str_starts_with($templateId, 'glpi-hl.assets.')) {
             return false;
         }
 

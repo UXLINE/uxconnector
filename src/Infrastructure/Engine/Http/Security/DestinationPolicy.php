@@ -48,141 +48,179 @@ final class DestinationPolicy implements DestinationPolicyInterface
     /**
      * @var list<string>
      */
-   private const BLOCKED_IPV4_CIDRS = [
-        '127.0.0.0/8',    // loopback
-        '0.0.0.0/8',      // "this network"
-        '169.254.0.0/16', // link-local, includes cloud instance metadata (169.254.169.254)
-        '100.64.0.0/10',  // carrier-grade NAT, used by some cloud metadata setups
-    ];
+    private const BLOCKED_IPV4_CIDRS = [
+         '127.0.0.0/8',    // loopback
+         '0.0.0.0/8',      // "this network"
+         '169.254.0.0/16', // link-local, includes cloud instance metadata (169.254.169.254)
+         '100.64.0.0/10',  // carrier-grade NAT, used by some cloud metadata setups
+     ];
 
-   public function __construct(
+    public function __construct(
         private readonly HostResolverInterface $resolver
     ) {
-   }
+    }
 
-   public function assertAllowed(Endpoint $endpoint): void {
-       $host = parse_url($endpoint->value(), PHP_URL_HOST);
+    public function assertAllowed(Endpoint $endpoint): void
+    {
+        $host = parse_url($endpoint->value(), PHP_URL_HOST);
 
-      if (!is_string($host) || $host === '') {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::unresolvableHost($endpoint->value());
-      }
+        if (!is_string($host) || $host === '') {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::unresolvableHost($endpoint->value());
+        }
 
-       // parse_url() keeps the surrounding brackets for an IPv6
-       // literal host (e.g. "[::1]") — strip them before treating
-       // the value as a candidate IP address.
-       $host = trim($host, '[]');
+        // parse_url() keeps the surrounding brackets for an IPv6
+        // literal host (e.g. "[::1]") — strip them before treating
+        // the value as a candidate IP address.
+        $host = trim($host, '[]');
 
-       $ips = $this->resolveHost($host);
+        $this->assertHostAllowlist($host);
 
-      if ($ips === []) {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::unresolvableHost($host);
-      }
+        $ips = $this->resolveHost($host);
 
-      foreach ($ips as $ip) {
-         if ($this->isBlocked($ip)) {
-             throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::blockedAddress($host, $ip);
-         }
-      }
-   }
+        if ($ips === []) {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::unresolvableHost($host);
+        }
+
+        foreach ($ips as $ip) {
+            if ($this->isBlocked($ip)) {
+                throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::blockedAddress($host, $ip);
+            }
+        }
+    }
+
+    private function assertHostAllowlist(string $host): void
+    {
+        $raw = getenv('UXCONNECTOR_ALLOWED_HOSTS');
+        if ($raw === false || trim($raw) === '') {
+            return;
+        }
+
+        $host = strtolower(rtrim($host, '.'));
+        $patterns = array_values(array_filter(array_map(
+            static fn (string $value): string => strtolower(rtrim(trim($value), '.')),
+            explode(',', $raw)
+        ), static fn (string $value): bool => $value !== ''));
+
+        foreach ($patterns as $pattern) {
+            if ($pattern === $host) {
+                return;
+            }
+
+            if (str_starts_with($pattern, '*.') && strlen($pattern) > 2) {
+                $suffix = substr($pattern, 1);
+                if (str_ends_with($host, $suffix) && $host !== substr($suffix, 1)) {
+                    return;
+                }
+            }
+        }
+
+        throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::hostNotAllowlisted($host);
+    }
 
     /**
      * @return list<string>
      */
-   private function resolveHost(string $host): array {
-       // A literal IP address needs no DNS resolution.
-      if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
-          return [$host];
-      }
+    private function resolveHost(string $host): array
+    {
+        // A literal IP address needs no DNS resolution.
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return [$host];
+        }
 
-       return $this->resolver->resolve($host);
-   }
+        return $this->resolver->resolve($host);
+    }
 
-   private function isBlocked(string $ip): bool {
-      if (str_contains($ip, ':')) {
-          return $this->isBlockedIpv6($ip);
-      }
+    private function isBlocked(string $ip): bool
+    {
+        if (str_contains($ip, ':')) {
+            return $this->isBlockedIpv6($ip);
+        }
 
-       return $this->isBlockedIpv4($ip);
-   }
+        return $this->isBlockedIpv4($ip);
+    }
 
-   private function isBlockedIpv4(string $ip): bool {
-      foreach (self::BLOCKED_IPV4_CIDRS as $cidr) {
-         if ($this->ipv4InCidr($ip, $cidr)) {
+    private function isBlockedIpv4(string $ip): bool
+    {
+        foreach (self::BLOCKED_IPV4_CIDRS as $cidr) {
+            if ($this->ipv4InCidr($ip, $cidr)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function ipv4InCidr(string $ip, string $cidr): bool
+    {
+        [$subnet, $bits] = explode('/', $cidr);
+
+        $ipLong = ip2long($ip);
+        $subnetLong = ip2long($subnet);
+
+        if ($ipLong === false || $subnetLong === false) {
+            return false;
+        }
+
+        $mask = -1 << (32 - (int) $bits);
+
+        return ($ipLong & $mask) === ($subnetLong & $mask);
+    }
+
+    private function isBlockedIpv6(string $ip): bool
+    {
+        $packed = @inet_pton($ip);
+
+        if ($packed === false) {
+            // Malformed input we cannot classify: fail closed rather
+            // than let an unrecognized address format slip through.
             return true;
-         }
-      }
+        }
 
-       return false;
-   }
+        if ($ip === '::1' || $ip === '::') {
+            return true;
+        }
 
-   private function ipv4InCidr(string $ip, string $cidr): bool {
-       [$subnet, $bits] = explode('/', $cidr);
+        if ($this->ipv6InPrefix($packed, 'fe80::', 10)) {
+            return true;
+        }
 
-       $ipLong = ip2long($ip);
-       $subnetLong = ip2long($subnet);
+        // IPv4-mapped addresses must be recognized from their binary form,
+        // not from the textual suffix. IPv6 permits hexadecimal spellings such
+        // as ::ffff:7f00:1, which maps to 127.0.0.1 but is not itself a valid
+        // dotted IPv4 string. Text-only parsing would therefore create an SSRF
+        // bypass around the loopback/link-local policy.
+        $mappedPrefix = hex2bin('00000000000000000000ffff');
 
-      if ($ipLong === false || $subnetLong === false) {
-          return false;
-      }
+        if ($mappedPrefix !== false && substr($packed, 0, 12) === $mappedPrefix) {
+            $mapped = inet_ntop(substr($packed, 12, 4));
 
-       $mask = -1 << (32 - (int) $bits);
+            return $mapped === false || $this->isBlockedIpv4($mapped);
+        }
 
-       return ($ipLong & $mask) === ($subnetLong & $mask);
-   }
+        return false;
+    }
 
-   private function isBlockedIpv6(string $ip): bool {
-       $packed = @inet_pton($ip);
+    private function ipv6InPrefix(string $packed, string $prefixAddress, int $prefixBits): bool
+    {
+        $prefixPacked = @inet_pton($prefixAddress);
 
-      if ($packed === false) {
-          // Malformed input we cannot classify: fail closed rather
-          // than let an unrecognized address format slip through.
-          return true;
-      }
+        if ($prefixPacked === false) {
+            return false;
+        }
 
-      if ($ip === '::1' || $ip === '::') {
-          return true;
-      }
+        $fullBytes = intdiv($prefixBits, 8);
+        $remainingBits = $prefixBits % 8;
 
-      if ($this->ipv6InPrefix($packed, 'fe80::', 10)) {
-          return true;
-      }
+        if (substr($packed, 0, $fullBytes) !== substr($prefixPacked, 0, $fullBytes)) {
+            return false;
+        }
 
-       // IPv4-mapped addresses must be recognized from their binary form,
-       // not from the textual suffix. IPv6 permits hexadecimal spellings such
-       // as ::ffff:7f00:1, which maps to 127.0.0.1 but is not itself a valid
-       // dotted IPv4 string. Text-only parsing would therefore create an SSRF
-       // bypass around the loopback/link-local policy.
-       $mappedPrefix = hex2bin('00000000000000000000ffff');
+        if ($remainingBits === 0) {
+            return true;
+        }
 
-      if ($mappedPrefix !== false && substr($packed, 0, 12) === $mappedPrefix) {
-          $mapped = inet_ntop(substr($packed, 12, 4));
+        $mask = (0xFF << (8 - $remainingBits)) & 0xFF;
 
-          return $mapped === false || $this->isBlockedIpv4($mapped);
-      }
-
-       return false;
-   }
-
-   private function ipv6InPrefix(string $packed, string $prefixAddress, int $prefixBits): bool {
-       $prefixPacked = @inet_pton($prefixAddress);
-
-      if ($prefixPacked === false) {
-          return false;
-      }
-
-       $fullBytes = intdiv($prefixBits, 8);
-       $remainingBits = $prefixBits % 8;
-
-      if (substr($packed, 0, $fullBytes) !== substr($prefixPacked, 0, $fullBytes)) {
-          return false;
-      }
-
-      if ($remainingBits === 0) {
-          return true;
-      }
-
-       $mask = (0xFF << (8 - $remainingBits)) & 0xFF;
-
-       return (ord($packed[$fullBytes]) & $mask) === (ord($prefixPacked[$fullBytes]) & $mask);
-   }
+        return (ord($packed[$fullBytes]) & $mask) === (ord($prefixPacked[$fullBytes]) & $mask);
+    }
 }

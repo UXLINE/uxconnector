@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * -------------------------------------------------------------------------
@@ -68,7 +68,7 @@ final class DestinationPolicyTest extends TestCase
    public static function legitimateLiteralEndpoints(): iterable {
        // RFC1918 private ranges: this plugin's core use case is
        // reaching internal systems (Zabbix, MDM) living exactly here
-       // â€” they must never be blocked by default.
+       // — they must never be blocked by default.
        yield 'RFC1918 10.x' => ['http://10.40.5.20/zabbix'];
        yield 'RFC1918 172.16.x' => ['http://172.16.0.5/api'];
        yield 'RFC1918 192.168.x' => ['http://192.168.1.50/api'];
@@ -93,9 +93,9 @@ final class DestinationPolicyTest extends TestCase
    }
 
    public function testHostnameResolvingToAnInternalPrivateAddressIsAllowed(): void {
-       $policy = $this->makePolicy(['zabbix.example.local' => ['10.40.5.20']]);
+       $policy = $this->makePolicy(['zabbix.helpline.local' => ['10.40.5.20']]);
 
-       $policy->assertAllowed(new Endpoint('https://zabbix.example.local/api'));
+       $policy->assertAllowed(new Endpoint('https://zabbix.helpline.local/api'));
 
        $this->addToAssertionCount(1);
    }
@@ -122,7 +122,7 @@ final class DestinationPolicyTest extends TestCase
 
     /**
      * A hostname resolving to several addresses is rejected as soon
-     * as any one of them is forbidden â€” an attacker controlling DNS
+     * as any one of them is forbidden — an attacker controlling DNS
      * cannot hide a forbidden address among legitimate ones.
      */
    public function testHostnameResolvingToMultipleAddressesIsRejectedIfAnyIsForbidden(): void {
@@ -133,4 +133,3 @@ final class DestinationPolicyTest extends TestCase
        $policy->assertAllowed(new Endpoint('https://multi.example.com/api'));
    }
 }
-

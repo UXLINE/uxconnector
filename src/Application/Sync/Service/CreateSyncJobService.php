@@ -22,6 +22,7 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
 use GlpiPlugin\Uxconnector\Domain\Shared\Event\EventDispatcherInterface;
 use GlpiPlugin\Uxconnector\Domain\Shared\Persistence\TransactionManagerInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncJob;
+use GlpiPlugin\Uxconnector\Domain\Sync\Policy\BuiltinTemplateTargetPolicy;
 use GlpiPlugin\Uxconnector\Domain\Sync\Policy\TargetFieldPolicy;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\AuthConfigReference;
@@ -45,14 +46,14 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\AuthConfigReference;
  */
 final class CreateSyncJobService
 {
-   public function __construct(
+    public function __construct(
         private readonly SyncJobRepositoryInterface $syncJobRepository,
         private readonly AuthConfigRepositoryInterface $authConfigRepository,
         private readonly TargetFieldPolicy $targetFieldPolicy,
         private readonly TransactionManagerInterface $transaction,
         private readonly EventDispatcherInterface $events
     ) {
-   }
+    }
 
     /**
      * @throws SyncDirectionNotSupportedException if the command's direction
@@ -60,66 +61,69 @@ final class CreateSyncJobService
      * @throws SyncJobAuthConfigNotFoundException if the command's
      *         AuthConfigReference does not resolve to an existing AuthConfig.
      */
-   public function execute(CreateSyncJobCommand $command): SyncJob {
-      if (!$command->direction->isImplemented()) {
-          throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncDirectionNotSupportedException::forDirection($command->direction);
-      }
+    public function execute(CreateSyncJobCommand $command): SyncJob
+    {
+        if (!$command->direction->isImplemented()) {
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncDirectionNotSupportedException::forDirection($command->direction);
+        }
 
-       $this->assertAuthConfigExists($command->authConfigReference->value());
-      if ($command->direction->readsFromExternalSystem()) {
-          $this->targetFieldPolicy->assertConfiguration(
-              $command->targetItemtype,
-              $command->matchField,
-              $command->fieldMappings
-          );
-      }
+        $this->assertAuthConfigExists($command->authConfigReference->value());
+        (new BuiltinTemplateTargetPolicy())->assertAllowed($command->templateId, $command->targetItemtype);
+        if ($command->direction->readsFromExternalSystem()) {
+            $this->targetFieldPolicy->assertConfiguration(
+                $command->targetItemtype,
+                $command->matchField,
+                $command->fieldMappings
+            );
+        }
 
-       $this->transaction->begin();
+        $this->transaction->begin();
 
-      try {
-          $syncJob = SyncJob::create(
-              $command->name,
-              $command->authConfigReference,
-              $command->direction,
-              $command->resourcePath,
-              $command->targetItemtype,
-              $command->matchField,
-              $command->externalIdField,
-              $command->fieldMappings,
-              $command->entityAssignmentStrategy,
-              $command->collectionPath,
-              $command->paginationConfig,
-              $command->templateId,
-              $command->templateVersion,
-              $command->triggerType,
-              $command->externalObjectType,
-              $command->outboundConfig,
-              $command->webhookKey
-          );
+        try {
+            $syncJob = SyncJob::create(
+                $command->name,
+                $command->authConfigReference,
+                $command->direction,
+                $command->resourcePath,
+                $command->targetItemtype,
+                $command->matchField,
+                $command->externalIdField,
+                $command->fieldMappings,
+                $command->entityAssignmentStrategy,
+                $command->collectionPath,
+                $command->paginationConfig,
+                $command->templateId,
+                $command->templateVersion,
+                $command->triggerType,
+                $command->externalObjectType,
+                $command->outboundConfig,
+                $command->webhookKey
+            );
 
-          $events = $syncJob->releaseEvents();
+            $events = $syncJob->releaseEvents();
 
-          $syncJob = $this->syncJobRepository->save($syncJob);
+            $syncJob = $this->syncJobRepository->save($syncJob);
 
-          $this->transaction->commit();
+            $this->transaction->commit();
 
-         foreach ($events as $event) {
-            $this->events->dispatch($event);
-         }
+            foreach ($events as $event) {
+                $this->events->dispatch($event);
+            }
 
-          return $syncJob;
-      } catch (\Throwable $exception) {
-          $this->transaction->rollback();
+            return $syncJob;
+        } catch (\Throwable $exception) {
+            $this->transaction->rollback();
 
-          throw $exception;
-      }
-   }
+            throw $exception;
+        }
+    }
 
-   private function assertAuthConfigExists(int $authConfigId): void {
-      if (!$this->authConfigRepository->exists(new AuthConfigId($authConfigId))) {
-          throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigNotFoundException::forReference(
-              new AuthConfigReference($authConfigId)
-          );
-      }
-   }
+    private function assertAuthConfigExists(int $authConfigId): void
+    {
+        if (!$this->authConfigRepository->exists(new AuthConfigId($authConfigId))) {
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigNotFoundException::forReference(
+                new AuthConfigReference($authConfigId)
+            );
+        }
+    }
 }

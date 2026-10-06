@@ -1,0 +1,14 @@
+{
+  "ticket_fields": [
+    {
+      "id": 999,
+      "type": "tagger",
+      "title": "Sujet",
+      "custom_field_options": [
+        {"name": "IT :: Accès", "value": "topic__it__access"},
+        {"name": "IT :: Poste de travail", "value": "topic__it__workstation"}
+      ]
+    }
+  ],
+  "next_page": null
+}

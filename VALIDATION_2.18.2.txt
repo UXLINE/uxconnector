@@ -1,0 +1,15 @@
+UXConnector 2.18.2
+
+Changes since 2.18.1:
+- PHPUnit Integration bootstrap now delegates to GLPI's official tests/bootstrap.php.
+- Explicit warning/guard against running Integration tests on a normal runtime DB.
+- OpenSslCredentialVault validates an explicit key before instantiating GLPIKey.
+- Removed non-shipped Functional/EndToEnd suites from default phpunit.xml.dist.
+- Added TESTING_2.18.2.md with dedicated testing DB instructions.
+
+Functional Zendesk hardening/regression fixes from 2.18.1 are unchanged.
+
+Local validation in the artifact-building environment:
+- PHP syntax lint: to be executed after packaging.
+- Full PHPUnit cannot be executed here because this environment lacks dom,
+  mbstring and xmlwriter. Docker validation remains required.

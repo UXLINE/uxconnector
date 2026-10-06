@@ -1,0 +1,31 @@
+UXConnector 2.18.1 - validation summary
+Date: 2026-09-17
+
+User Docker evidence received
+- PHP 8.5.9.
+- Zendesk synthetic 20,000-ticket test on 2.18.0: PASS (20,000 processed, 0 failed, 200 pages).
+- Unit suite on 2.18.0: 365 tests, 9 failures, all in ExecuteSyncJobService tests.
+- Root cause identified: str_starts_with() received null for generic jobs without template_id in InboundRecordProcessor.
+- Integration suite errors were caused by GLPI not being bootstrapped (Computer/GLPIKey unavailable), not by the Zendesk runtime itself.
+
+Corrections in 2.18.1
+- Generic template-id checks are null-safe in InboundRecordProcessor and GlpiAssetReferencePostProcessor.
+- Zendesk entity/category/actors/comments stages run independently. Missing reference links no longer short-circuit comments or attachments.
+- Entity and category updates are applied independently.
+- PHPUnit GLPI bootstrap/skip behavior improved; empty Functional and EndToEnd directories included.
+
+Validation performed in artifact environment
+- PHP syntax check over src/, front/, tests/ and tools/: PASS.
+- Zendesk synthetic 20,000-ticket / 100-per-page test: PASS.
+  Processed: 20,000
+  Failed: 0
+  Status: success
+  Writer count: 20,000
+- Full PHPUnit cannot be executed in this artifact environment because its PHP CLI lacks DOM/mbstring/xmlwriter. Re-run in the user's GLPI Docker image.
+
+Required Docker regression gate before GitHub push
+1. vendor/bin/phpunit -c phpunit.xml.dist --testsuite Unit
+2. GLPI_ROOT=/var/www/glpi vendor/bin/phpunit -c phpunit.xml.dist --testsuite Integration
+3. php tools/zendesk-volume-test.php 20000 100
+4. Real Zendesk sample: category + requester/assignee/group/entity + public/private followups + regular/inline attachments.
+5. Replay the same sample and confirm no duplicates.

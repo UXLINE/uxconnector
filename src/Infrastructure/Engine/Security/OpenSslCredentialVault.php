@@ -41,10 +41,14 @@ final class OpenSslCredentialVault implements CredentialVaultInterface
      *                                 null so GLPIKey reads config/glpicrypt.key.
      */
    public function __construct(?string $explicitKey = null, ?\GLPIKey $glpiKey = null) {
-       $this->glpiKey = $glpiKey ?? new \GLPIKey();
+       // Validate an explicitly supplied key before touching GLPIKey. This
+       // keeps the constructor deterministic for invalid input and avoids
+       // masking a domain validation error behind an unrelated GLPI config
+       // bootstrap error.
        $this->explicitKey = $explicitKey === null
            ? null
            : self::normalizeExplicitKey($explicitKey);
+       $this->glpiKey = $glpiKey ?? new \GLPIKey();
 
       if ($this->explicitKey === null && $this->glpiKey->hasReadErrors()) {
           throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::encryptionKeyUnavailable();

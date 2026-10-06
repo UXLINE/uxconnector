@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * -------------------------------------------------------------------------
@@ -9,26 +9,26 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * NÃ©cessite une instance GLPI de test rÃ©elle (GLPI_ROOT dÃ©fini) ainsi
+ * Nécessite une instance GLPI de test réelle (GLPI_ROOT défini) ainsi
  * qu'un serveur HTTP de test accessible en boucle locale
- * (UXCONNECTOR_TEST_HTTP_ENDPOINT, ex. dÃ©marrÃ© via
- * `php -S 127.0.0.1:8099` servant un payload JSON statique â€” voir
- * les scripts de smoke test dÃ©jÃ  utilisÃ©s en dÃ©veloppement).
+ * (UXCONNECTOR_TEST_HTTP_ENDPOINT, ex. démarré via
+ * `php -S 127.0.0.1:8099` servant un payload JSON statique — voir
+ * les scripts de smoke test déjà utilisés en développement).
  *
- * CORRECTIF P0 (revue de code externe) : la version prÃ©cÃ©dente de ce
+ * CORRECTIF P0 (revue de code externe) : la version précédente de ce
  * fichier appelait directement SyncJobCronTask::cronSyncJob(), qui
- * exÃ©cute *tous* les SyncJob actifs de la base â€” pas seulement celui
- * crÃ©Ã© par le test. LancÃ© sur une instance partagÃ©e (shared-test-instance
- * ou toute base contenant dÃ©jÃ  des synchronisations rÃ©elles actives),
- * ce test aurait dÃ©clenchÃ© leur exÃ©cution en mÃªme temps que la sienne.
- * Cette classe distingue dÃ©sormais explicitement :
- *  - un scÃ©nario isolÃ© (ExecuteSyncJobService, ne touche que le job du
- *    test), qui reste le test par dÃ©faut ;
- *  - un scÃ©nario couvrant le comportement rÃ©el de cronSyncJob() (Â« tous
- *    les jobs actifs Â»), verrouillÃ© derriÃ¨re une variable d'environnement
- *    explicite, Ã  n'activer QUE sur une base GLPI jetable et dÃ©diÃ©e.
- * Le Computer potentiellement crÃ©Ã© par GlpiItemWriter est Ã©galement
- * nettoyÃ© en tearDown(), ce que la version prÃ©cÃ©dente omettait.
+ * exécute *tous* les SyncJob actifs de la base — pas seulement celui
+ * créé par le test. Lancé sur une instance partagée (helpline-datawise
+ * ou toute base contenant déjà des synchronisations réelles actives),
+ * ce test aurait déclenché leur exécution en même temps que la sienne.
+ * Cette classe distingue désormais explicitement :
+ *  - un scénario isolé (ExecuteSyncJobService, ne touche que le job du
+ *    test), qui reste le test par défaut ;
+ *  - un scénario couvrant le comportement réel de cronSyncJob() (« tous
+ *    les jobs actifs »), verrouillé derrière une variable d'environnement
+ *    explicite, à n'activer QUE sur une base GLPI jetable et dédiée.
+ * Le Computer potentiellement créé par GlpiItemWriter est également
+ * nettoyé en tearDown(), ce que la version précédente omettait.
  * -------------------------------------------------------------------------
  */
 
@@ -89,7 +89,7 @@ final class SyncJobCronTaskTest extends TestCase
 
     /**
      * Safe by construction: executes only the SyncJob created by this
-     * test, through ExecuteSyncJobService directly â€” never touches any
+     * test, through ExecuteSyncJobService directly — never touches any
      * other SyncJob that may exist in the database. This is the test
      * that should run in ordinary CI against a shared test database.
      */
@@ -113,12 +113,12 @@ final class SyncJobCronTaskTest extends TestCase
      * Covers the actual behaviour of the GLPI scheduler entry point:
      * cronSyncJob() runs EVERY currently active SyncJob, not just one.
      *
-     * DANGER : ce test exÃ©cute rÃ©ellement toutes les synchronisations
-     * actives de la base ciblÃ©e. Il ne doit JAMAIS Ãªtre lancÃ© contre
-     * une instance partagÃ©e ou de production â€” uniquement contre une
-     * base GLPI jetable, dÃ©diÃ©e aux tests d'intÃ©gration, oÃ¹ la
-     * prÃ©sence d'autres SyncJob actifs est soit impossible soit sans
-     * consÃ©quence. D'oÃ¹ la double garde : le skip par dÃ©faut, levÃ©
+     * DANGER : ce test exécute réellement toutes les synchronisations
+     * actives de la base ciblée. Il ne doit JAMAIS être lancé contre
+     * une instance partagée ou de production — uniquement contre une
+     * base GLPI jetable, dédiée aux tests d'intégration, où la
+     * présence d'autres SyncJob actifs est soit impossible soit sans
+     * conséquence. D'où la double garde : le skip par défaut, levé
      * uniquement par une variable d'environnement au nom explicite.
      */
    public function testCronSyncJobExecutesEveryActiveSyncJobInTheDatabase(): void {
@@ -127,7 +127,7 @@ final class SyncJobCronTaskTest extends TestCase
               'SyncJobCronTask::cronSyncJob() executes EVERY active SyncJob ' .
               'currently in the database, not just the one created by this test. ' .
               'Set UXCONNECTOR_ALLOW_DESTRUCTIVE_CRON_TEST=1 only against a ' .
-              'disposable, dedicated test GLPI instance â€” never against a shared ' .
+              'disposable, dedicated test GLPI instance — never against a shared ' .
               'or production database.'
           );
       }
@@ -151,10 +151,10 @@ final class SyncJobCronTaskTest extends TestCase
            AuthMethod::NONE
        );
        // CORRECTIF (revue de code externe) : sans ces deux appels,
-       // l'AuthConfig reste en statut DRAFT â€” AuthConfig::isUsable()
-       // exige ACTIVE, donc ExecuteSyncJobService aurait rejetÃ©
-       // l'exÃ©cution avec SyncJobAuthConfigUnavailableException et ce
-       // test aurait Ã©chouÃ© Ã  sa propre assertion de statut.
+       // l'AuthConfig reste en statut DRAFT — AuthConfig::isUsable()
+       // exige ACTIVE, donc ExecuteSyncJobService aurait rejeté
+       // l'exécution avec SyncJobAuthConfigUnavailableException et ce
+       // test aurait échoué à sa propre assertion de statut.
        $this->authConfig->markTesting();
        $this->authConfig->activate();
        $this->authConfig = $authConfigRepository->save($this->authConfig);
@@ -177,12 +177,16 @@ final class SyncJobCronTaskTest extends TestCase
     /**
      * Cleans up not only the fixtures this test created directly, but
      * also the Computer GlpiItemWriter may have written, and every
-     * SyncExecution the run(s) may have produced â€” the two gaps the
+     * SyncExecution the run(s) may have produced — the two gaps the
      * code review flagged: "il pollue progressivement la CMDB de
      * test" and the execution history growing unboundedly on a
      * persistent CI database.
      */
    protected function tearDown(): void {
+      if (!class_exists(\Computer::class)) {
+         return;
+      }
+
       if ($this->syncJob?->id() !== null) {
           $executionRepository = new SyncExecutionRepository(new SyncExecutionPersistenceMapper());
 
@@ -210,4 +214,3 @@ final class SyncJobCronTaskTest extends TestCase
        $this->syncJob = null;
    }
 }
-

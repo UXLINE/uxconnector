@@ -1,0 +1,57 @@
+{
+  "comments": [
+    {
+      "id": 5001,
+      "author_id": 101,
+      "body": "Le VPN ne fonctionne plus.",
+      "plain_body": "Le VPN ne fonctionne plus.",
+      "html_body": "<p>Le VPN ne fonctionne plus.</p>",
+      "public": true,
+      "created_at": "2026-09-01T08:30:00Z",
+      "attachments": [
+        {
+          "id": 9001,
+          "file_name": "capture-initiale.png",
+          "content_type": "image/png",
+          "content_url": "https://zendesk.invalid/api/v2/attachments/9001/content?name=capture-initiale.png",
+          "mapped_content_url": "https://zendesk.invalid/api/v2/attachments/9001/content?name=capture-initiale.png",
+          "inline": false,
+          "deleted": false,
+          "malware_scan_result": "malware_not_found"
+        }
+      ]
+    },
+    {
+      "id": 5002,
+      "author_id": 102,
+      "body": "Pouvez-vous tester avec le nouveau profil ?\n\n![capture](https://zendesk.invalid/api/v2/attachments/9002/content?name=profil-vpn.png)",
+      "plain_body": "Pouvez-vous tester avec le nouveau profil ?",
+      "html_body": "<p>Pouvez-vous tester avec le nouveau profil ?</p><img src=\"https://zendesk.invalid/api/v2/attachments/9002/content?name=profil-vpn.png\">",
+      "public": true,
+      "created_at": "2026-09-01T09:00:00Z",
+      "attachments": [
+        {
+          "id": 9002,
+          "file_name": "profil-vpn.png",
+          "content_type": "image/png",
+          "content_url": "https://zendesk.invalid/api/v2/attachments/9002/content?name=profil-vpn.png",
+          "mapped_content_url": "https://zendesk.invalid/api/v2/attachments/9002/content?name=profil-vpn.png",
+          "inline": true,
+          "deleted": false,
+          "malware_scan_result": "malware_not_found"
+        }
+      ]
+    },
+    {
+      "id": 5003,
+      "author_id": 102,
+      "body": "Note interne : contrôler les droits du groupe VPN.",
+      "plain_body": "Note interne : contrôler les droits du groupe VPN.",
+      "html_body": "<p>Note interne : contrôler les droits du groupe VPN.</p>",
+      "public": false,
+      "created_at": "2026-09-01T09:15:00Z",
+      "attachments": []
+    }
+  ],
+  "next_page": null
+}

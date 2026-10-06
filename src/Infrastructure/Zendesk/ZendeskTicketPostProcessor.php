@@ -80,20 +80,26 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
       }
 
       $ticketId = $ticketLink->itemId();
-      if (!$this->applyEntityAndCategory($syncJob, $sourceRecord, $ticketId)) {
-         return false;
-      }
-      if (!$this->applyActors($syncJob, $sourceRecord, $ticketId)) {
-         return false;
-      }
 
-      return $this->importComments($syncJob, $sourceRecord, $ticketId, $externalId);
+      // Enrichments are intentionally independent. A temporarily missing
+      // organization/user/group reconciliation link must not prevent the ITIL
+      // category, comments or attachments from being imported. Returning false
+      // when any stage failed keeps the page checkpoint replay-safe: a later run
+      // can heal the missing relation without duplicating comments/documents.
+      $relationsOk = $this->applyEntityAndCategory($syncJob, $sourceRecord, $ticketId);
+      $actorsOk = $this->applyActors($syncJob, $sourceRecord, $ticketId);
+      $commentsOk = $this->importComments($syncJob, $sourceRecord, $ticketId, $externalId);
+
+      return $relationsOk && $actorsOk && $commentsOk;
    }
 
    /** @param array<string, mixed> $sourceRecord */
    private function applyEntityAndCategory(SyncJob $syncJob, array $sourceRecord, int $ticketId): bool {
-      $update = ['id' => $ticketId];
+      $ok = true;
 
+      // Apply the entity independently from the category. Previously a missing
+      // Zendesk organization ObjectLink returned immediately and prevented the
+      // category and all later ticket enrichments from running.
       if (isset($sourceRecord['organization_id']) && is_scalar($sourceRecord['organization_id'])) {
          $entityId = $this->resolveMappedId(
             $syncJob,
@@ -102,9 +108,16 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
             TargetItemtype::ENTITY
          );
          if ($entityId === null) {
-            return false;
+            $ok = false;
+         } else {
+            $ticket = new \Ticket();
+            if (!(bool) $ticket->update([
+               'id' => $ticketId,
+               'entities_id' => $entityId,
+            ])) {
+               $ok = false;
+            }
          }
-         $update['entities_id'] = $entityId;
       }
 
       $topicValue = $this->topicCatalog->topicValueFromTicket($syncJob, $sourceRecord);
@@ -121,27 +134,31 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
          // leaving the new ticket uncategorized.
          if ($categoryId === null) {
             $label = $this->topicCatalog->labelForValue($syncJob, $topicValue);
-            if ($label === null) {
-               return false;
+            if ($label !== null) {
+               $categoryId = $this->topicCategories->ensureForTopic($syncJob, $topicValue, $label);
             }
-            $categoryId = $this->topicCategories->ensureForTopic($syncJob, $topicValue, $label);
          }
 
          if ($categoryId === null) {
-            return false;
+            $ok = false;
+         } else {
+            $ticket = new \Ticket();
+            if (!(bool) $ticket->update([
+               'id' => $ticketId,
+               'itilcategories_id' => $categoryId,
+            ])) {
+               $ok = false;
+            }
          }
-         $update['itilcategories_id'] = $categoryId;
       }
 
-      if (count($update) === 1) {
-         return true;
-      }
-
-      return (bool) (new \Ticket())->update($update);
+      return $ok;
    }
 
    /** @param array<string, mixed> $sourceRecord */
    private function applyActors(SyncJob $syncJob, array $sourceRecord, int $ticketId): bool {
+      $ok = true;
+
       if (isset($sourceRecord['requester_id']) && is_scalar($sourceRecord['requester_id'])) {
          $userId = $this->resolveMappedId(
             $syncJob,
@@ -150,7 +167,7 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
             TargetItemtype::USER
          );
          if ($userId === null || !$this->ensureTicketUser($ticketId, $userId, $this->requesterType())) {
-            return false;
+            $ok = false;
          }
       }
 
@@ -166,7 +183,7 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
             TargetItemtype::USER
          );
          if ($userId === null || !$this->ensureTicketUser($ticketId, $userId, $this->assignType())) {
-            return false;
+            $ok = false;
          }
       }
 
@@ -182,11 +199,11 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
             TargetItemtype::GROUP
          );
          if ($groupId === null || !$this->ensureTicketGroup($ticketId, $groupId, $this->assignType())) {
-            return false;
+            $ok = false;
          }
       }
 
-      return true;
+      return $ok;
    }
 
    private function resolveMappedId(
@@ -1196,7 +1213,7 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                'ignore_errors' => true,
                'follow_location' => 0,
                'max_redirects' => 0,
-               'header' => "User-Agent: UXConnector/2.17.1\r\n",
+               'header' => "User-Agent: UXConnector/2.18.3\r\n",
             ],
          ]);
 

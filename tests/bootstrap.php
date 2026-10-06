@@ -9,36 +9,56 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * Bootstrap PHPUnit — aucune logique métier.
+ * PHPUnit bootstrap.
  *
- * La suite Unit ne dépend jamais de GLPI (c'est tout l'intérêt de la
- * Clean Architecture appliquée à ce plugin : Domain/Application sont
- * testables avec zéro dépendance externe). Ce bootstrap ne charge
- * l'environnement GLPI complet que lorsque GLPI_ROOT est défini —
- * c'est-à-dire uniquement quand les suites Integration/EndToEnd sont
- * exécutées, typiquement en CI contre une instance GLPI de test ou
- * en local via docker-compose.
+ * Unit tests intentionally run without GLPI.
+ * Integration tests MUST run against GLPI's dedicated testing environment,
+ * never against the normal runtime database. When GLPI_ROOT is provided we
+ * therefore delegate the whole GLPI boot sequence to GLPI's own
+ * tests/bootstrap.php instead of trying to reproduce the Kernel/DB/session
+ * initialization from the plugin.
  * -------------------------------------------------------------------------
  */
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../vendor/autoload.php';
-
+$pluginRoot = dirname(__DIR__);
 $glpiRoot = getenv('GLPI_ROOT');
 
-if ($glpiRoot !== false && $glpiRoot !== '') {
-    /*
-     * GLPI 11 defines GLPI_ROOT itself while loading its Composer
-     * autoloader. Do not define the constant from the plugin bootstrap.
-     */
-    require_once rtrim($glpiRoot, '/') . '/vendor/autoload.php';
+if ($glpiRoot === false || trim($glpiRoot) === '') {
+    // Pure Unit mode: no GLPI dependency.
+    require_once $pluginRoot . '/vendor/autoload.php';
+    return;
+}
 
-    if (!defined('GLPI_ROOT')) {
-        throw new RuntimeException(
-            'GLPI bootstrap did not define GLPI_ROOT.'
-        );
-    }
+$glpiRoot = rtrim(trim($glpiRoot), '/');
+$coreTestBootstrap = $glpiRoot . '/tests/bootstrap.php';
 
-    require_once GLPI_ROOT . '/inc/includes.php';
+if (!is_file($coreTestBootstrap)) {
+    throw new RuntimeException(
+        'UXConnector integration tests require GLPI\'s own tests/bootstrap.php. '
+        . 'Use a GLPI source/development tree with a dedicated --env=testing database; '
+        . 'do not run these integration tests against the normal GLPI runtime database. '
+        . 'Missing file: ' . $coreTestBootstrap
+    );
+}
+
+// GLPI's official test bootstrap initializes the testing Kernel, constants,
+// config paths, database connection, cache, session/test fixtures and core
+// autoloading in the supported order.
+require_once $coreTestBootstrap;
+
+// UXConnector's development dependencies/autoloading are plugin-local.
+require_once $pluginRoot . '/vendor/autoload.php';
+
+if (!class_exists(\Plugin::class)) {
+    throw new RuntimeException('GLPI test bootstrap did not initialize the Plugin class.');
+}
+
+if (!\Plugin::isPluginActive('uxconnector')) {
+    throw new RuntimeException(
+        'UXConnector is not active in GLPI\'s testing environment. '
+        . 'Install and enable it with bin/console plugin:install --env=testing '
+        . 'and bin/console plugin:enable --env=testing before running Integration tests.'
+    );
 }

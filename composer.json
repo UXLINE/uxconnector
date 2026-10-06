@@ -1,4 +1,4 @@
-﻿{
+{
     "name": "helpline/uxconnector",
     "description": "UXConnector - Generic connector marketplace framework for GLPI (Engine + Sync bounded contexts)",
     "type": "glpi-plugin",
@@ -33,7 +33,9 @@
         "test": "phpunit",
         "analyse": "phpstan analyse",
         "fix": "php-cs-fixer fix",
-        "lint:glpi": "phpcs --standard=GlpiStandard src setup.php hook.php front"
+        "lint:glpi": "phpcs --standard=GlpiStandard src setup.php hook.php front",
+        "test:zendesk-offline": "phpunit --testsuite ZendeskOffline",
+        "test:preflight": "sh tools/preflight-2.18.3.sh"
     },
     "config": {
         "sort-packages": true,
@@ -43,4 +45,3 @@
         }
     }
 }
-

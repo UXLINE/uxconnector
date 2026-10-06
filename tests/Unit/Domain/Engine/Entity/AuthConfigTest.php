@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * -------------------------------------------------------------------------
@@ -138,7 +138,7 @@ final class AuthConfigTest extends TestCase
        $authConfig->markTesting();
        $authConfig->activate();
 
-       $authConfig->changeEndpoint(new Endpoint('https://zabbix.example.com/api'));
+       $authConfig->changeEndpoint(new Endpoint('https://zabbix.helpline.fr/api'));
 
        self::assertSame(AuthConfigStatus::DRAFT, $authConfig->status());
    }
@@ -237,4 +237,3 @@ final class AuthConfigTest extends TestCase
    }
 
 }
-
