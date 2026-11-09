@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use GlpiPlugin\Uxconnector\Infrastructure\Connection\ConnectionControllerFactory;
+use GlpiPlugin\Uxconnector\Bootstrap\ConnectionControllerFactory;
 
 Session::checkRight('plugin_uxconnector_authconfig', READ);
 

@@ -19,7 +19,7 @@ namespace GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security;
  *
  * Isolated behind an interface so DestinationPolicy's blocking logic
  * (the part that actually matters for tests) can be unit-tested with
- * a fake resolver, without depending on real DNS resolution — which
+ * a fake resolver, without depending on real DNS resolution - which
  * this sandbox's egress proxy would refuse for arbitrary hostnames
  * anyway.
  */
@@ -29,5 +29,5 @@ interface HostResolverInterface
      * @return list<string> Resolved IPv4/IPv6 addresses, or an empty
      *         array if resolution failed.
      */
-   public function resolve(string $hostname): array;
+    public function resolve(string $hostname): array;
 }

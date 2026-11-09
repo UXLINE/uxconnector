@@ -13,17 +13,15 @@ final class SyncCheckpointRepository implements SyncCheckpointRepositoryInterfac
 {
     private const TABLE = 'glpi_plugin_uxconnector_sync_checkpoints';
 
-    public function __construct(private readonly DBmysql $db)
-    {
-    }
+    public function __construct(private readonly DBmysql $db) {}
 
     public function findCursor(SyncJobId $syncJobId): ?string
     {
         $rows = $this->db->request([
-           'SELECT' => ['cursor_value'],
-           'FROM' => self::TABLE,
-           'WHERE' => ['plugin_uxconnector_syncjobs_id' => $syncJobId->value()],
-           'LIMIT' => 1,
+            'SELECT' => ['cursor_value'],
+            'FROM' => self::TABLE,
+            'WHERE' => ['plugin_uxconnector_syncjobs_id' => $syncJobId->value()],
+            'LIMIT' => 1,
         ]);
 
         foreach ($rows as $row) {
@@ -42,20 +40,20 @@ final class SyncCheckpointRepository implements SyncCheckpointRepositoryInterfac
         }
 
         $existing = $this->db->request([
-           'SELECT' => ['id'],
-           'FROM' => self::TABLE,
-           'WHERE' => ['plugin_uxconnector_syncjobs_id' => $syncJobId->value()],
-           'LIMIT' => 1,
+            'SELECT' => ['id'],
+            'FROM' => self::TABLE,
+            'WHERE' => ['plugin_uxconnector_syncjobs_id' => $syncJobId->value()],
+            'LIMIT' => 1,
         ]);
 
         foreach ($existing as $row) {
             $ok = $this->db->update(
                 self::TABLE,
                 [
-                  'cursor_value' => $cursor,
-                  'date_mod' => date('Y-m-d H:i:s'),
-            ],
-                ['id' => (int) $row['id']]
+                    'cursor_value' => $cursor,
+                    'date_mod' => date('Y-m-d H:i:s'),
+                ],
+                ['id' => (int) $row['id']],
             );
             if (!$ok) {
                 throw new \RuntimeException('Unable to update synchronization checkpoint.');
@@ -64,9 +62,9 @@ final class SyncCheckpointRepository implements SyncCheckpointRepositoryInterfac
         }
 
         $ok = $this->db->insert(self::TABLE, [
-           'plugin_uxconnector_syncjobs_id' => $syncJobId->value(),
-           'cursor_value' => $cursor,
-           'date_mod' => date('Y-m-d H:i:s'),
+            'plugin_uxconnector_syncjobs_id' => $syncJobId->value(),
+            'cursor_value' => $cursor,
+            'date_mod' => date('Y-m-d H:i:s'),
         ]);
         if (!$ok) {
             throw new \RuntimeException('Unable to persist synchronization checkpoint.');

@@ -24,87 +24,98 @@ use GlpiPlugin\Uxconnector\Infrastructure\Engine\EngineServiceProvider;
 
 final class SemanticServiceProvider
 {
-   public static function repository(): SemanticEngineConfigRepositoryInterface {
-       return new SemanticEngineConfigRepository(
-           new SemanticEngineConfigPersistenceMapper()
-       );
-   }
+    public static function repository(): SemanticEngineConfigRepositoryInterface
+    {
+        return new SemanticEngineConfigRepository(
+            new SemanticEngineConfigPersistenceMapper(),
+        );
+    }
 
-   public static function connectionValidator(): SemanticEngineConnectionValidator {
-       return new SemanticEngineConnectionValidator(
-           EngineServiceProvider::authConfigRepository()
-       );
-   }
+    public static function connectionValidator(): SemanticEngineConnectionValidator
+    {
+        return new SemanticEngineConnectionValidator(
+            EngineServiceProvider::authConfigRepository(),
+        );
+    }
 
-   public static function createService(): CreateSemanticEngineConfigService {
-       return new CreateSemanticEngineConfigService(
-           self::repository(),
-           self::connectionValidator()
-       );
-   }
+    public static function createService(): CreateSemanticEngineConfigService
+    {
+        return new CreateSemanticEngineConfigService(
+            self::repository(),
+            self::connectionValidator(),
+        );
+    }
 
-   public static function updateService(): UpdateSemanticEngineConfigService {
-       return new UpdateSemanticEngineConfigService(
-           self::repository(),
-           self::connectionValidator()
-       );
-   }
+    public static function updateService(): UpdateSemanticEngineConfigService
+    {
+        return new UpdateSemanticEngineConfigService(
+            self::repository(),
+            self::connectionValidator(),
+        );
+    }
 
-   public static function activateService(): ActivateSemanticEngineConfigService {
-       return new ActivateSemanticEngineConfigService(
-           self::repository(),
-           self::connectionValidator()
-       );
-   }
+    public static function activateService(): ActivateSemanticEngineConfigService
+    {
+        return new ActivateSemanticEngineConfigService(
+            self::repository(),
+            self::connectionValidator(),
+        );
+    }
 
-   public static function disableService(): DisableSemanticEngineConfigService {
-       return new DisableSemanticEngineConfigService(
-           self::repository()
-       );
-   }
-   public static function classificationProvider(): SemanticClassificationProviderInterface {
-       $config = self::repository()->findActive();
+    public static function disableService(): DisableSemanticEngineConfigService
+    {
+        return new DisableSemanticEngineConfigService(
+            self::repository(),
+        );
+    }
+    public static function classificationProvider(): SemanticClassificationProviderInterface
+    {
+        $config = self::repository()->findActive();
 
-      if ($config === null) {
-          throw new \RuntimeException(
-              'No active semantic engine configuration is available.'
-          );
-      }
+        if ($config === null) {
+            throw new \RuntimeException(
+                'No active semantic engine configuration is available.',
+            );
+        }
 
-       $connection = self::connectionValidator()->requireUsable(
-           new AuthConfigId($config->authConfigReference())
-       );
+        $connection = self::connectionValidator()->requireUsable(
+            new AuthConfigId($config->authConfigReference()),
+        );
 
-       return new OpenAiCompatibleSemanticProvider(
-           $config,
-           $connection,
-           EngineServiceProvider::httpEngine()
-       );
-   }
-   public static function ticketSource(): SemanticTicketSourceInterface {
-       return new LocalGlpiSemanticTicketSource();
-   }
+        return new OpenAiCompatibleSemanticProvider(
+            $config,
+            $connection,
+            EngineServiceProvider::httpEngine(),
+        );
+    }
+    public static function ticketSource(): SemanticTicketSourceInterface
+    {
+        return new LocalGlpiSemanticTicketSource();
+    }
 
-   public static function analysisService(): AnalyzeSemanticTicketClassificationService {
-       $config = self::repository()->findActive();
+    public static function analysisService(): AnalyzeSemanticTicketClassificationService
+    {
+        $config = self::repository()->findActive();
 
-      if ($config === null) {
-          throw new \RuntimeException(
-              'No active semantic engine configuration is available.'
-          );
-      }
+        if ($config === null) {
+            throw new \RuntimeException(
+                'No active semantic engine configuration is available.',
+            );
+        }
 
-       return new AnalyzeSemanticTicketClassificationService(
-           self::ticketSource(),
-           self::classificationProvider(),
-           $config
-       );
-   }
-   public static function prepareClassificationService(): PrepareSemanticTicketClassificationService {
-       return new PrepareSemanticTicketClassificationService(self::ticketSource());
-   }
+        return new AnalyzeSemanticTicketClassificationService(
+            self::ticketSource(),
+            self::classificationProvider(),
+            $config,
+        );
+    }
+    public static function prepareClassificationService(): PrepareSemanticTicketClassificationService
+    {
+        return new PrepareSemanticTicketClassificationService(self::ticketSource());
+    }
 
-   public static function finalizeClassificationService(): FinalizeSemanticTicketClassificationService {
-       return new FinalizeSemanticTicketClassificationService(self::ticketSource());
-   }
+    public static function finalizeClassificationService(): FinalizeSemanticTicketClassificationService
+    {
+        return new FinalizeSemanticTicketClassificationService(self::ticketSource());
+    }
 }

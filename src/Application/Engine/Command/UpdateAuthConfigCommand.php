@@ -18,13 +18,12 @@ use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
  */
 final readonly class UpdateAuthConfigCommand
 {
-   public function __construct(
+    public function __construct(
         public AuthConfigId $id,
         public AuthConfigName $name,
         public Endpoint $endpoint,
         public AuthMethod $authMethod,
         public TestPath $testPath,
         public ?string $plaintextSecret = null
-    ) {
-   }
+    ) {}
 }

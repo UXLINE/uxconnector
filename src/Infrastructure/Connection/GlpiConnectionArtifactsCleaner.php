@@ -16,18 +16,19 @@ use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\ObjectLinkItem;
  */
 final class GlpiConnectionArtifactsCleaner implements AuthConfigArtifactsCleanerInterface
 {
-   public function cleanup(AuthConfigId $authConfigId): void {
-       $model = new ObjectLinkItem();
-       $rows = $model->find(['auth_config_reference' => $authConfigId->value()]);
+    public function cleanup(AuthConfigId $authConfigId): void
+    {
+        $model = new ObjectLinkItem();
+        $rows = $model->find(['auth_config_reference' => $authConfigId->value()]);
 
-      foreach ($rows as $row) {
-          $id = (int) ($row['id'] ?? 0);
-         if ($id <= 0) {
-            continue;
-         }
-         if (!$model->delete(['id' => $id], true)) {
-             throw new \RuntimeException(sprintf('Failed to purge ObjectLink #%d while deleting the connection.', $id));
-         }
-      }
-   }
+        foreach ($rows as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            if (!$model->delete(['id' => $id], true)) {
+                throw new \RuntimeException(sprintf('Failed to purge ObjectLink #%d while deleting the connection.', $id));
+            }
+        }
+    }
 }

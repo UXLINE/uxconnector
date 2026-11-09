@@ -43,7 +43,7 @@ final readonly class CreateSyncJobCommand
     /**
      * @param list<FieldMapping> $fieldMappings
      */
-   public function __construct(
+    public function __construct(
         public SyncJobName $name,
         public AuthConfigReference $authConfigReference,
         public SyncDirection $direction,
@@ -61,6 +61,5 @@ final readonly class CreateSyncJobCommand
         public ?string $externalObjectType = null,
         public ?OutboundConfig $outboundConfig = null,
         public ?string $webhookKey = null
-    ) {
-   }
+    ) {}
 }

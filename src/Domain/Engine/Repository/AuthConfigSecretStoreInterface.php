@@ -23,8 +23,8 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
  * Deliberately kept separate from AuthConfigRepositoryInterface: the
  * AuthConfig aggregate itself never carries any secret material, in
  * clear or protected form (see AuthConfig's class doc-block). Only
- * this dedicated store — backed by its own, more tightly
- * access-controlled table — ever persists a protected secret.
+ * this dedicated store - backed by its own, more tightly
+ * access-controlled table - ever persists a protected secret.
  *
  * This interface never accepts nor returns a plaintext secret: the
  * plaintext only ever exists transiently inside the Application
@@ -32,9 +32,9 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
  */
 interface AuthConfigSecretStoreInterface
 {
-   public function put(AuthConfigId $id, string $protectedSecret): void;
+    public function put(AuthConfigId $id, string $protectedSecret): void;
 
-   public function get(AuthConfigId $id): ?string;
+    public function get(AuthConfigId $id): ?string;
 
-   public function delete(AuthConfigId $id): void;
+    public function delete(AuthConfigId $id): void;
 }

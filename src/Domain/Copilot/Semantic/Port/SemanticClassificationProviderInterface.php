@@ -13,5 +13,5 @@ interface SemanticClassificationProviderInterface
      * @param list<SemanticTicketInput> $tickets
      * @return list<SemanticTicketClassification>
      */
-   public function classify(array $tickets): array;
+    public function classify(array $tickets): array;
 }

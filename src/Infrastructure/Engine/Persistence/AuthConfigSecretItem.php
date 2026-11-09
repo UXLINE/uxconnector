@@ -33,21 +33,24 @@ final class AuthConfigSecretItem extends CommonDBTM
 {
     // See AuthConfigItem::$rightname's comment: must stay in sync
     // with PluginUxconnectorProfile::getRightDefinitions().
-   public static $rightname = 'plugin_uxconnector_authconfig';
+    public static $rightname = 'plugin_uxconnector_authconfig';
 
-   public static function getTable($classname = null): string {
-       return 'glpi_plugin_uxconnector_authconfig_secrets';
-   }
+    public static function getTable($classname = null): string
+    {
+        return 'glpi_plugin_uxconnector_authconfig_secrets';
+    }
 
-   public static function getTypeName($nb = 0): string {
-       return \_n('Authentication secret', 'Authentication secrets', $nb, 'uxconnector');
-   }
+    public static function getTypeName($nb = 0): string
+    {
+        return \_n('Authentication secret', 'Authentication secrets', $nb, 'uxconnector');
+    }
 
     /**
      * Never expose the protected payload through the generic search
      * engine or list views: this table is not meant to be browsable.
      */
-   public function rawSearchOptions(): array {
-       return [];
-   }
+    public function rawSearchOptions(): array
+    {
+        return [];
+    }
 }

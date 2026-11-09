@@ -32,21 +32,23 @@ enum AuthConfigStatus: string
     case DISABLED = 'disabled';
     case ERROR = 'error';
 
-   public function label(): string {
-       return match ($this) {
-           self::DRAFT => 'Brouillon',
-           self::TESTING => 'En cours de test',
-           self::ACTIVE => 'Active',
-           self::DISABLED => 'Désactivée',
-           self::ERROR => 'En erreur',
-       };
-   }
+    public function label(): string
+    {
+        return match ($this) {
+            self::DRAFT => 'Brouillon',
+            self::TESTING => 'En cours de test',
+            self::ACTIVE => 'Active',
+            self::DISABLED => 'Désactivée',
+            self::ERROR => 'En erreur',
+        };
+    }
 
     /**
      * Whether an AuthConfig in this status may be used by the
      * GenericHttpEngine to authenticate an outgoing request.
      */
-   public function isUsable(): bool {
-       return $this === self::ACTIVE;
-   }
+    public function isUsable(): bool
+    {
+        return $this === self::ACTIVE;
+    }
 }

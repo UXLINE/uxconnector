@@ -200,6 +200,7 @@
                     class="form-control font-monospace"
                 >{{ syncjob.fieldMappingsJson }}</textarea>
 
+                <p class="form-text">Champs Fields : <code>fields:Libellé exact</code> (voir la liste active). Références de lignes importées : <code>link:glpi_rest_v1_location_telecom_line</code> dans la transformation du champ <code>lines_id</code>, avec l’ID source GLPI 10.</p>
                 <details class="mt-3">
                     <summary>
                         {{ __('Allowed GLPI target fields', 'uxconnector') }}
@@ -230,6 +231,7 @@
                     rows="10"
                     class="form-control font-monospace"
                 >{{ syncjob.paginationJson }}</textarea>
+                <p class="form-text">Zendesk Sujet: if automatic field discovery fails, preserve the existing pagination configuration and add <code>"zendesk_topic_field_id": "123456789"</code> inside <code>options</code> (use your own Zendesk field ID). The dedicated field is validated as a tagger before reading its options.</p>
             </div>
         </div>
 
@@ -259,6 +261,7 @@
             </div>
         </div>
 
+        {% include '@uxconnector/sync/syncjob/schedule.html.twig' %}
         <div class="d-flex gap-2">
             <button
                 type="submit"

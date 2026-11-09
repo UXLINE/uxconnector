@@ -14,30 +14,34 @@ namespace GlpiPlugin\Uxconnector\Domain\Sync\ValueObject;
  */
 final readonly class CollectionPath
 {
-   private const MAX_LENGTH = 255;
+    private const MAX_LENGTH = 255;
 
-   private string $value;
+    private string $value;
 
-   public function __construct(string $value) {
-       $trimmed = trim($value);
-      if ($trimmed === '') {
-          throw new \InvalidArgumentException('CollectionPath must not be empty; use "$" for the response root.');
-      }
-      if (mb_strlen($trimmed) > self::MAX_LENGTH) {
-          throw new \InvalidArgumentException(sprintf('CollectionPath must not exceed %d characters.', self::MAX_LENGTH));
-      }
-       $this->value = $trimmed;
-   }
+    public function __construct(string $value)
+    {
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            throw new \InvalidArgumentException('CollectionPath must not be empty; use "$" for the response root.');
+        }
+        if (mb_strlen($trimmed) > self::MAX_LENGTH) {
+            throw new \InvalidArgumentException(sprintf('CollectionPath must not exceed %d characters.', self::MAX_LENGTH));
+        }
+        $this->value = $trimmed;
+    }
 
-   public static function root(): self {
-       return new self('$');
-   }
+    public static function root(): self
+    {
+        return new self('$');
+    }
 
-   public function value(): string {
-       return $this->value;
-   }
+    public function value(): string
+    {
+        return $this->value;
+    }
 
-   public function isRoot(): bool {
-       return $this->value === '$';
-   }
+    public function isRoot(): bool
+    {
+        return $this->value === '$';
+    }
 }

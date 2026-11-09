@@ -9,5 +9,5 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncExecution;
 
 interface SyncJobExecutorInterface
 {
-   public function execute(ExecuteSyncJobCommand $command): SyncExecution;
+    public function execute(ExecuteSyncJobCommand $command): SyncExecution;
 }

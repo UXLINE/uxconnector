@@ -46,31 +46,32 @@ final class AuthConfigPersistenceMapper
      *
      * @param array<string, mixed> $row Raw row as returned by CommonDBTM::fields.
      */
-   public function toDomain(array $row): AuthConfig {
-       $this->assertHasRequiredFields($row);
+    public function toDomain(array $row): AuthConfig
+    {
+        $this->assertHasRequiredFields($row);
 
-       $authMethod = AuthMethod::tryFrom((string) $row['auth_method']);
-       $status = AuthConfigStatus::tryFrom((string) $row['status']);
+        $authMethod = AuthMethod::tryFrom((string) $row['auth_method']);
+        $status = AuthConfigStatus::tryFrom((string) $row['status']);
 
-      if ($authMethod === null || $status === null) {
-          throw new \RuntimeException(sprintf(
-              'Corrupted AuthConfig row #%s: unknown auth_method or status value.',
-              (string) $row['id']
-          ));
-      }
+        if ($authMethod === null || $status === null) {
+            throw new \RuntimeException(sprintf(
+                'Corrupted AuthConfig row #%s: unknown auth_method or status value.',
+                (string) $row['id'],
+            ));
+        }
 
-       return AuthConfig::reconstitute(
-           new AuthConfigId((int) $row['id']),
-           new AuthConfigName((string) $row['name']),
-           new Endpoint((string) $row['endpoint']),
-           $authMethod,
-           $status,
-           new DateTimeImmutable((string) $row['date_creation']),
-           new DateTimeImmutable((string) $row['date_mod']),
-           new TestPath((string) ($row['test_path'] ?? '/')),
-           (string) ($row['connector_id'] ?? 'custom')
-       );
-   }
+        return AuthConfig::reconstitute(
+            new AuthConfigId((int) $row['id']),
+            new AuthConfigName((string) $row['name']),
+            new Endpoint((string) $row['endpoint']),
+            $authMethod,
+            $status,
+            new DateTimeImmutable((string) $row['date_creation']),
+            new DateTimeImmutable((string) $row['date_mod']),
+            new TestPath((string) ($row['test_path'] ?? '/')),
+            (string) ($row['connector_id'] ?? 'custom'),
+        );
+    }
 
     /**
      * Converts an AuthConfig aggregate into the flat array expected
@@ -78,24 +79,25 @@ final class AuthConfigPersistenceMapper
      *
      * @return array<string, int|string>
      */
-   public function toPersistence(AuthConfig $authConfig): array {
-       $data = [
-           'name'        => $authConfig->name()->value(),
-           'endpoint'    => $authConfig->endpoint()->value(),
-           'test_path'   => $authConfig->testPath()->value(),
-           'connector_id' => $authConfig->connectorId(),
-           'auth_method' => $authConfig->authMethod()->value,
-           'status'      => $authConfig->status()->value,
-       ];
+    public function toPersistence(AuthConfig $authConfig): array
+    {
+        $data = [
+            'name'        => $authConfig->name()->value(),
+            'endpoint'    => $authConfig->endpoint()->value(),
+            'test_path'   => $authConfig->testPath()->value(),
+            'connector_id' => $authConfig->connectorId(),
+            'auth_method' => $authConfig->authMethod()->value,
+            'status'      => $authConfig->status()->value,
+        ];
 
-       $id = $authConfig->id();
+        $id = $authConfig->id();
 
-       if ($id !== null) {
-           $data['id'] = $id->value();
-       }
+        if ($id !== null) {
+            $data['id'] = $id->value();
+        }
 
-       return $data;
-   }
+        return $data;
+    }
 
     /**
      * Assigns the identifier generated at persistence time onto the
@@ -104,21 +106,23 @@ final class AuthConfigPersistenceMapper
      *
      * @throws InvalidAuthConfigStateException if the aggregate already has an id.
      */
-   public function assignGeneratedId(AuthConfig $authConfig, int $generatedId): void {
-       $authConfig->assignId(new AuthConfigId($generatedId));
-   }
+    public function assignGeneratedId(AuthConfig $authConfig, int $generatedId): void
+    {
+        $authConfig->assignId(new AuthConfigId($generatedId));
+    }
 
     /**
      * @param array<string, mixed> $row
      */
-   private function assertHasRequiredFields(array $row): void {
-      foreach (['id', 'name', 'endpoint', 'auth_method', 'status', 'date_creation', 'date_mod'] as $field) {
-         if (!array_key_exists($field, $row)) {
-            throw new \RuntimeException(sprintf(
-                'Cannot hydrate AuthConfig: missing "%s" field in persisted row.',
-                $field
-            ));
-         }
-      }
-   }
+    private function assertHasRequiredFields(array $row): void
+    {
+        foreach (['id', 'name', 'endpoint', 'auth_method', 'status', 'date_creation', 'date_mod'] as $field) {
+            if (!array_key_exists($field, $row)) {
+                throw new \RuntimeException(sprintf(
+                    'Cannot hydrate AuthConfig: missing "%s" field in persisted row.',
+                    $field,
+                ));
+            }
+        }
+    }
 }

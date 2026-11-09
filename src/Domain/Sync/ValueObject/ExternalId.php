@@ -16,7 +16,7 @@ namespace GlpiPlugin\Uxconnector\Domain\Sync\ValueObject;
 
 /**
  * The stable, external-system-issued identifier of a single record
- * (e.g. a remote record ID) — the actual value
+ * (e.g. a remote record ID) - the actual value
  * `ObjectLink` uses to remember which GLPI item a given external
  * record was already reconciled to.
  *
@@ -28,36 +28,40 @@ namespace GlpiPlugin\Uxconnector\Domain\Sync\ValueObject;
  */
 final readonly class ExternalId
 {
-   private const MAX_LENGTH = 191; // fits a utf8mb4 unique index on MySQL/MariaDB
+    private const MAX_LENGTH = 191; // fits a utf8mb4 unique index on MySQL/MariaDB
 
-   private string $value;
+    private string $value;
 
-   public function __construct(string $value) {
-       $trimmed = trim($value);
+    public function __construct(string $value)
+    {
+        $trimmed = trim($value);
 
-      if ($trimmed === '') {
-          throw new \InvalidArgumentException('ExternalId must not be empty.');
-      }
+        if ($trimmed === '') {
+            throw new \InvalidArgumentException('ExternalId must not be empty.');
+        }
 
-      if (mb_strlen($trimmed) > self::MAX_LENGTH) {
-          throw new \InvalidArgumentException(sprintf(
-              'ExternalId must not exceed %d characters.',
-              self::MAX_LENGTH
-          ));
-      }
+        if (mb_strlen($trimmed) > self::MAX_LENGTH) {
+            throw new \InvalidArgumentException(sprintf(
+                'ExternalId must not exceed %d characters.',
+                self::MAX_LENGTH,
+            ));
+        }
 
-       $this->value = $trimmed;
-   }
+        $this->value = $trimmed;
+    }
 
-   public function value(): string {
-       return $this->value;
-   }
+    public function value(): string
+    {
+        return $this->value;
+    }
 
-   public function equals(self $other): bool {
-       return $this->value === $other->value;
-   }
+    public function equals(self $other): bool
+    {
+        return $this->value === $other->value;
+    }
 
-   public function __toString(): string {
-       return $this->value;
-   }
+    public function __toString(): string
+    {
+        return $this->value;
+    }
 }

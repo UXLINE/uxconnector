@@ -10,16 +10,19 @@ enum PaginationType: string
     case NONE = 'none';
     case OFFSET = 'offset';
     case COUNT_OFFSET = 'count_offset';
+    case RANGE = 'range';
     case CURSOR = 'cursor';
     case NEXT_LINK = 'next_link';
 
-   public function label(): string {
-       return match ($this) {
-           self::NONE => 'Aucune',
-           self::OFFSET => 'Offset',
-           self::COUNT_OFFSET => 'Offset par taille de page',
-           self::CURSOR => 'Curseur',
-           self::NEXT_LINK => 'Lien suivant',
-       };
-   }
+    public function label(): string
+    {
+        return match ($this) {
+            self::NONE => 'Aucune',
+            self::OFFSET => 'Offset',
+            self::COUNT_OFFSET => 'Offset par taille de page',
+            self::RANGE => 'Plage inclusive',
+            self::CURSOR => 'Curseur',
+            self::NEXT_LINK => 'Lien suivant',
+        };
+    }
 }

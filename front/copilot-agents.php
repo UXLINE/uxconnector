@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use GlpiPlugin\Uxconnector\Infrastructure\Copilot\CopilotAgentControllerFactory;
+use GlpiPlugin\Uxconnector\Bootstrap\CopilotAgentControllerFactory;
 
 $controller = CopilotAgentControllerFactory::create();
 

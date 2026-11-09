@@ -1,64 +1,86 @@
-{# ---------------------------------------------------------------------
-   UXConnector plugin for GLPI
-   ---------------------------------------------------------------------
-   Fragment HTML pur : aucun {% extends %} (même REX que
-   templates/sync/syncjob/list.html.twig).
-
-   Contexte attendu : `syncJobId` (int), `executions` (list<SyncExecutionDTO>)
-   fourni par SyncJobController::history(). Vue passive uniquement
-   (RULE-048) : aucun accès Repository, aucun calcul métier, aucune
-   Entité exposée.
-   --------------------------------------------------------------------- #}
-
 <div class="uxconnector-syncexecution-history">
-    <h2>{{ __('Execution history', 'uxconnector') }}</h2>
-    <p>
-        <a href="syncjob.php" class="btn btn-sm btn-outline-secondary">
-            {{ __('← Back to synchronizations', 'uxconnector') }}
-        </a>
-    </p>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">{{ __('Execution history', 'uxconnector') }}</h2>
+            <a href="syncjob.php" class="btn btn-sm btn-outline-secondary">{{ __('← Back to synchronizations', 'uxconnector') }}</a>
+        </div>
+        {% if can_update %}
+            <div class="d-flex flex-wrap gap-2">
+                <form method="post" action="syncjob.php" class="uxconnector-run-form">
+                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="id" value="{{ syncJobId }}">
+                    <button type="submit" name="run_now" value="1" class="btn btn-outline-primary">
+                        <i class="ti ti-player-play"></i> {{ __('Run now', 'uxconnector') }}
+                    </button>
+                </form>
+                <form method="post" action="syncjob.php" class="uxconnector-run-form">
+                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="id" value="{{ syncJobId }}">
+                    <button type="submit" name="full_replay" value="1" class="btn btn-warning" onclick="return confirm('{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('js') }}')">
+                        <i class="ti ti-refresh"></i> {{ __('Replay from start', 'uxconnector') }}
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+    {% if can_update %}
+        <div class="alert alert-info py-2">
+            {{ __('Replay from start resets only the source checkpoint, preserves object links for idempotence, and queues a new background execution.', 'uxconnector') }}
+        </div>
+    {% endif %}
 
     {% if executions|length == 0 %}
-        <p class="uxconnector-empty-state">
-            {{ __('No execution has been recorded yet for this synchronization job.', 'uxconnector') }}
-        </p>
+        <p class="uxconnector-empty-state">{{ __('No execution has been recorded yet for this synchronization job.', 'uxconnector') }}</p>
     {% else %}
         <table class="table card-table">
-            <thead>
-                <tr>
-                    <th>{{ __('Started at', 'uxconnector') }}</th>
-                    <th>{{ __('Duration', 'uxconnector') }}</th>
-                    <th>{{ __('Status', 'uxconnector') }}</th>
-                    <th>{{ __('Processed', 'uxconnector') }}</th>
-                    <th>{{ __('Failed', 'uxconnector') }}</th>
-                    <th>{{ __('Error', 'uxconnector') }}</th>
-                </tr>
-            </thead>
+            <thead><tr>
+                <th>ID</th><th>{{ __('Started at', 'uxconnector') }}</th><th>{{ __('Duration', 'uxconnector') }}</th>
+                <th>{{ __('Status', 'uxconnector') }}</th><th>{{ __('Created', 'uxconnector') }}</th>
+                <th>{{ __('Updated', 'uxconnector') }}</th><th>{{ __('Skipped', 'uxconnector') }}</th>
+                <th>{{ __('Warnings', 'uxconnector') }}</th><th>{{ __('Failed', 'uxconnector') }}</th>
+                <th>{{ __('Checkpoint', 'uxconnector') }}</th><th>{{ __('Error', 'uxconnector') }}</th><th>{{ __('Details', 'uxconnector') }}</th>
+            </tr></thead>
             <tbody>
-                {% for execution in executions %}
-                    <tr>
-                        <td>{{ execution.startedAt }}</td>
-                        <td>
-                            {%- if execution.durationSeconds is not null -%}
-                                {{ execution.durationSeconds }}&nbsp;s
-                            {%- else -%}
-                                {{ __('In progress', 'uxconnector') }}
-                            {%- endif -%}
-                        </td>
-                        <td>
-                            <span class="badge {{ execution.status == 'success' ? 'bg-green' : (execution.status == 'partial' ? 'bg-orange' : (execution.status == 'failed' ? 'bg-red' : 'bg-secondary')) }}">
-                                {{ execution.statusLabel }}
-                            </span>
-                        </td>
-                        <td>{{ execution.itemsProcessed }}</td>
-                        <td>{{ execution.itemsFailed }}</td>
-                        <td>
-                            {% if execution.errorMessage %}
-                                <code>{{ execution.errorMessage }}</code>
+            {% for execution in executions %}
+                <tr>
+                    <td>#{{ execution.id }}</td>
+                    <td>{{ execution.startedAt }}<br><small>{{ execution.triggerSource }}</small></td>
+                    <td>{% if execution.durationSeconds is not null %}{{ execution.durationSeconds }} s{% else %}{{ __('In progress', 'uxconnector') }}{% endif %}</td>
+                    <td><span class="badge {{ execution.status == 'success' ? 'bg-green' : (execution.status == 'success_with_warnings' or execution.status == 'partial' ? 'bg-orange' : (execution.status == 'failed' ? 'bg-red' : (execution.status == 'interrupted' ? 'bg-yellow' : 'bg-secondary'))) }}">{{ execution.statusLabel }}</span></td>
+                    <td>{{ execution.itemsCreated }}</td><td>{{ execution.itemsUpdated }}</td><td>{{ execution.itemsSkipped }}</td>
+                    <td>{{ execution.itemsWarnings }}</td><td>{{ execution.itemsFailed }}</td>
+                    <td>
+                        {% if execution.page > 0 %}p. {{ execution.page }}{% endif %}
+                        {% if execution.lastSuccessfulSourceId %}<br><small>last={{ execution.lastSuccessfulSourceId }}</small>{% endif %}
+                        {% if execution.resumeAvailable %}<br><span class="badge bg-yellow">{{ __('Resumable', 'uxconnector') }}</span>{% endif %}
+                    </td>
+                    <td>{% if execution.errorMessage %}<code>{{ execution.errorMessage }}</code>{% endif %}</td>
+                    <td>
+                        {% if execution.itemsFailed > 0 or execution.itemsWarnings > 0 %}
+                            <a class="btn btn-sm btn-outline-secondary" href="syncexecution.failures.php?id={{ execution.id }}">{{ __('Failed items', 'uxconnector') }}</a>
+                        {% endif %}
+                        {% if can_update and execution.status == 'running' %}
+                            {% if execution.stopRequested %}
+                                <span class="badge bg-yellow">{{ __('Stop requested', 'uxconnector') }}</span>
+                            {% else %}
+                                <form method="post" action="syncexecution.stop.php" style="display:inline-block" onsubmit="return confirm('{{ __('Request a safe stop of this execution? The current item finishes before the worker stops.', 'uxconnector')|e('js') }}')">
+                                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="id" value="{{ execution.id }}">
+                                    <input type="hidden" name="job_id" value="{{ syncJobId }}">
+                                    <button class="btn btn-sm btn-outline-danger" type="submit"><i class="ti ti-player-stop"></i> {{ __('Stop execution', 'uxconnector') }}</button>
+                                </form>
                             {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
+                        {% endif %}
+                        {% if execution.resumeAvailable %}
+                            <form method="post" action="syncexecution.resume.php" style="display:inline-block">
+                                <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="id" value="{{ execution.id }}">
+                                <button class="btn btn-sm btn-warning" type="submit">{{ __('Resume', 'uxconnector') }}</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
             </tbody>
         </table>
     {% endif %}

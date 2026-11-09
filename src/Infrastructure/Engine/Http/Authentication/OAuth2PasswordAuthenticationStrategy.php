@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication;
 
 use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpRequest;
+use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpResponse;
 
 /** OAuth2 Resource Owner Password grant, required by GLPI 11 HL API for unattended user-bound API access. */
-final class OAuth2PasswordAuthenticationStrategy implements AuthenticationStrategy
+final class OAuth2PasswordAuthenticationStrategy implements RenewableSessionAuthenticationStrategy
 {
-   public function __construct(
+    public function __construct(
         private readonly OAuth2TokenClient $tokenClient,
         private readonly string $tokenUrl,
         private readonly string $clientId,
@@ -19,15 +20,23 @@ final class OAuth2PasswordAuthenticationStrategy implements AuthenticationStrate
         private readonly ?string $scope,
     ) {}
 
-   public function authenticate(HttpRequest $request): HttpRequest {
-       $token = $this->tokenClient->fetchPasswordToken(
-           $this->tokenUrl,
-           $this->clientId,
-           $this->clientSecret,
-           $this->username,
-           $this->password,
-           $this->scope,
-       );
-       return $request->withHeader('Authorization', 'Bearer ' . $token);
-   }
+    public function responseRequiresRenewal(HttpResponse $response): bool
+    {
+        return $response->statusCode === 401;
+    }
+    public function invalidateSession(): void {}
+    public function closeSession(): void {}
+
+    public function authenticate(HttpRequest $request): HttpRequest
+    {
+        $token = $this->tokenClient->fetchPasswordToken(
+            $this->tokenUrl,
+            $this->clientId,
+            $this->clientSecret,
+            $this->username,
+            $this->password,
+            $this->scope,
+        );
+        return $request->withHeader('Authorization', 'Bearer ' . $token);
+    }
 }

@@ -22,7 +22,8 @@ enum HttpMethod: string
     case PATCH = 'PATCH';
     case DELETE = 'DELETE';
 
-   public function allowsRequestBody(): bool {
-       return $this !== self::GET;
-   }
+    public function allowsRequestBody(): bool
+    {
+        return $this !== self::GET;
+    }
 }

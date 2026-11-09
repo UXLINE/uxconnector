@@ -9,12 +9,12 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Semantic\ValueObject\SemanticEngineCon
 
 interface SemanticEngineConfigRepositoryInterface
 {
-   public function save(SemanticEngineConfig $config): SemanticEngineConfig;
-   public function findById(SemanticEngineConfigId $id): ?SemanticEngineConfig;
+    public function save(SemanticEngineConfig $config): SemanticEngineConfig;
+    public function findById(SemanticEngineConfigId $id): ?SemanticEngineConfig;
 
     /** @return list<SemanticEngineConfig> */
-   public function findAll(): array;
+    public function findAll(): array;
 
-   public function findActive(): ?SemanticEngineConfig;
-   public function delete(SemanticEngineConfigId $id): void;
+    public function findActive(): ?SemanticEngineConfig;
+    public function delete(SemanticEngineConfigId $id): void;
 }

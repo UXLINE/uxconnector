@@ -14,9 +14,10 @@ use GlpiPlugin\Uxconnector\Infrastructure\Template\Transform\JiraAdfToTextTransf
 final class TemplateFieldTransformProvider
 {
     /** @return list<FieldTransformInterface> */
-   public static function extensions(): array {
-       return [
-           new JiraAdfToTextTransform(),
-       ];
-   }
+    public static function extensions(): array
+    {
+        return [
+            new JiraAdfToTextTransform(),
+        ];
+    }
 }

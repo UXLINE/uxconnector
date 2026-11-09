@@ -27,7 +27,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ReconciliationContext;
  * reconciliation strategy.
  *
  * CORRECTIF (réconciliation, revue de code externe) : $context bundles
- * ExternalId alongside TargetItemtype/MatchField — an implementation
+ * ExternalId alongside TargetItemtype/MatchField - an implementation
  * is now expected to reconcile via a stable external identifier
  * (ObjectLink) rather than a MatchField-based SQL lookup alone, which
  * risked silently matching the wrong GLPI record when several shared
@@ -38,7 +38,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ReconciliationContext;
  * for an INBOUND SyncJob it is a GLPI itemtype
  * (Infrastructure\Sync\Writer\GlpiItemWriter, restricted to
  * TargetItemtype's curated allow-list); for OUTBOUND it could be the
- * external system through HttpEngineInterface (not yet implemented —
+ * external system through HttpEngineInterface (not yet implemented -
  * this plugin currently only supports INBOUND synchronization end to
  * end).
  */
@@ -49,5 +49,5 @@ interface SyncItemWriterInterface
      *
      * @return bool true if the record was written successfully.
      */
-   public function write(ReconciliationContext $context, array $mappedFields): bool;
+    public function write(ReconciliationContext $context, array $mappedFields): bool;
 }

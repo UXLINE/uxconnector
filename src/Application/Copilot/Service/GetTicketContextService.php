@@ -8,13 +8,14 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Port\ItsmDataProviderInterface;
 
 final readonly class GetTicketContextService
 {
-   public function __construct(private ItsmDataProviderInterface $provider) {}
+    public function __construct(private ItsmDataProviderInterface $provider) {}
 
     /** @return array<string,mixed> */
-   public function execute(int $ticketId): array {
-      if ($ticketId <= 0) {
-          throw new \InvalidArgumentException('ticketId must be a positive integer.');
-      }
-       return $this->provider->getTicketContext($ticketId);
-   }
+    public function execute(int $ticketId): array
+    {
+        if ($ticketId <= 0) {
+            throw new \InvalidArgumentException('ticketId must be a positive integer.');
+        }
+        return $this->provider->getTicketContext($ticketId);
+    }
 }

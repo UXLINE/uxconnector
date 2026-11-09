@@ -38,9 +38,16 @@
             <div class="mb-3"><label class="form-label">{{ __('Name', 'uxconnector') }}</label><input name="name" class="form-control" maxlength="128" required value="{{ defaults.name }}" placeholder="JIRA COAXIS"></div>
             <div class="mb-3"><label class="form-label">{{ __('Endpoint', 'uxconnector') }}</label><input name="endpoint" type="url" class="form-control" required value="{{ defaults.endpoint }}"><div class="form-text">{{ __('Replace placeholders such as {cloudId} with the value for this environment.', 'uxconnector') }}</div></div>
             <div class="mb-3"><label class="form-label">{{ __('Test path', 'uxconnector') }}</label><input name="test_path" class="form-control" required value="{{ defaults.test_path }}"><div class="form-text">{{ __('Authenticated resource used only by the Test action. It must return HTTP 2xx when credentials are valid.', 'uxconnector') }}</div></div>
-            <div class="mb-3"><label class="form-label">{{ __('Authentication method', 'uxconnector') }}</label><select name="auth_method" class="form-select" required>{% for method in authMethods %}<option value="{{ method.value }}" {% if defaults.auth_method == method.value %}selected{% endif %}>{{ method.label() }}</option>{% endfor %}</select></div>
-            <div class="mb-3"><label class="form-label">{{ mode == 'edit' ? __('New credential', 'uxconnector') : __('Credential', 'uxconnector') }}</label><input name="secret" type="password" autocomplete="new-password" class="form-control"><div class="form-text">{% if mode == 'edit' %}{{ __('Leave blank to keep the currently stored credential. Entering a new value replaces it and requires a new connection test.', 'uxconnector') }}{% else %}{{ __('Bearer token, API key or Basic credential depending on the selected method. Secrets are stored protected by GLPI.', 'uxconnector') }}{% endif %}</div></div>
+            <div class="mb-3"><label class="form-label">{{ __('Authentication method', 'uxconnector') }}</label><select id="uxconnector-auth-method" name="auth_method" class="form-select" required>{% for method in authMethods %}<option value="{{ method.value }}" {% if defaults.auth_method == method.value %}selected{% endif %}>{{ method.label() }}</option>{% endfor %}</select></div>
+            <div id="uxconnector-generic-credential" class="mb-3"><label class="form-label">{{ mode == 'edit' ? __('New credential', 'uxconnector') : __('Credential', 'uxconnector') }}</label><input name="secret" type="password" autocomplete="new-password" class="form-control"><div class="form-text">{% if mode == 'edit' %}{{ __('Leave blank to keep the currently stored credential. Entering a new value replaces it and requires a new connection test.', 'uxconnector') }}{% else %}{{ __('Bearer token, API key or Basic credential depending on the selected method. Secrets are stored protected by GLPI.', 'uxconnector') }}{% endif %}</div></div>
         </div></div>
+
+        <details id="uxconnector-glpi-rest-credentials" class="card mb-3" {% if defaults.auth_method == 'glpi_rest_v1' %}open{% endif %}><summary class="card-header">{{ __('GLPI REST v1 - GLPI 9/10', 'uxconnector') }}</summary><div class="card-body">
+            {% if mode == 'edit' %}<div class="alert alert-secondary py-2">{{ __('Leave both GLPI REST v1 token fields blank to keep the currently stored credential. Fill both fields to replace it.', 'uxconnector') }}</div>{% endif %}
+            <div class="alert alert-info py-2">{{ __('App-Token and User-Token are protected at rest. UXConnector creates a Session-Token with /initSession, keeps it only in memory, renews it when needed and closes it with /killSession.', 'uxconnector') }}</div>
+            <div class="mb-2"><label class="form-label">App-Token</label><input name="glpi_rest_app_token" type="password" autocomplete="new-password" class="form-control"></div>
+            <div class="mb-2"><label class="form-label">User-Token</label><input name="glpi_rest_user_token" type="password" autocomplete="new-password" class="form-control"></div>
+        </div></details>
 
         <details class="card mb-3"><summary class="card-header">{{ __('OAuth2 Password Grant (GLPI 11 HL API)', 'uxconnector') }}</summary><div class="card-body">
             {% if mode == 'edit' %}<div class="alert alert-secondary py-2">{{ __('Leave all Password Grant fields blank to keep the current OAuth2 credential. Fill the complete set to replace it.', 'uxconnector') }}</div>{% endif %}
@@ -69,3 +76,20 @@
         {% endif %}
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const method = document.getElementById('uxconnector-auth-method');
+    const generic = document.getElementById('uxconnector-generic-credential');
+    const glpiRest = document.getElementById('uxconnector-glpi-rest-credentials');
+    if (!method || !generic || !glpiRest) return;
+    const refreshCredentials = () => {
+        const isGlpiRest = method.value === 'glpi_rest_v1';
+        generic.style.display = isGlpiRest ? 'none' : '';
+        glpiRest.style.display = isGlpiRest ? '' : 'none';
+        if (isGlpiRest) glpiRest.open = true;
+    };
+    method.addEventListener('change', refreshCredentials);
+    refreshCredentials();
+});
+</script>

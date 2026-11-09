@@ -9,7 +9,7 @@ use GlpiPlugin\Uxconnector\Domain\Template\Entity\ConnectorTemplate;
 interface ConnectorTemplateRepositoryInterface
 {
     /** @return list<ConnectorTemplate> */
-   public function findAll(): array;
+    public function findAll(): array;
 
-   public function findById(string $id): ?ConnectorTemplate;
+    public function findById(string $id): ?ConnectorTemplate;
 }

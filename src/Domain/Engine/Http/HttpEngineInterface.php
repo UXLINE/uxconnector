@@ -43,5 +43,5 @@ interface HttpEngineInterface
      *         inspect (RULE-CTRL-like separation: transport failure
      *         vs. business-level HTTP status are different concerns).
      */
-   public function execute(AuthConfig $authConfig, HttpRequest $request): HttpResponse;
+    public function execute(AuthConfig $authConfig, HttpRequest $request): HttpResponse;
 }

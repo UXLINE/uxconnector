@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\EngineServiceProvider;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\AuthConfigController;
+use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\GlpiRestV1SecretComposer;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\OAuth2ClientCredentialsSecretComposer;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\OAuth2PasswordSecretComposer;
 
@@ -32,7 +33,8 @@ $controller = new AuthConfigController(
     EngineServiceProvider::disableAuthConfigService(),
     EngineServiceProvider::deleteAuthConfigService(),
     new OAuth2ClientCredentialsSecretComposer(),
-    new OAuth2PasswordSecretComposer()
+    new OAuth2PasswordSecretComposer(),
+    new GlpiRestV1SecretComposer(),
 );
 
 if (isset($_POST['add'])) {
@@ -45,7 +47,7 @@ if (isset($_POST['add'])) {
         $_SERVER['PHP_SELF'],
         'tools',
         'PluginUxconnectorMenu',
-        'authconfig'
+        'authconfig',
     );
     $controller->showCreateForm($_GET);
     Html::footer();

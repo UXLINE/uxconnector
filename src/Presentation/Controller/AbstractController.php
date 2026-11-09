@@ -38,19 +38,19 @@ use Session;
  * Base class for every UXConnector controller.
  *
  * RULE-CTRL-001/002/003 : a Controller never contains a business
- * rule, never runs SQL, and never calls a third-party API directly —
+ * rule, never runs SQL, and never calls a third-party API directly -
  * it only orchestrates an Application Service and hands its result
  * to a template.
  */
 abstract class AbstractController
 {
-   private const TEMPLATE_NAMESPACE = '@uxconnector/';
+    private const TEMPLATE_NAMESPACE = '@uxconnector/';
 
     /**
      * Renders a plugin template fragment.
      *
      * `csrf_token` is always available in the template, even for
-     * screens without a form — this keeps render() a single place to
+     * screens without a form - this keeps render() a single place to
      * reason about rather than requiring every concrete Controller to
      * remember to add it. A template that does not render a form
      * simply never uses the variable.
@@ -59,23 +59,25 @@ abstract class AbstractController
      *                         "@uxconnector/" namespace prefix and
      *                         WITHOUT any {% extends %} directive in
      *                         the template itself (see class doc-block).
-     * @param array<string, mixed> $context ViewModels/scalars only —
+     * @param array<string, mixed> $context ViewModels/scalars only -
      *                         never a Domain Entity or Value Object
      *                         (RULE-048).
      */
-   protected function render(string $template, array $context = []): void {
-       TemplateRenderer::getInstance()->display(
-           self::TEMPLATE_NAMESPACE . ltrim($template, '/'),
-           ['csrf_token' => Session::getNewCSRFToken(), ...$context]
-       );
-   }
+    protected function render(string $template, array $context = []): void
+    {
+        TemplateRenderer::getInstance()->display(
+            self::TEMPLATE_NAMESPACE . ltrim($template, '/'),
+            ['csrf_token' => Session::getNewCSRFToken(), ...$context],
+        );
+    }
 
     /**
      * Redirects the browser using GLPI's own mechanism
      * (RULE-HTML-004 : never call header() directly from a Controller).
      */
-   protected function redirect(string $url): void {
-       Html::redirect($url);
-   }
+    protected function redirect(string $url): void
+    {
+        Html::redirect($url);
+    }
 
 }

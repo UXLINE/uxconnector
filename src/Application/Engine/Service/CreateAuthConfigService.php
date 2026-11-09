@@ -34,7 +34,7 @@ use GlpiPlugin\Uxconnector\Domain\Shared\Persistence\TransactionManagerInterface
  * protect & store the credential (if any) → commit → dispatch events.
  *
  * RULE-036/060 (transaction), RULE-061 (event publication) : this
- * Service never contains a business rule itself — those live in
+ * Service never contains a business rule itself - those live in
  * AuthConfig and AuthMethod. It only sequences ports.
  *
  * Deliberate deviation from the naive "release events after
@@ -49,15 +49,14 @@ use GlpiPlugin\Uxconnector\Domain\Shared\Persistence\TransactionManagerInterface
  */
 final class CreateAuthConfigService
 {
-   public function __construct(
+    public function __construct(
         private readonly AuthConfigRepositoryInterface $repository,
         private readonly AuthConfigSecretStoreInterface $secretStore,
         private readonly CredentialVaultInterface $vault,
         private readonly DestinationPolicyInterface $destinationPolicy,
         private readonly TransactionManagerInterface $transaction,
         private readonly EventDispatcherInterface $events
-    ) {
-   }
+    ) {}
 
     /**
      * @throws AuthMethodNotSupportedException if the chosen AuthMethod is not
@@ -65,69 +64,70 @@ final class CreateAuthConfigService
      * @throws InsecureCredentialTransportException if reusable credentials
      *         would be sent over clear-text HTTP.
      * @throws ForbiddenDestinationException if the endpoint resolves to an
-     *         address this plugin must never contact (SSRF protection —
+     *         address this plugin must never contact (SSRF protection -
      *         see DestinationPolicy). Re-checked at every execution by
      *         GenericHttpEngine regardless, since DNS can change after
      *         creation; this early check only gives immediate feedback.
      * @throws MissingCredentialException if the chosen AuthMethod requires
      *         a credential and none was supplied.
      */
-   public function execute(CreateAuthConfigCommand $command): AuthConfig {
-      if (!$command->authMethod->isImplemented()) {
-          throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod($command->authMethod);
-      }
+    public function execute(CreateAuthConfigCommand $command): AuthConfig
+    {
+        if (!$command->authMethod->isImplemented()) {
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod($command->authMethod);
+        }
 
-      if ($command->authMethod->requiresVaultedCredentials() && !$command->endpoint->isSecure()) {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InsecureCredentialTransportException::forEndpoint(
-              $command->authMethod,
-              $command->endpoint
-          );
-      }
+        if ($command->authMethod->requiresVaultedCredentials() && !$command->endpoint->isSecure()) {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InsecureCredentialTransportException::forEndpoint(
+                $command->authMethod,
+                $command->endpoint,
+            );
+        }
 
-       $this->destinationPolicy->assertAllowed($command->endpoint);
+        $this->destinationPolicy->assertAllowed($command->endpoint);
 
-      if ($command->authMethod->requiresVaultedCredentials() && $command->plaintextSecret === null) {
-          throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod($command->authMethod);
-      }
+        if ($command->authMethod->requiresVaultedCredentials() && $command->plaintextSecret === null) {
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod($command->authMethod);
+        }
 
-       $this->transaction->begin();
+        $this->transaction->begin();
 
-      try {
-          $authConfig = AuthConfig::create(
-              $command->name,
-              $command->endpoint,
-              $command->authMethod,
-              $command->testPath,
-              $command->connectorId
-          );
+        try {
+            $authConfig = AuthConfig::create(
+                $command->name,
+                $command->endpoint,
+                $command->authMethod,
+                $command->testPath,
+                $command->connectorId,
+            );
 
-          $events = $authConfig->releaseEvents();
+            $events = $authConfig->releaseEvents();
 
-          $authConfig = $this->repository->save($authConfig);
+            $authConfig = $this->repository->save($authConfig);
 
-         if ($command->plaintextSecret !== null) {
-            $protectedSecret = $this->vault->protect($command->plaintextSecret);
-            $authConfigId = $authConfig->id();
-            if ($authConfigId === null) {
-               throw new \RuntimeException(
-                  'Persisted AuthConfig has no identifier.'
-               );
+            if ($command->plaintextSecret !== null) {
+                $protectedSecret = $this->vault->protect($command->plaintextSecret);
+                $authConfigId = $authConfig->id();
+                if ($authConfigId === null) {
+                    throw new \RuntimeException(
+                        'Persisted AuthConfig has no identifier.',
+                    );
+                }
+
+                $this->secretStore->put($authConfigId, $protectedSecret);
             }
 
-            $this->secretStore->put($authConfigId, $protectedSecret);
-         }
+            $this->transaction->commit();
 
-          $this->transaction->commit();
+            foreach ($events as $event) {
+                $this->events->dispatch($event);
+            }
 
-         foreach ($events as $event) {
-             $this->events->dispatch($event);
-         }
+            return $authConfig;
+        } catch (\Throwable $exception) {
+            $this->transaction->rollback();
 
-          return $authConfig;
-      } catch (\Throwable $exception) {
-          $this->transaction->rollback();
-
-          throw $exception;
-      }
-   }
+            throw $exception;
+        }
+    }
 }

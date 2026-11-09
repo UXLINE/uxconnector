@@ -1,0 +1,25 @@
+{% set cadence = schedule|default({}) %}
+<div class="card my-3">
+    <div class="card-header"><strong>Planification du job</strong></div>
+    <div class="card-body">
+        <input type="hidden" name="schedule_options_present" value="1">
+        <label class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="schedule_enabled" value="1" {% if cadence.schedule_enabled is not defined or cadence.schedule_enabled %}checked{% endif %}>
+            <span class="form-check-label">Passages automatiques activés</span>
+        </label>
+        <label class="form-label" for="schedule_interval_minutes">Délai après la fin du dernier passage, en minutes</label>
+        <input class="form-control mb-3" id="schedule_interval_minutes" type="number" min="5" max="43200" required name="schedule_interval_minutes" value="{{ cadence.schedule_interval_minutes|default(60) }}">
+        <label class="form-label" for="schedule_start_at">Premier passage au plus tôt, en UTC (facultatif)</label>
+        <input class="form-control mb-3" id="schedule_start_at" type="datetime-local" name="schedule_start_at" value="{{ cadence.schedule_start_at|default('')|slice(0,16) }}">
+        <label class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="schedule_retry_after_failure" value="1" {% if cadence.schedule_retry_after_failure|default(false) %}checked{% endif %}>
+            <span class="form-check-label">Autoriser un nouveau passage automatique après échec ou interruption</span>
+        </label>
+        <label class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="zendesk_download_attachments" value="1" {% if cadence.zendesk_download_attachments|default(false) %}checked{% endif %}>
+            <span class="form-check-label">Télécharger les PJ et captures Zendesk (désactivé par défaut, ralentit la reprise)</span>
+        </label>
+        <p class="form-text">Le délai s'applique aux passages planifiés. Un lancement manuel reste possible. Un même job ne peut pas avoir deux exécutions ouvertes. Les jobs indépendants peuvent utiliser les workers simultanément selon la limite du serveur. Suspendre un job avant de modifier sa configuration.</p>
+        <p class="form-text">Protection des données : les objets existants sont complétés uniquement dans leurs champs vides. Les valeurs déjà renseignées sont conservées. Les téléchargements de pièces jointes Zendesk sont désactivés par défaut.</p>
+    </div>
+</div>

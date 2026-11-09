@@ -1,10 +1,10 @@
-{# UXConnector advanced custom interaction editor — GLPI 11 fragment, no extends. #}
+{# UXConnector advanced custom interaction editor - GLPI 11 fragment, no extends. #}
 
 <div class="uxconnector-syncjob-form">
     <h2>{{ __('Advanced custom REST interaction', 'uxconnector') }}</h2>
 
     <div class="alert alert-info mb-3">
-        <strong>{{ __('Advanced mode', 'uxconnector') }}</strong> —
+        <strong>{{ __('Advanced mode', 'uxconnector') }}</strong> -
         {{ __('Use this editor only for an API that has no ready-to-use interaction in the connection catalog. Jira, Intune, MDM and other standard connectors must normally be configured from the Connection screen.', 'uxconnector') }}
     </div>
 
@@ -27,7 +27,7 @@
                     <td>
                         <select id="auth_config_reference" name="auth_config_reference" required class="form-select">
                             {% for authconfig in authConfigs %}
-                                <option value="{{ authconfig.id }}" {% if defaults.auth_config_id == authconfig.id %}selected{% endif %}>{{ authconfig.name }} — {{ authconfig.statusLabel }}</option>
+                                <option value="{{ authconfig.id }}" {% if defaults.auth_config_id == authconfig.id %}selected{% endif %}>{{ authconfig.name }} - {{ authconfig.statusLabel }}</option>
                             {% endfor %}
                         </select>
                     </td>
@@ -36,9 +36,9 @@
                     <td><label for="interaction_mode">{{ __('Mode', 'uxconnector') }}</label></td>
                     <td>
                         <select id="interaction_mode" name="interaction_mode" required class="form-select">
-                            <option value="inbound_polling">{{ __('External system → GLPI — scheduled REST polling', 'uxconnector') }}</option>
-                            <option value="inbound_webhook">{{ __('External system → GLPI — incoming webhook/event', 'uxconnector') }}</option>
-                            <option value="outbound_glpi_event">{{ __('GLPI → external system — on GLPI object change', 'uxconnector') }}</option>
+                            <option value="inbound_polling">{{ __('External system → GLPI - scheduled REST polling', 'uxconnector') }}</option>
+                            <option value="inbound_webhook">{{ __('External system → GLPI - incoming webhook/event', 'uxconnector') }}</option>
+                            <option value="outbound_glpi_event">{{ __('GLPI → external system - on GLPI object change', 'uxconnector') }}</option>
                         </select>
                         <div class="form-text">{{ __('Bidirectional behavior is configured as two independent interactions.', 'uxconnector') }}</div>
                     </td>
@@ -95,12 +95,13 @@
                 <summary class="card-header"><strong>{{ __('2B. External → GLPI field mappings', 'uxconnector') }}</strong></summary>
                 <div class="card-body">
                     <p class="form-text">{{ __('Used by polling and webhook interactions. Source fields accept nested JSON paths and constants such as @literal:1. Transform accepts named transforms or map:key=value|key=value.', 'uxconnector') }}</p>
+                    <p class="form-text">Fields : utilisez le champ cible <code>fields:Libellé exact</code> figurant dans la liste ci-dessous. Les blocs doivent déjà exister et être actifs. Pour un lien SIM vers une ligne déjà importée : transformation <code>link:glpi_rest_v1_location_telecom_line</code> sur le champ cible <code>lines_id</code> ; la source doit être l’ID du pseudo-lieu GLPI 10 et la connexion identique à celle de l’import initial. Les ID numériques directs doivent être des ID GLPI 11 vérifiés, jamais des ID GLPI 10.</p>
                     <datalist id="uxconnector-transform-list"><option value="trim"></option><option value="uppercase"></option><option value="lowercase"></option><option value="date_iso8601"></option><option value="datetime_glpi"></option><option value="integer"></option><option value="boolean_int"></option></datalist>
                     <table class="tab_cadre_fixe" id="uxconnector-field-mappings">
                         <thead><tr><th>{{ __('Source field / JSON path', 'uxconnector') }}</th><th>{{ __('Target field', 'uxconnector') }}</th><th>{{ __('Transform / value map', 'uxconnector') }}</th><th>{{ __('Required', 'uxconnector') }}</th></tr></thead>
                         <tbody>{% for i in 0..9 %}<tr class="tab_bg_1"><td><input type="text" name="source_field[]" class="form-control"></td><td><input type="text" name="target_field[]" class="form-control"></td><td><input type="text" name="transform[]" list="uxconnector-transform-list" class="form-control"></td><td><input type="checkbox" name="required[{{ i }}]" value="1"></td></tr>{% endfor %}</tbody>
                     </table>
-                    <details class="mt-3"><summary>{{ __('Allowed GLPI target fields', 'uxconnector') }}</summary><ul>{% for entry in targetFieldCatalog %}<li><strong>{{ entry.label }}</strong> — {{ __('match fields', 'uxconnector') }}: <code>{{ entry.matchable|join(', ') }}</code><br>{{ __('writable fields', 'uxconnector') }}: <code>{{ entry.writable|join(', ') }}</code></li>{% endfor %}</ul></details>
+                    <details class="mt-3"><summary>{{ __('Allowed GLPI target fields', 'uxconnector') }}</summary><ul>{% for entry in targetFieldCatalog %}<li><strong>{{ entry.label }}</strong> - {{ __('match fields', 'uxconnector') }}: <code>{{ entry.matchable|join(', ') }}</code><br>{{ __('writable fields', 'uxconnector') }}: <code>{{ entry.writable|join(', ') }}</code></li>{% endfor %}</ul></details>
                 </div>
             </details>
 
@@ -125,7 +126,7 @@
                 <summary class="card-header"><strong>{{ __('3. Entity / source scope', 'uxconnector') }}</strong></summary>
                 <div class="card-body">
                     <table class="tab_cadre_fixe">
-                        <tr class="tab_bg_1"><td><label for="entity_strategy">{{ __('Strategy', 'uxconnector') }}</label></td><td><select id="entity_strategy" name="entity_strategy" class="form-select"><option value="">{{ __('None — leave to GLPI default', 'uxconnector') }}</option><option value="fixed">{{ __('Fixed — inbound target entity / outbound source scope', 'uxconnector') }}</option><option value="mapped">{{ __('Mapped from a source field — inbound only', 'uxconnector') }}</option></select></td></tr>
+                        <tr class="tab_bg_1"><td><label for="entity_strategy">{{ __('Strategy', 'uxconnector') }}</label></td><td><select id="entity_strategy" name="entity_strategy" class="form-select"><option value="">{{ __('None - leave to GLPI default', 'uxconnector') }}</option><option value="fixed">{{ __('Fixed - inbound target entity / outbound source scope', 'uxconnector') }}</option><option value="mapped">{{ __('Mapped from a source field - inbound only', 'uxconnector') }}</option></select></td></tr>
                         <tr class="tab_bg_1"><td><label for="entity_fixed_id">{{ __('Fixed entity ID', 'uxconnector') }}</label></td><td><input type="number" id="entity_fixed_id" name="entity_fixed_id" min="0" class="form-control"></td></tr>
                         <tr class="tab_bg_1"><td><label for="entity_source_field">{{ __('Source field (mapped)', 'uxconnector') }}</label></td><td><input type="text" id="entity_source_field" name="entity_source_field" class="form-control"></td></tr>
                         <tr class="tab_bg_1"><td><label for="entity_mapping_rules">{{ __('Mapping rules (mapped)', 'uxconnector') }}</label></td><td><textarea id="entity_mapping_rules" name="entity_mapping_rules" rows="4" class="form-control" placeholder="A=0&#10;B=2"></textarea></td></tr>
@@ -135,6 +136,7 @@
                 </div>
             </details>
 
+        {% include '@uxconnector/sync/syncjob/schedule.html.twig' %}
             <div class="uxconnector-form-actions mt-3"><button type="submit" name="add" class="btn btn-primary">{{ __('Create interaction', 'uxconnector') }}</button></div>
         </form>
     {% endif %}

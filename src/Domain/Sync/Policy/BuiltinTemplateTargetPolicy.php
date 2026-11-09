@@ -36,6 +36,9 @@ final class BuiltinTemplateTargetPolicy
         'zendesk.tickets.delta.inbound' => TargetItemtype::TICKET,
         'zendesk.tickets.active.inbound' => TargetItemtype::TICKET,
         'zendesk.tickets.inbound' => TargetItemtype::TICKET,
+        'glpi_rest_v1.indigo.telecom.locations.normalize' => TargetItemtype::LINE,
+        'glpi_rest_v1.indigo.network.locations.normalize' => TargetItemtype::NETWORK_EQUIPMENT,
+        'glpi_rest_v1.indigo.microsoft.licences.normalize' => TargetItemtype::SOFTWARE_LICENSE,
     ];
 
     public function assertAllowed(?string $templateId, TargetItemtype $target): void
@@ -50,7 +53,7 @@ final class BuiltinTemplateTargetPolicy
                 'Built-in template "%s" is locked to target "%s" and cannot target "%s".',
                 $templateId,
                 $expected->value,
-                $target->value
+                $target->value,
             ));
         }
     }

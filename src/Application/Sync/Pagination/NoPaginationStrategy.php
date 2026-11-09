@@ -6,7 +6,8 @@ namespace GlpiPlugin\Uxconnector\Application\Sync\Pagination;
 
 final class NoPaginationStrategy implements PaginationStrategyInterface
 {
-   public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string {
-       return null;
-   }
+    public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string
+    {
+        return null;
+    }
 }

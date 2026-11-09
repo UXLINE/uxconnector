@@ -22,11 +22,12 @@ use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
  */
 final class InsecureCredentialTransportException extends \RuntimeException
 {
-   public static function forEndpoint(AuthMethod $authMethod, Endpoint $endpoint): self {
-       return new self(sprintf(
-           'Authentication method "%s" requires HTTPS; refusing to send credentials to insecure endpoint "%s".',
-           $authMethod->value,
-           $endpoint->value()
-       ));
-   }
+    public static function forEndpoint(AuthMethod $authMethod, Endpoint $endpoint): self
+    {
+        return new self(sprintf(
+            'Authentication method "%s" requires HTTPS; refusing to send credentials to insecure endpoint "%s".',
+            $authMethod->value,
+            $endpoint->value(),
+        ));
+    }
 }

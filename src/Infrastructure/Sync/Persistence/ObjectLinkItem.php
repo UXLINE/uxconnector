@@ -27,22 +27,25 @@ use CommonDBTM;
  * Uses the same right as SyncJob (`plugin_uxconnector_syncjob`):
  * ObjectLink is purely an internal bookkeeping record produced by
  * running a SyncJob, never a first-class object an administrator
- * manages directly — it has no dedicated screen, only the right that
+ * manages directly - it has no dedicated screen, only the right that
  * already gates the synchronizations that produce it.
  */
 final class ObjectLinkItem extends CommonDBTM
 {
-   public static $rightname = 'plugin_uxconnector_syncjob';
+    public static $rightname = 'plugin_uxconnector_syncjob';
 
-   public static function getTable($classname = null): string {
-       return 'glpi_plugin_uxconnector_objectlinks';
-   }
+    public static function getTable($classname = null): string
+    {
+        return 'glpi_plugin_uxconnector_objectlinks';
+    }
 
-   public static function getTypeName($nb = 0): string {
-       return _n('Object link', 'Object links', $nb, 'uxconnector');
-   }
+    public static function getTypeName($nb = 0): string
+    {
+        return _n('Object link', 'Object links', $nb, 'uxconnector');
+    }
 
-   public function rawSearchOptions(): array {
-       return [];
-   }
+    public function rawSearchOptions(): array
+    {
+        return [];
+    }
 }

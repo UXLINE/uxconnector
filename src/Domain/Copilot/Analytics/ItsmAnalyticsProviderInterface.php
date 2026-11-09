@@ -6,54 +6,54 @@ namespace GlpiPlugin\Uxconnector\Domain\Copilot\Analytics;
 
 interface ItsmAnalyticsProviderInterface
 {
-       /**
+    /**
     * @param array<string, mixed> $criteria
     *
     * @return array<string, mixed>
     */
-   public function ticketSummary(array $criteria): array;
+    public function ticketSummary(array $criteria): array;
 
-       /**
+    /**
     * @param array<string, mixed> $criteria
     *
     * @return array<string, mixed>
     */
-   public function ticketTrends(array $criteria): array;
+    public function ticketTrends(array $criteria): array;
 
-       /**
+    /**
     * @param array<string, mixed> $criteria
     *
     * @return array<string, mixed>
     */
-   public function categoryAnalytics(array $criteria): array;
+    public function categoryAnalytics(array $criteria): array;
 
-       /**
+    /**
     * @param array<string, mixed> $criteria
     *
     * @return array<string, mixed>
     */
-   public function slaAnalytics(array $criteria): array;
+    public function slaAnalytics(array $criteria): array;
 
-       /**
+    /**
     * @param array<string, mixed> $criteria
     *
     * @return array<string, mixed>
     */
-   public function groupAnalytics(array $criteria): array;
+    public function groupAnalytics(array $criteria): array;
 
-       /**
+    /**
     * @param array<string, mixed> $criteria
     *
     * @return array<string, mixed>
     */
-   public function technicianAnalytics(array $criteria): array;
+    public function technicianAnalytics(array $criteria): array;
 
-       /**
+    /**
     * @param array<string, mixed> $criteria
     *
     * @return array<string, mixed>
     */
-   public function comparePeriods(array $criteria): array;
+    public function comparePeriods(array $criteria): array;
 
     /**
      * Incidentology analysis scoped by initial technical assignment group.
@@ -62,19 +62,19 @@ interface ItsmAnalyticsProviderInterface
      *
      * @return array<string,mixed>
      */
-       /**
+    /**
     * @param array<string, mixed> $criteria
     *
     * @return array<string, mixed>
     */
-   public function listIncidentologyGroups(array $criteria): array;
+    public function listIncidentologyGroups(array $criteria): array;
 
-   /**
-    * @param array<string, mixed> $criteria
-    *
-    * @return array<string, mixed>
-    */
-   public function incidentologyGlobal(array $criteria): array;
+    /**
+     * @param array<string, mixed> $criteria
+     *
+     * @return array<string, mixed>
+     */
+    public function incidentologyGlobal(array $criteria): array;
 
     /**
      * Incidentologue analysis by validated qualitative typology mapping.
@@ -83,5 +83,5 @@ interface ItsmAnalyticsProviderInterface
      *
      * @return array<string,mixed>
      */
-   public function incidentologyTypologies(array $criteria): array;
+    public function incidentologyTypologies(array $criteria): array;
 }

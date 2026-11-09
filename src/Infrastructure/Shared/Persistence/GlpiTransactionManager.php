@@ -22,25 +22,27 @@ use GlpiPlugin\Uxconnector\Domain\Shared\Persistence\TransactionManagerInterface
  * DBmysql connection, so Application Services never call
  * beginTransaction()/commit()/rollback() directly (RULE-036/060).
  *
- * Requires a real GLPI runtime (the global $DB instance) — validated
+ * Requires a real GLPI runtime (the global $DB instance) - validated
  * in tests/Integration, not in tests/Unit.
  */
 final class GlpiTransactionManager implements TransactionManagerInterface
 {
-   public function __construct(
+    public function __construct(
         private readonly DBmysql $db
-    ) {
-   }
+    ) {}
 
-   public function begin(): void {
-       $this->db->beginTransaction();
-   }
+    public function begin(): void
+    {
+        $this->db->beginTransaction();
+    }
 
-   public function commit(): void {
-       $this->db->commit();
-   }
+    public function commit(): void
+    {
+        $this->db->commit();
+    }
 
-   public function rollback(): void {
-       $this->db->rollback();
-   }
+    public function rollback(): void
+    {
+        $this->db->rollback();
+    }
 }

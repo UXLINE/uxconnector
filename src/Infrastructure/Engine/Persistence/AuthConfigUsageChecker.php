@@ -25,29 +25,29 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
  */
 final class AuthConfigUsageChecker implements AuthConfigUsageCheckerInterface
 {
-   private const SYNC_JOB_TABLE = 'glpi_plugin_uxconnector_syncjobs';
+    private const SYNC_JOB_TABLE = 'glpi_plugin_uxconnector_syncjobs';
 
-   public function __construct(
+    public function __construct(
         private readonly DBmysql $db
-    ) {
-   }
+    ) {}
 
-   public function isUsed(AuthConfigId $id): bool {
-      if (!$this->db->tableExists(self::SYNC_JOB_TABLE)) {
-          return false;
-      }
+    public function isUsed(AuthConfigId $id): bool
+    {
+        if (!$this->db->tableExists(self::SYNC_JOB_TABLE)) {
+            return false;
+        }
 
-       $iterator = $this->db->request([
-           'SELECT' => ['id'],
-           'FROM'   => self::SYNC_JOB_TABLE,
-           'WHERE'  => ['auth_config_reference' => $id->value()],
-           'LIMIT'  => 1,
-       ]);
+        $iterator = $this->db->request([
+            'SELECT' => ['id'],
+            'FROM'   => self::SYNC_JOB_TABLE,
+            'WHERE'  => ['auth_config_reference' => $id->value()],
+            'LIMIT'  => 1,
+        ]);
 
-      foreach ($iterator as $_row) {
-          return true;
-      }
+        foreach ($iterator as $_row) {
+            return true;
+        }
 
-       return false;
-   }
+        return false;
+    }
 }

@@ -18,7 +18,8 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
 final class SyncJobNotFoundException extends \RuntimeException
 {
-   public static function forId(SyncJobId $id): self {
-       return new self(sprintf('SyncJob #%d does not exist.', $id->value()));
-   }
+    public static function forId(SyncJobId $id): self
+    {
+        return new self(sprintf('SyncJob #%d does not exist.', $id->value()));
+    }
 }

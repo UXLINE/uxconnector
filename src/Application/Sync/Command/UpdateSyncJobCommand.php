@@ -21,25 +21,24 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobName;
 
 final readonly class UpdateSyncJobCommand
 {
-   /**
-    * @param list<FieldMapping> $fieldMappings
-    */
-   public function __construct(
-      public SyncJobId $id,
-      public SyncJobName $name,
-      public AuthConfigReference $authConfigReference,
-      public SyncDirection $direction,
-      public ResourcePath $resourcePath,
-      public TargetItemtype $targetItemtype,
-      public MatchField $matchField,
-      public ExternalIdField $externalIdField,
-      public array $fieldMappings,
-      public ?EntityAssignmentStrategy $entityAssignmentStrategy,
-      public CollectionPath $collectionPath,
-      public PaginationConfig $paginationConfig,
-      public InteractionTrigger $triggerType,
-      public string $externalObjectType,
-      public OutboundConfig $outboundConfig
-   ) {
-   }
+    /**
+     * @param list<FieldMapping> $fieldMappings
+     */
+    public function __construct(
+        public SyncJobId $id,
+        public SyncJobName $name,
+        public AuthConfigReference $authConfigReference,
+        public SyncDirection $direction,
+        public ResourcePath $resourcePath,
+        public TargetItemtype $targetItemtype,
+        public MatchField $matchField,
+        public ExternalIdField $externalIdField,
+        public array $fieldMappings,
+        public ?EntityAssignmentStrategy $entityAssignmentStrategy,
+        public CollectionPath $collectionPath,
+        public PaginationConfig $paginationConfig,
+        public InteractionTrigger $triggerType,
+        public string $externalObjectType,
+        public OutboundConfig $outboundConfig
+    ) {}
 }

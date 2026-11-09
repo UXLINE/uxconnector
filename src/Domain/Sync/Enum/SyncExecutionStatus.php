@@ -1,47 +1,47 @@
 <?php
 
-/**
- * -------------------------------------------------------------------------
- * UXConnector plugin for GLPI
- * -------------------------------------------------------------------------
- *
- * @copyright HELPLINE
- * @license   GPL-3.0-or-later
- * -------------------------------------------------------------------------
- */
-
 declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Domain\Sync\Enum;
 
-/**
- * Status of a single SyncExecution (one run of a SyncJob).
- *
- * Cycle: PENDING -> RUNNING -> (SUCCESS | PARTIAL | FAILED)
- */
+/** Lifecycle of one synchronization execution. */
 enum SyncExecutionStatus: string
 {
     case PENDING = 'pending';
     case RUNNING = 'running';
     case SUCCESS = 'success';
+    /** Kept for backward compatibility with 2.18.3 history rows. */
     case PARTIAL = 'partial';
+    case SUCCESS_WITH_WARNINGS = 'success_with_warnings';
     case FAILED = 'failed';
+    case INTERRUPTED = 'interrupted';
 
-   public function label(): string {
-       return match ($this) {
-           self::PENDING => 'En attente',
-           self::RUNNING => 'En cours',
-           self::SUCCESS => 'Succès',
-           self::PARTIAL => 'Succès partiel',
-           self::FAILED => 'Échec',
-       };
-   }
+    public function label(): string
+    {
+        return match ($this) {
+            self::PENDING => 'En attente',
+            self::RUNNING => 'En cours',
+            self::SUCCESS => 'Succès',
+            self::PARTIAL => 'Succès partiel',
+            self::SUCCESS_WITH_WARNINGS => 'Succès avec avertissements',
+            self::FAILED => 'Échec',
+            self::INTERRUPTED => 'Interrompu / reprenable',
+        };
+    }
 
-    /**
-     * Whether this status represents a terminal state — no further
-     * transition is expected once an execution reaches it.
-     */
-   public function isFinished(): bool {
-       return in_array($this, [self::SUCCESS, self::PARTIAL, self::FAILED], true);
-   }
+    public function isFinished(): bool
+    {
+        return in_array($this, [
+            self::SUCCESS,
+            self::PARTIAL,
+            self::SUCCESS_WITH_WARNINGS,
+            self::FAILED,
+            self::INTERRUPTED,
+        ], true);
+    }
+
+    public function isResumable(): bool
+    {
+        return $this === self::INTERRUPTED;
+    }
 }

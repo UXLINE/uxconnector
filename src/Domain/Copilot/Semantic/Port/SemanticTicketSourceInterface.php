@@ -18,5 +18,5 @@ interface SemanticTicketSourceInterface
      *
      * @param array<string,mixed> $criteria
      */
-   public function fetch(array $criteria): SemanticTicketSourceResult;
+    public function fetch(array $criteria): SemanticTicketSourceResult;
 }

@@ -30,8 +30,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
     public function __construct(
         private readonly DBmysql $db,
         private readonly ObjectLinkRepositoryInterface $objectLinks
-    ) {
-    }
+    ) {}
 
     public function supports(SyncJob $syncJob): bool
     {
@@ -53,7 +52,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
         $assetLink = $this->objectLinks->findByExternalId(
             $syncJob->authConfigReference(),
             $syncJob->externalObjectType(),
-            $externalId
+            $externalId,
         );
         if ($assetLink === null || $assetLink->itemtype() !== $syncJob->targetItemtype()) {
             return false;
@@ -61,7 +60,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
 
         $assetClass = $syncJob->targetItemtype()->glpiClassName();
         /** @var \CommonDBTM $asset */
-        $asset = new $assetClass();
+        $asset = \GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\NativeItemFactory::create($assetClass);
         if (!$asset->getFromDB($assetLink->itemId())) {
             return false;
         }
@@ -122,7 +121,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
             return true;
         }
 
-        return SyncRuntimeGuard::run(static fn (): bool => (bool) $asset->update($update));
+        return SyncRuntimeGuard::run(static fn(): bool => (bool) $asset->update($update));
     }
 
     private function currentEntityId(\CommonDBTM $asset): int
@@ -156,14 +155,14 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
         }
 
         /** @var \CommonDBTM $item */
-        $item = new $className();
+        $item = \GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\NativeItemFactory::create($className);
         $existing = $this->findUniqueId($item->getTable(), ['name' => $name]);
         if ($existing !== null) {
             $this->namedReferenceCache[$cacheKey] = $existing;
             return $existing;
         }
 
-        $generatedId = SyncRuntimeGuard::run(static fn () => $item->add(['name' => $name]));
+        $generatedId = SyncRuntimeGuard::run(static fn() => $item->add(['name' => $name]));
         if ($generatedId === false) {
             return null;
         }
@@ -225,7 +224,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
                 $input['is_visible_' . strtolower($visibleItemtype)] = 1;
             }
 
-            $generatedId = SyncRuntimeGuard::run(static fn () => $state->add($input));
+            $generatedId = SyncRuntimeGuard::run(static fn() => $state->add($input));
             if ($generatedId === false) {
                 return null;
             }
@@ -297,7 +296,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
                 continue;
             }
 
-            $generatedId = SyncRuntimeGuard::run(static fn () => $entity->add([
+            $generatedId = SyncRuntimeGuard::run(static fn() => $entity->add([
                 'name' => $segment,
                 'entities_id' => $parentId,
             ]));
@@ -343,7 +342,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
                 continue;
             }
 
-            $generatedId = SyncRuntimeGuard::run(static fn () => $location->add([
+            $generatedId = SyncRuntimeGuard::run(static fn() => $location->add([
                 'name' => $segment,
                 'entities_id' => $entityId,
                 'locations_id' => $parentLocationId,
@@ -411,7 +410,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
     {
         $current = $asset->fields[$field] ?? 0;
         $currentId = is_numeric($current) ? (int) $current : 0;
-        if ($currentId !== $targetId) {
+        if ($field !== 'entities_id' && $currentId === 0 && $targetId > 0) {
             $update[$field] = $targetId;
         }
     }
@@ -439,7 +438,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
             throw new \RuntimeException(sprintf(
                 'Ambiguous GLPI reference in table "%s" for criteria %s.',
                 $table,
-                json_encode($where, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                json_encode($where, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ));
         }
 

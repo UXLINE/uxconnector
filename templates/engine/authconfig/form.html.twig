@@ -55,6 +55,15 @@
             </tr>
         </table>
 
+
+        <h3>{{ __('GLPI REST v1 - GLPI 9/10', 'uxconnector') }}</h3>
+        <p class="form-text">{{ __('Use the legacy GLPI REST API with App-Token + User-Token. The Session-Token is created in memory with /initSession and closed with /killSession.', 'uxconnector') }}</p>
+        <table class="tab_cadre_fixe">
+            <tr class="tab_bg_1"><td><label for="glpi_rest_app_token">App-Token</label></td><td><input type="password" id="glpi_rest_app_token" name="glpi_rest_app_token" autocomplete="new-password" class="form-control"></td></tr>
+            <tr class="tab_bg_1"><td><label for="glpi_rest_user_token">User-Token</label></td><td><input type="password" id="glpi_rest_user_token" name="glpi_rest_user_token" autocomplete="new-password" class="form-control"></td></tr>
+            <tr class="tab_bg_1"><td>{{ __('Defaults', 'uxconnector') }}</td><td><code>/initSession</code> · <code>/killSession</code> · TLS verify · timeout 60 s · 4 retries · auto-renew</td></tr>
+        </table>
+
         <h3>{{ __('OAuth2 Password Grant (GLPI 11 HL API)', 'uxconnector') }}</h3>
         <p class="form-text">{{ __('Use /api.php/token and scope api for GLPI 11 High-Level API.', 'uxconnector') }}</p>
         <table class="tab_cadre_fixe">

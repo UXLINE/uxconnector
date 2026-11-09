@@ -8,12 +8,13 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Repository\CopilotClientRepositoryInte
 
 final readonly class ListCopilotClientsService
 {
-   public function __construct(private CopilotClientRepositoryInterface $repository) {}
+    public function __construct(private CopilotClientRepositoryInterface $repository) {}
 
-   /**
-    * @return list<array<string, mixed>>
-    */
-   public function execute(): array {
-       return $this->repository->all();
-   }
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function execute(): array
+    {
+        return $this->repository->all();
+    }
 }

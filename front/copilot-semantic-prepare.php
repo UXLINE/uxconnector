@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotGatewayResponder;
+use GlpiPlugin\Uxconnector\Bootstrap\CopilotGatewayResponderFactory;
 
 try {
-    (new CopilotGatewayResponder())->analytics('semantic_prepare');
+    CopilotGatewayResponderFactory::create()->analytics('semantic_prepare');
 } catch (\JsonException|\InvalidArgumentException $e) {
     \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(400);
     header('Content-Type: application/json; charset=utf-8');

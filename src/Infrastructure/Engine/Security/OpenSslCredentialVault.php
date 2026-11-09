@@ -32,78 +32,82 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Security\CredentialVaultInterface;
  */
 final class OpenSslCredentialVault implements CredentialVaultInterface
 {
-   private readonly \GLPIKey $glpiKey;
-   private readonly ?string $explicitKey;
+    private readonly \GLPIKey $glpiKey;
+    private readonly ?string $explicitKey;
 
     /**
      * @param string|null $explicitKey Optional key used only by maintenance /
      *                                 migration tooling. Runtime code leaves it
      *                                 null so GLPIKey reads config/glpicrypt.key.
      */
-   public function __construct(?string $explicitKey = null, ?\GLPIKey $glpiKey = null) {
-       // Validate an explicitly supplied key before touching GLPIKey. This
-       // keeps the constructor deterministic for invalid input and avoids
-       // masking a domain validation error behind an unrelated GLPI config
-       // bootstrap error.
-       $this->explicitKey = $explicitKey === null
-           ? null
-           : self::normalizeExplicitKey($explicitKey);
-       $this->glpiKey = $glpiKey ?? new \GLPIKey();
+    public function __construct(?string $explicitKey = null, ?\GLPIKey $glpiKey = null)
+    {
+        // Validate an explicitly supplied key before touching GLPIKey. This
+        // keeps the constructor deterministic for invalid input and avoids
+        // masking a domain validation error behind an unrelated GLPI config
+        // bootstrap error.
+        $this->explicitKey = $explicitKey === null
+            ? null
+            : self::normalizeExplicitKey($explicitKey);
+        $this->glpiKey = $glpiKey ?? new \GLPIKey();
 
-      if ($this->explicitKey === null && $this->glpiKey->hasReadErrors()) {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::encryptionKeyUnavailable();
-      }
-   }
+        if ($this->explicitKey === null && $this->glpiKey->hasReadErrors()) {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::encryptionKeyUnavailable();
+        }
+    }
 
-   public function protect(string $plaintextSecret): string {
-      if ($plaintextSecret === '') {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::protectionFailed();
-      }
-      try {
-          $protected = $this->glpiKey->encrypt($plaintextSecret, $this->explicitKey);
-      } catch (\Throwable) {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::protectionFailed();
-      }
+    public function protect(string $plaintextSecret): string
+    {
+        if ($plaintextSecret === '') {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::protectionFailed();
+        }
+        try {
+            $protected = $this->glpiKey->encrypt($plaintextSecret, $this->explicitKey);
+        } catch (\Throwable) {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::protectionFailed();
+        }
 
-      if ($protected === '') {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::protectionFailed();
-      }
+        if ($protected === '') {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::protectionFailed();
+        }
 
-       return $protected;
-   }
+        return $protected;
+    }
 
-   public function reveal(string $protectedSecret): string {
-      try {
-          $plaintext = $this->glpiKey->decrypt($protectedSecret, $this->explicitKey);
-      } catch (\Throwable) {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::revealFailed();
-      }
+    public function reveal(string $protectedSecret): string
+    {
+        try {
+            $plaintext = $this->glpiKey->decrypt($protectedSecret, $this->explicitKey);
+        } catch (\Throwable) {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::revealFailed();
+        }
 
-       // AuthConfig credentials are never intentionally stored as an empty
-       // protected payload. GLPIKey returns an empty string when a non-empty
-       // payload cannot be decoded/decrypted, so translate that core failure
-       // into the bounded-context exception expected by callers.
-      if ($protectedSecret !== '' && ($plaintext === null || $plaintext === '')) {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::revealFailed();
-      }
+        // AuthConfig credentials are never intentionally stored as an empty
+        // protected payload. GLPIKey returns an empty string when a non-empty
+        // payload cannot be decoded/decrypted, so translate that core failure
+        // into the bounded-context exception expected by callers.
+        if ($protectedSecret !== '' && ($plaintext === null || $plaintext === '')) {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::revealFailed();
+        }
 
-       return $plaintext ?? '';
-   }
+        return $plaintext ?? '';
+    }
 
     /**
      * GLPI's sodium cipher requires a 32-byte key. Native runtime keys already
      * have that size. Hashing non-native explicit values preserves the old
      * maintenance/test constructor contract without affecting normal runtime.
      */
-   private static function normalizeExplicitKey(string $key): string {
-      if ($key === '') {
-          throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::encryptionKeyUnavailable();
-      }
+    private static function normalizeExplicitKey(string $key): string
+    {
+        if ($key === '') {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::encryptionKeyUnavailable();
+        }
 
-      if (strlen($key) === SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES) {
-          return $key;
-      }
+        if (strlen($key) === SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES) {
+            return $key;
+        }
 
-       return hash('sha256', $key, true);
-   }
+        return hash('sha256', $key, true);
+    }
 }

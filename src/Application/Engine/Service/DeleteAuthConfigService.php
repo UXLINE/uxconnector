@@ -29,32 +29,32 @@ use GlpiPlugin\Uxconnector\Domain\Shared\Persistence\TransactionManagerInterface
  */
 final class DeleteAuthConfigService
 {
-   public function __construct(
+    public function __construct(
         private readonly AuthConfigRepositoryInterface $repository,
         private readonly AuthConfigUsageCheckerInterface $usageChecker,
         private readonly TransactionManagerInterface $transaction,
         private readonly ?AuthConfigArtifactsCleanerInterface $artifactsCleaner = null
-    ) {
-   }
+    ) {}
 
-   public function execute(DeleteAuthConfigCommand $command): void {
-      if (!$this->repository->exists($command->authConfigId)) {
-          throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigNotFoundException::forId($command->authConfigId);
-      }
+    public function execute(DeleteAuthConfigCommand $command): void
+    {
+        if (!$this->repository->exists($command->authConfigId)) {
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigNotFoundException::forId($command->authConfigId);
+        }
 
-      if ($this->usageChecker->isUsed($command->authConfigId)) {
-          throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigInUseException::forId($command->authConfigId);
-      }
+        if ($this->usageChecker->isUsed($command->authConfigId)) {
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigInUseException::forId($command->authConfigId);
+        }
 
-       $this->transaction->begin();
+        $this->transaction->begin();
 
-      try {
-          $this->artifactsCleaner?->cleanup($command->authConfigId);
-          $this->repository->delete($command->authConfigId);
-          $this->transaction->commit();
-      } catch (\Throwable $exception) {
-          $this->transaction->rollback();
-          throw $exception;
-      }
-   }
+        try {
+            $this->artifactsCleaner?->cleanup($command->authConfigId);
+            $this->repository->delete($command->authConfigId);
+            $this->transaction->commit();
+        } catch (\Throwable $exception) {
+            $this->transaction->rollback();
+            throw $exception;
+        }
+    }
 }

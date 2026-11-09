@@ -1,3 +1,259 @@
+## 2.18.37 candidate - 2026-11-06
+
+- Add EasyVista Service Manager with five inbound pilots and one disabled outbound definition.
+- See docs/EasyVista_Service_Manager.md for API scope and acceptance checks.
+
+## 2.18.36 candidate - 2026-11-06
+
+- Bundle Matrix42 with two inbound pilots and two disabled outbound definitions.
+- Add two JSM Cloud inbound pilots scoped to a portal and request type.
+- Retain the existing Jira Cloud catalogue and all other connector definitions from the generic base.
+- Include the 32 Jira and JSM design specifications in the documentation.
+- See docs/releases/RELEASE_NOTES_2.18.36.md for test scope and publication metadata.
+
+## 2.18.31 candidate - 2026-11-02
+
+- Base: the exact 2.18.29 archive supplied by INDIGO; retain its existing worker and Location fixes, plus exact target-label aliases.
+- Protect consolidated target data: fill empty fields only across native writes, Fields, financial data and ticket relations; preserve root entity, nonzero references, numeric zero and false.
+- Microsoft: one native SoftwareLicense per source assignment, with the observed 21-field block; stable connection/source identity, normalized dates/prices and safe recovery after a partial Fields failure. Refuse silent conversion of legacy pool assignments.
+- Network: reuse trusted ObjectLinks, preserve manually changed sites/models/types and financial values, enrich the observed 16 Fields attributes and expose safe failure stages.
+- Fields: preflight generated classes, tables and columns; resolve custom dropdowns by target labels and refuse ambiguity. Do not regenerate or delete Fields schemas.
+- Per-job cadence and optional first start (UTC) in the job editor; scheduled queue admission rechecks due dates under its mutex. Failed/interrupted jobs do not automatically restart by default.
+- Zendesk: downloads disabled by default, optional explicit reactivation; textual private/public followups retained; preserve categories, entity and populated actor roles. Bound Search Export HTTP 422 cursor restart to one per run without changing the filter.
+- Email: explicit mapping fills missing email/default placeholders, preserving existing addresses and consolidated user identity.
+- See docs/releases/RELEASE_NOTES_2.18.31.md and tools/preflight-2.18.31.sh. Offline simulations are not a live GLPI/Fields/MySQL integration certification.
+
+## 2.18.30 - 2026-10-28
+
+- Accept seven exact INDIGO Inpark target labels for NetworkEquipment, without renaming Fields metadata.
+- Share label resolution between preflight and writes; preserve active/type/read-only gates and reject ambiguous or duplicate target addresses.
+- Add 26 offline regression checks reproducing the 2.18.29 error and verifying native write/replay behavior.
+- See docs/releases/RELEASE_NOTES_2.18.30.md.
+
+## 2.18.29 - 2026-10-28
+
+- Consolidate Location option and Zendesk attachment fixes from 2.18.27/28.
+- Queue scheduled jobs and add an independent CLI worker, job/stream ownership and bounded shared capacity.
+- Preserve live worker ownership during watchdog recovery and serialize targeted retries with active jobs.
+- Add explicit native user email mapping with validation, alias preservation and short transactions.
+- See docs/releases/RELEASE_NOTES_2.18.29.md for installation, worker scheduling and preproduction acceptance.
+
+## 2.18.28 - 2026-10-27
+
+- Fix own Location name versus parent Location search option ambiguity in Network and Microsoft profiles.
+- Request raw search option metadata and use relation fields rather than fixed option IDs.
+- Preserve true ambiguity rejection and exhaustive Fields fail-fast checks.
+- Clarify that ambiguous option numbers are API search field identifiers.
+- Add 29 offline regression checks.
+
+## 2.18.27 - 2026-10-26
+- Reconcile documents reused by native GLPI content deduplication.
+- Keep authentication for same-origin attachment redirect chains; never send API credentials to CDN destinations.
+- Preserve valid files when another download in the comment fails.
+- Reject HTML login responses; give opaque inline image URLs a usable filename.
+- Use parent ticket entity for followup uploads.
+- Add 45 attachment checks using the unmodified GLPI 11.0.11 addFiles method with simulated persistence/network.
+
+## 2.18.23 - Zendesk Sujet explicit field selector (candidate)
+
+- Job-scoped `pagination.options.zendesk_topic_field_id` avoids a potentially ambiguous automatic "Sujet" field discovery.
+- The selected Zendesk field is verified with `GET /api/v2/ticket_fields/{id}.json` and must be a tagger.
+- Options are retrieved from `GET /api/v2/ticket_fields/{id}/options?page[size]=100`, including pagination, and do not require `topic__` tags when the field is explicitly selected.
+- Invalid field selection, empty options, invalid labels, duplicate conflicting tags and pagination errors remain blocking.
+- No schema migration; no change to GLPI-to-GLPI profiles, association logic, or ObjectLink identity rules.
+- Added offline regression tests and `tools/preflight-2.18.23.sh`.
+
+## 2.18.22 - GLPI 11 Datawise Fields option recognition (candidate)
+
+- Fix block-prefixed Location Fields labels and dedicated dropdown-table options.
+- Real read-only Datawise search metadata replay: 35/35 matched; false-positive/duplicate guards.
+- Strict source and target Fields fail-fast retained; Zendesk/INDIGO profiles unchanged.
+- Offline-candidate only; live import and TLS trust need qualification.
+
+## 2.18.21 - Safe GLPI REST v1 Fields diagnosis (candidate)
+
+- Read-only administrator diagnostic of authenticated Location search options, mappings and ambiguities.
+- More robust schema-aware detection across GLPI 10 / GLPI 11 Fields metadata, without silent fallback on unrelated native fields.
+- Strict preflight retained, security checks and Zendesk/INDIGO job profiles preserved.
+
+## 2.18.20 - Independent GLPI 10 legacy migration profiles (candidate)
+
+- Three independent GLPI REST v1 jobs: Telecom (unchanged), Network and Microsoft Licences.
+- Shared isolated GLPI 10 Location Fields search-option discovery with technical names,
+  ambiguity rejection and source preflight. Distinct credentials, checkpoints and ObjectLinks.
+- Network pseudo-locations become NetworkEquipment; site data goes to Location,
+  standard asset attributes to core fields, finance to equipment Infocom and residual
+  métier values to the required target Fields blocks.
+- Microsoft product Software/SoftwareLicense catalogue and individualized assignments
+  preserved in plugin-owned migration storage (not Location). Acquired quantity is
+  explicitly unknown and never inferred from individual assignment counts.
+- Read-only privileged Microsoft assignment list in the UXConnector menu.
+- Adds an idempotent plugin-owned SQL table during GLPI plugin upgrade.
+- Maintains Zendesk workflows, Telecom connector and source/target Fields fail-fast.
+- Candidate: real GLPI 10/11 integration, full PHPUnit/GLPI editor review pending.
+
+## 2.18.19 - GLPI 10 Fields source option discovery (candidate)
+
+- Resolve the historical GLPI 10 telecom fields by technical `xml_node` identifiers
+  when those identifiers are exposed by `/listSearchOptions/Location`, with
+  scoped exact-label fallback for options of the Fields plugin.
+- Never copy YAML field IDs as GLPI search option IDs; the latter are discovered
+  dynamically from the live API on each source connection.
+- Reject ambiguous field matches before writing GLPI 11 data, rather than
+  choosing the first identically named option. Keep the source and target
+  fail-fast prerequisites and per-record diagnostics.
+- Legacy GLPI 10 telecom label variants supported: Utilisateur, Equipements,
+  N° de série, Tarif équipements, Abonnements, Date de Création, Code RDS,
+  Date de Résiliation, etc. No source credentials/configuration exports included.
+- No change to Zendesk category or ticket jobs, SIM processing, material
+  associations, finance write path, or Microsoft license transformation.
+- `Fields` dropdown source values must resolve to their DISPLAY LABELS, not
+  foreign numeric option IDs; verify this in GLPI 10 integration before use.
+- Unit regression tests and a standalone preflight included; actual GLPI 10
+  API and GLPI 11 target reconciliation remain unverified in this package.
+
+## 2.18.18 - INDIGO GLPI 10 source diagnostics (candidate)
+
+- **New source-side fail-fast**: the INDIGO telecom job checks the GLPI 10
+  `/listSearchOptions/Location` mapping before any GLPI 11 write and lists
+  expected source columns which cannot be resolved. Keeps the existing
+  target Fields fail-fast for Location and Line unchanged.
+- **No silent API omissions**: missing keys in a GLPI 10 search response
+  generate a per-record `SOURCE_OPTION_NOT_RETURNED` warning, with only
+  allowlisted column labels and source ID; empty or null values explicitly
+  present in the response are not treated as missing columns.
+- Removed overbroad substring-based source label matching to reduce the
+  risk of choosing an unrelated search option.
+- Extended strict financial date parsing to common GLPI 10 datetime and
+  European date formats. Rejects impossible dates and malformed monetary
+  values rather than silently transforming them.
+- Preserves Zendesk catalog and delta workflows, SIM creation, GLPI material
+  associations, `Infocom` exclusively on the material, `Line.caller_name` as
+  text (no user reconciliation), ObjectLinks and idempotence.
+- No database migration, schema change or new dependency.
+- This is a **diagnostic candidate**, not evidence that empty source data
+  or all missing target relations are fixed. Test on GLPI 11 staging.
+
+## 2.18.15 (2026-10-15)
+
+## 2.18.17 - GLPI 10 Télécoms : SIM, rattachement matériel, gestion financière et appelant
+
+- Corrige la préparation du référentiel SIM (DeviceSimcard non nul) et renforce l'association Item_DeviceSimcard/Line.
+- Isole les sous-traitements équipement / association / Infocom / SIM ; incidents détaillés avec codes stables sans secrets.
+- Préserve la correspondance texte vers Line.caller_name, sans rapprochement utilisateurs GLPI.
+- Conserve strictement le contrôle préalable Fields et le comportement Zendesk 2.18.15.
+- Tests unitaires simulés complémentaires, préflight et note de recette.
+
+- Replace Zendesk category ticket-scan bootstrap with direct paginated Sujet field-option catalog import, including upgrades of persisted jobs.
+- Preserve `topic__` identity via ObjectLink while translating Zendesk `::` labels to GLPI ITILCategory ancestry (`>` display).
+- Keep initial non-closed ticket import and incremental delta behavior; add unique-known-tag fallback for ticket records missing custom_fields.
+- Keep category hierarchy synchronized on renamed/reparented subjects.
+- Add isolated unit and no-dependency preflight checks.
+
+## 2.18.14 - Candidate (2026-10-14)
+- Advanced REST inbound interactions can now target `Item_DeviceSimcard` with native SIM fields and explicit associations.
+- Active Fields labels appear as `fields:<label>` in allowed targets, with validation and existing generated container writer reuse.
+- `link:<external_object_type>` transform resolves foreign relations through scoped ObjectLink rather than copying source primary keys.
+- SIM entity/reference checks; sensitive SIM payloads withheld from error snapshots. Additional unit and standalone preflight checks.
+- Requires functional GLPI 11 / Fields / API regression testing before publisher submission.
+
+## 2.18.12 - 2026-10-09
+
+- Advanced Custom REST: expose explicit GLPI targets `Lieu`, `Ligne` and `Licence` in the curated allow-list.
+- `Licence` maps to the native GLPI `SoftwareLicense` itemtype (`glpi_softwarelicenses`) and is handled by the generic CommonDBTM writer.
+- Add conservative match fields (`serial`, `otherserial`, `name`) and writable-field allow-list for software licenses.
+- Preserve the security model: no arbitrary table/class names and no raw-SQL target selection.
+- Add a regression self-test for the three management targets.
+
+## 2.18.11 - 2026-10-08
+
+- Verrouille le périmètre du job INDIGO Lignes téléphoniques sur la matrice validée.
+- Documente le mapping exact Location / Line / Fields / équipements / SIM / Infocom.
+- Confirme que le champ source Utilisateur alimente `caller_name` uniquement et ne crée pas d’utilisateur GLPI.
+- Ajoute un self-test de non-régression sur les 2 champs Fields Lieu, 14 champs Fields Ligne et les relations natives.
+
+## 2.18.10 - Test build
+
+- Ajoute le job `INDIGO - Lieux Télécom GLPI 10 → Lieux / Lignes GLPI 11` au connecteur GLPI REST v1.
+- Découverte automatique des search options `Location` du GLPI 10, y compris les champs du plugin Fields.
+- Pagination native GLPI REST v1 par `range=start-end`.
+- Normalisation des pseudo-lignes stockées dans `Location` vers `Location` + `Line`.
+- Alimentation des 2 champs supplémentaires Lieu et des 14 champs supplémentaires Ligne via les classes générées du plugin Fields, sans altérer les tables cœur.
+- Réconciliation par code/nom de site, numéro appelant de ligne et ObjectLink source, avec réparation du lien si la cible a été supprimée/recréée.
+- Normalise les équipements (`OTD*` → `NetworkEquipment`, autres libellés → `Phone`), les rattache aux lignes via `Item_Line`, alimente `Infocom` (date de remise / valeur) et les SIM (`serial`, `PUK`, ligne et équipement).
+- Préflight Fields avant toute écriture : le job refuse de démarrer si les 2 champs Lieu ou les 14 champs Ligne attendus ne sont pas configurés.
+
+## 2.18.9 - Test build
+
+- Fixes **Retry failed items** for corrected Zendesk source data: retries now re-fetch the current object by immutable Zendesk ID before replaying it instead of processing the historical failure snapshot.
+- Keeps `source_snapshot` immutable as audit evidence; a supported live refresh failure never silently falls back to stale data.
+- Adds an application retry-source refresh port and a Zendesk infrastructure adapter with a closed allow-list of single-object API paths (users, groups, organizations, tickets, ticket forms).
+- Preserves snapshot-based retry as backward-compatible fallback only for connector/object types without a dedicated live refresh strategy.
+- Allows a retry to be queued when a source ID exists even if no snapshot is stored, enabling live-source recovery.
+- Improves `REQUIRED_MAPPING_MISSING` diagnostics by naming the missing source field (for example `email`).
+- Keeps full replay, idempotence/ObjectLinks, category counters, ExecutionQueue and ExecutionWatchdog behavior unchanged.
+
+## 2.18.8 - Test build
+
+- Fixes execution counters for the specialized Zendesk topics -> GLPI ITIL categories batch processor.
+- Specialized batch processors now return the shared detailed `BatchProcessResult`, preserving Created / Updated / Skipped / Failed counters end-to-end.
+- Category reconciliation now exposes a typed create/update/skip outcome while retaining the existing `ensureForTopic()` compatibility API used by ticket enrichment.
+- Adds a non-regression unit test covering create, update, skip, failure, duplicate-topic de-duplication and closed-ticket exclusion.
+- Keeps the 2.18.7 full-replay UI/cache-bypass and 2.18.5 watchdog/resume behavior unchanged.
+
+## 2.18.7 - Test build
+
+- Fixes execution-history action discoverability when GLPI production Twig cache still serves a previously compiled template.
+- Uses a versioned execution-history template (`history_2_18_7.html.twig`) so the controller cannot resolve the stale compiled 2.18.5/2.18.6 template.
+- Keeps the same CSRF, UPDATE-right, atomic full-replay and idempotence controls.
+
+## 2.18.5
+
+## 2.18.6 - Test build
+
+- Exposes **Replay from start** directly in the execution-history header, where operators already monitor and resume executions.
+- Keeps CSRF and UPDATE-right checks on the replay POST action.
+- Reuses the existing atomic QueueFullReplayService: source checkpoint reset only, ObjectLinks preserved, background PENDING execution.
+- Version bump forces GLPI to run the plugin update cycle and refresh cached presentation resources.
+
+
+### Fixed
+- Added independent `ExecutionWatchdog` CronTask to recover abandoned RUNNING executions after stale heartbeat detection.
+- Releases a stale GLPI `ExecutionQueue` RUNNING lease only after an abandoned UXConnector execution has been positively recovered.
+- `ExecutionQueue` now processes at most one queued execution per invocation.
+- Heartbeat is persisted before each potentially slow remote page.
+- Full replay is now an atomic Application use case and is exposed as **Replay from start** in the UI.
+- Removed inward-layer dependency violations: Application/Presentation no longer import Infrastructure and controller factories moved to `Bootstrap`.
+
+### Security / quality
+- Preserves GLPI CSRF protection, TLS verification, credential vault isolation, secret redaction and short-lived DB mutexes.
+- Added architecture dependency gate and unit tests for stale recovery, heartbeat and atomic replay.
+
+## 2.18.4 - 2026-10-06
+
+### 2.18.4 recipe corrections (test build 2)
+
+- Fixed the Connection screen `Run now` path: it now queues work through `QueueSyncJobService` instead of executing the full synchronization inside the user HTTP request.
+- Added an InnoDB row mutex around queue/resume critical sections so rapid double-clicks cannot enqueue concurrent executions for the same interaction.
+- Added UI double-submit guards for manual run/full replay actions.
+- Added explicit GLPI REST v1 App-Token and User-Token fields to the main Connection form and wired them to the existing protected credential composer.
+- Added `Full replay`: resets only the persisted source checkpoint, preserves ObjectLinks/idempotence metadata, then queues a background execution.
+- Reduced abandoned-execution recovery default from 30 to 10 minutes (configurable with `UXCONNECTOR_STALE_EXECUTION_MINUTES`, 2..1440).
+- Hardened rollback paths so a lost MariaDB connection cannot mask the original worker error; stale `RUNNING` executions are reconciled after DB recovery.
+- No database schema change is required by this recipe correction.
+
+
+### Execution resilience / GLPI REST v1
+
+- Manual `Run now` actions are now queued and return immediately; the `ExecutionQueue` CronTask processes manual work asynchronously without changing the cadence of scheduled jobs.
+- Added execution progress/checkpoint metadata, resumable `INTERRUPTED` executions, duplicate-launch prevention, and detailed Created/Updated/Skipped/Warnings/Failed counters.
+- Added per-item failure persistence, CSV export, targeted failed-item replay queue, error categories, retry metadata, and `SUCCESS_WITH_WARNINGS` for non-fatal post-processing failures such as attachments.
+- Added connector-agnostic HTTP resilience: retry budget, exponential backoff with jitter, `Retry-After`, 408/429/500/502/503/504 handling, one authentication renewal, and HTTP/2 stream-error fallback to HTTP/1.1 when cURL is available.
+- Added native `glpi_rest_v1` connector support for GLPI 9/10 using App-Token + User-Token, `/initSession`, memory-only Session-Token renewal, and `/killSession`.
+- Added secret redaction before failed-record snapshots are persisted; TLS verification remains mandatory.
+- Added domain-level RetryPolicy/ErrorClassification rules and unit regressions for retry classification, HTTP/2 stream fallback detection, resumable executions, warning status, and secret redaction.
+- Extended the README architecture statement without claiming historical strict TDD.
+
 ## 2.18.3 - 2026-10-05
 
 ### Zendesk offline pre-release validation
@@ -183,20 +439,20 @@
 - Added the read-only UXConnector Copilot Gateway Lot 1.
 - Added canonical ITSM ticket model, GLPI HL provider, Copilot API clients and OpenAPI tools.
 
-## 2.8.4 — 2026-08-19
+## 2.8.4 - 2026-08-19
 
 - Fix standard interaction creation on an already active connection: the `Activate immediately` checkbox no longer reuses the connection-level `activate` POST action name.
 - Dispatch `instantiate` before AuthConfig lifecycle actions as a defensive routing rule.
 - No database schema change.
 
-## 2.8.3 — 2026-08-19
+## 2.8.3 - 2026-08-19
 
 - Ajoute des accès directs **Edit** et **Interactions** depuis la liste des connexions.
 - Ajoute un raccourci **Interactions** dans l'en-tête de la fiche connexion.
 - Ajoute une ancre `#interactions` afin d'ouvrir directement la zone des interactions standards.
 - Expose le droit de lecture des jobs à la vue liste sans contourner le modèle de droits GLPI.
 
-## 2.8.2 — 2026-08-19
+## 2.8.2 - 2026-08-19
 
 ### Correctif catalogue / types de connecteurs
 
@@ -206,7 +462,7 @@
 - Le catalogue et la fiche Connection partagent de nouveau la même source de templates embarqués.
 - Aucun changement de schéma SQL.
 
-## 2.8.1 — 2026-08-19
+## 2.8.1 - 2026-08-19
 
 ### Parcours Connection
 
@@ -226,7 +482,7 @@
 - Passer à une méthode sans credential purge le secret protégé devenu inutile.
 - Les méthodes d’authentification proposées en édition restent filtrées par les capacités du connecteur standard associé.
 
-## 2.8.0 — 2026-08-18
+## 2.8.0 - 2026-08-18
 
 ### Connections
 
@@ -267,7 +523,7 @@
 - Validation serveur de la compatibilité méthode d'authentification / connecteur lors d'une association.
 - Fallback ASCII `strtoupper` / `strtolower` pour les paramètres de templates lorsque `mbstring` n'est pas disponible.
 
-## 2.7.0 — 2026-08-18
+## 2.7.0 - 2026-08-18
 
 ### Catalogue et templates
 
@@ -298,7 +554,7 @@
 - Les jobs existants sont conservés. Pour éviter toute connaissance implicite d'un éditeur dans le runtime, les jobs 2.6.0 qui dépendaient de l'autodétection `issues`/`values` ou d'une pagination spécifique doivent être revus ou recréés depuis le catalogue.
 - Le périmètre d'écriture vers les systèmes tiers reste hors Phase A : les jobs fournis sont INBOUND.
 
-## 2.6.0 — 2026-08-18
+## 2.6.0 - 2026-08-18
 
 ### Ajouté
 
@@ -318,7 +574,7 @@
 - Les projets et tickets sont synchronisés comme objets indépendants. GLPI lie nativement un Ticket à une **ProjectTask**, pas directement à un Project; la matérialisation automatique de cette relation est donc volontairement reportée à une évolution dédiée.
 
 
-## 2.5.2 — 2026-08-18
+## 2.5.2 - 2026-08-18
 
 - Authentication connection test now targets a configurable relative **Test path** instead of always calling `/`.
 - Only HTTP **2xx** responses are considered successful authentication tests; 401/403/404/5xx now move the configuration to `ERROR` and cannot be activated.
@@ -326,7 +582,7 @@
 - Jira Cloud recommendation: Endpoint `https://api.atlassian.com/ex/jira/{cloudId}` with Test path `/rest/api/3/project`.
 - Includes prior GLPI 11 hotfixes for CSRF handling, `CommonDBTM::find()` arrays, and AuthConfig deletion.
 
-## 2.5.1 — GLPI 11 hotfix (2026-08-18)
+## 2.5.1 - GLPI 11 hotfix (2026-08-18)
 
 - Added a permanent **Delete** action for authentication configurations.
 - Deletion requires the GLPI `PURGE` right and is protected by the native GLPI 11 CSRF layer.
@@ -430,18 +686,18 @@ première phase de migration vers les contrôleurs natifs GLPI 11.
   `AuthMethod::OAUTH2_CLIENT_CREDENTIALS` est désormais proposé dans le
   formulaire de création. `OAUTH2_AUTHORIZATION_CODE` reste délibérément non
   implémenté (flux interactif incompatible avec une tâche planifiée
-  headless — incompatibilité de nature, pas un manque temporaire). Aucun
+  headless - incompatibilité de nature, pas un manque temporaire). Aucun
   cache de jeton : un nouveau jeton est obtenu à chaque exécution
   (limitation documentée, pas un défaut).
 - **Écran d'historique des `SyncExecution`** : `ListSyncExecutionsService`,
   nouvel écran accessible depuis un lien « Historique » sur chaque ligne de
-  la liste des synchronisations — statut, durée, éléments traités/échoués,
+  la liste des synchronisations - statut, durée, éléments traités/échoués,
   message d'erreur. Les données étaient déjà persistées ; elles ne sont
   aujourd'hui plus consultables uniquement en base.
-- **Migration GLPI 11 native — phase 1 (lecture seule)** :
+- **Migration GLPI 11 native - phase 1 (lecture seule)** :
   `AuthConfigNativeController`, `SyncJobNativeController`, délégant
   strictement aux mêmes Services applicatifs déjà utilisés par les
-  `front/*.php` existants. Non câblée dans `HookManager` — voir
+  `front/*.php` existants. Non câblée dans `HookManager` - voir
   `docs/migration/glpi11-native-controllers.md` pour le statut détaillé,
   les hypothèses non vérifiées, et la procédure de validation recommandée.
 
@@ -452,11 +708,11 @@ réelle (smoke tests), la migration vers les contrôleurs natifs GLPI 11 n'a
 **pas pu être prouvée par exécution** dans cet environnement de
 développement, faute de runtime GLPI/Symfony disponible. Le code est écrit
 et syntaxiquement valide, mais son comportement réel reste à confirmer sur
-une instance GLPI 11 — voir `docs/migration/glpi11-native-controllers.md`.
+une instance GLPI 11 - voir `docs/migration/glpi11-native-controllers.md`.
 
 ## [2.4.0]
 
-Gestion des entités GLPI — le dernier des quatre chantiers structurants
+Gestion des entités GLPI - le dernier des quatre chantiers structurants
 identifiés par les deux relectures externes successives (après le cycle
 d'activation, la sécurité SSRF/rotation de clé, et `ObjectLink`).
 
@@ -470,14 +726,14 @@ d'activation, la sécurité SSRF/rotation de clé, et `ObjectLink`).
   - **Déduite** : lit un champ de la réponse brute du système tiers (ex.
     `location`) et le résout via une table `valeur source → entities_id`,
     avec une politique explicite (`UnknownEntityPolicy`) en cas de valeur
-    non répertoriée — échouer l'enregistrement, ou utiliser une entité par
+    non répertoriée - échouer l'enregistrement, ou utiliser une entité par
     défaut.
 - **`SyncJob::entityAssignmentStrategy`** : nouveau champ de configuration,
   optionnel (absent = comportement GLPI par défaut, adapté à une instance
   mono-entité).
 - **`GlpiItemWriter`** applique désormais `entities_id` lors de la
   création/mise à jour, et **scope également la recherche de collision par
-  entité** quand elle est résolue — corrige directement l'exemple donné par
+  entité** quand elle est résolue - corrige directement l'exemple donné par
   la revue de code externe (deux `Computer` de même `serial`, un par
   entité) : la collision devient une résolution non ambiguë dès lors que
   l'entité cible est déterminée.
@@ -491,12 +747,12 @@ d'activation, la sécurité SSRF/rotation de clé, et `ObjectLink`).
 Contrairement aux trois précédentes extensions de `SyncJob`
 (`TargetItemtype`, `MatchField`, puis `ExternalIdField`), ce champ a été
 ajouté comme **paramètre optionnel en fin de signature** plutôt qu'en
-position médiane — aucun appel `SyncJob::create()` existant dans la base de
+position médiane - aucun appel `SyncJob::create()` existant dans la base de
 tests n'a donc eu besoin d'être modifié pour cette version.
 
 ## [2.3.0]
 
-Réconciliation par identifiant externe stable (`ObjectLink`) — le sujet
+Réconciliation par identifiant externe stable (`ObjectLink`) - le sujet
 structurant classé en tête de priorité par les deux relectures externes
 successives, juste après le cycle d'activation.
 
@@ -508,14 +764,14 @@ successives, juste après le cycle d'activation.
   `glpi_plugin_uxconnector_objectlinks`.
 - **`SyncJob::externalIdField`** (`ExternalIdField`) : nouveau champ de
   configuration nommant, dans la réponse brute du système tiers, celui qui
-  porte l'identifiant stable de l'enregistrement (ex. `id`, `sys_id`) —
+  porte l'identifiant stable de l'enregistrement (ex. `id`, `sys_id`) -
   distinct de `MatchField`, qui ne sert désormais plus qu'à la toute première
   tentative de rapprochement d'un `ExternalId` encore inconnu.
 - **`GlpiItemWriter` réécrit** : la stratégie de rapprochement n'est plus une
   simple recherche `WHERE <matchField> = <valeur> LIMIT 1`. Elle consulte
   d'abord `ObjectLink` ; à défaut de lien connu, elle applique une logique
   CREATE (aucune correspondance) / LINK (une correspondance, adoption d'un
-  enregistrement existant) / **COLLISION** (plusieurs correspondances — refus
+  enregistrement existant) / **COLLISION** (plusieurs correspondances - refus
   d'écrire plutôt que de deviner lequel modifier).
 - Doc-block de `GlpiItemWriter` corrigé : retire l'affirmation inexacte selon
   laquelle `CommonDBTM` protégerait automatiquement les droits utilisateur, et
@@ -531,7 +787,7 @@ successives, juste après le cycle d'activation.
 
 ## [2.2.0]
 
-Cycle d'activation applicatif — le sujet classé comme le plus urgent
+Cycle d'activation applicatif - le sujet classé comme le plus urgent
 fonctionnellement par les deux relectures externes successives : le Domaine
 exposait un cycle de vie complet (`AuthConfig` : `DRAFT → TESTING → ACTIVE` ;
 `SyncJob` : `DRAFT → ACTIVE → PAUSED`) qu'aucun code applicatif n'orchestrait.
@@ -566,8 +822,8 @@ mise en production.
 ### Sécurité
 
 - **Protection SSRF (`DestinationPolicy`)** : toute utilisation réelle d'un
-  `Endpoint` — à la création d'un `AuthConfig` (`CreateAuthConfigService`) et à
-  chaque exécution HTTP (`GenericHttpEngine`) — vérifie désormais que l'hôte,
+  `Endpoint` - à la création d'un `AuthConfig` (`CreateAuthConfigService`) et à
+  chaque exécution HTTP (`GenericHttpEngine`) - vérifie désormais que l'hôte,
   une fois résolu par DNS, ne pointe pas vers une adresse de boucle locale, une
   adresse lien-local (qui inclut les métadonnées d'instance cloud sur
   `169.254.169.254`), ou une autre plage à usage spécial jamais légitime pour
@@ -584,14 +840,14 @@ mise en production.
   déjà migré ou corrompu n'interrompt pas la rotation des autres). Exposé par
   un script opérationnel (`tools/rekey-credential-vault.php`) destiné à être
   exécuté manuellement par un administrateur avant toute modification de
-  `GLPI_INSTANCE_KEY` — auparavant, une rotation de cette constante aurait
+  `GLPI_INSTANCE_KEY` - auparavant, une rotation de cette constante aurait
   rendu tous les secrets déjà stockés définitivement indéchiffrables.
 
 ## [2.0.1]
 
 Lot de durcissement **P0**, consécutif à une revue de code externe menée sur
 la version 2.0.0. Chaque correctif ci-dessous a été vérifié par exécution
-réelle (smoke tests dédiés), pas seulement par relecture — voir le document
+réelle (smoke tests dédiés), pas seulement par relecture - voir le document
 de synthèse projet, section 6, pour le détail des scénarios de preuve.
 
 ### Sécurité
@@ -601,7 +857,7 @@ de synthèse projet, section 6, pour le détail des scénarios de preuve.
   soumission (`AbstractController::checkCsrf()`), sur les deux formulaires de
   création (`AuthConfig`, `SyncJob`).
 - **Redirections HTTP** : `GenericHttpEngine` ne suit plus automatiquement les
-  redirections (`follow_location => 0`) — élimine le risque de fuite des
+  redirections (`follow_location => 0`) - élimine le risque de fuite des
   en-têtes d'authentification (`Authorization`, `X-Api-Key`) vers un hôte de
   destination non maîtrisé.
 - **Taille de réponse HTTP bornée** : lecture du corps de réponse par blocs
@@ -632,7 +888,7 @@ de synthèse projet, section 6, pour le détail des scénarios de preuve.
   directement) et un scénario couvrant le comportement réel de
   `SyncJobCronTask::cronSyncJob()` (qui exécute *tous* les `SyncJob` actifs de
   la base), ce dernier verrouillé derrière la variable d'environnement
-  `UXCONNECTOR_ALLOW_DESTRUCTIVE_CRON_TEST=1` — ne doit jamais être activé sur
+  `UXCONNECTOR_ALLOW_DESTRUCTIVE_CRON_TEST=1` - ne doit jamais être activé sur
   une instance partagée ou de production.
 - **Fixture `AuthConfig` du test cron** : ne portait pas la configuration
   d'authentification à l'état `ACTIVE` avant utilisation
@@ -664,7 +920,7 @@ configurable).
 - **Bounded context Sync** : agrégats `SyncJob` (configuration de
   synchronisation) et `SyncExecution` (historique d'exécution, agrégat
   séparé), `GlpiItemWriter` (upsert vers un itemtype GLPI parmi une liste
-  fermée — `TargetItemtype`), `SyncJobCronTask` (exécution planifiée horaire
+  fermée - `TargetItemtype`), `SyncJobCronTask` (exécution planifiée horaire
   de tous les `SyncJob` actifs, isolation des erreurs entre jobs).
 - **Presentation** : écrans de liste et de création pour `AuthConfig` et
   `SyncJob`, menu de navigation GLPI (`inc/menu.class.php`), droits par

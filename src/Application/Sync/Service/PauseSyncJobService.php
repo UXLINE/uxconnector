@@ -22,30 +22,30 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
 /**
  * Orchestrates the "pause this SyncJob" use case.
  *
- * SyncJob::pause() has no state guard — pausing is always a safe,
+ * SyncJob::pause() has no state guard - pausing is always a safe,
  * immediate action, and SyncJobCronTask's findRunnable() will simply
  * stop picking this job up.
  */
 final class PauseSyncJobService
 {
-   public function __construct(
+    public function __construct(
         private readonly SyncJobRepositoryInterface $repository
-    ) {
-   }
+    ) {}
 
     /**
      * @throws SyncJobNotFoundException if the command's SyncJobId does not
      *         resolve to an existing SyncJob.
      */
-   public function execute(PauseSyncJobCommand $command): SyncJob {
-       $syncJob = $this->repository->findById($command->syncJobId);
+    public function execute(PauseSyncJobCommand $command): SyncJob
+    {
+        $syncJob = $this->repository->findById($command->syncJobId);
 
-      if ($syncJob === null) {
-          throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($command->syncJobId);
-      }
+        if ($syncJob === null) {
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($command->syncJobId);
+        }
 
-       $syncJob->pause();
+        $syncJob->pause();
 
-       return $this->repository->save($syncJob);
-   }
+        return $this->repository->save($syncJob);
+    }
 }

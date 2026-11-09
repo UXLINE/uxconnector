@@ -52,7 +52,7 @@ use GlpiPlugin\Uxconnector\Infrastructure\Template\TemplateServiceProvider;
  *
  * This is exactly the centralization promised in front/authconfig.php's
  * original comment ("Ce câblage sera centralisé dès qu'un deuxième
- * front/*.php en aura également besoin.") — a second call site
+ * front/*.php en aura également besoin.") - a second call site
  * (front/authconfig.form.php) now exists, so the poor man's DI is
  * replaced by this provider rather than duplicated.
  *
@@ -63,24 +63,28 @@ use GlpiPlugin\Uxconnector\Infrastructure\Template\TemplateServiceProvider;
  */
 final class EngineServiceProvider
 {
-   public static function authConfigRepository(): AuthConfigRepositoryInterface {
-       return new AuthConfigRepository(
-           new AuthConfigPersistenceMapper(),
-           self::authConfigSecretStore()
-       );
-   }
+    public static function authConfigRepository(): AuthConfigRepositoryInterface
+    {
+        return new AuthConfigRepository(
+            new AuthConfigPersistenceMapper(),
+            self::authConfigSecretStore(),
+        );
+    }
 
-   public static function authConfigSecretStore(): AuthConfigSecretStoreInterface {
-       return new AuthConfigSecretStore();
-   }
+    public static function authConfigSecretStore(): AuthConfigSecretStoreInterface
+    {
+        return new AuthConfigSecretStore();
+    }
 
-   public static function credentialVault(): CredentialVaultInterface {
-       return new OpenSslCredentialVault();
-   }
+    public static function credentialVault(): CredentialVaultInterface
+    {
+        return new OpenSslCredentialVault();
+    }
 
-   public static function hostResolver(): HostResolverInterface {
-       return new DnsHostResolver();
-   }
+    public static function hostResolver(): HostResolverInterface
+    {
+        return new DnsHostResolver();
+    }
 
     /**
      * CORRECTIF SÉCURITÉ (SSRF, revue de code externe) : source unique
@@ -88,84 +92,96 @@ final class EngineServiceProvider
      * (vérification à chaque exécution) et CreateAuthConfigService
      * (rejet immédiat à la création).
      */
-   public static function destinationPolicy(): DestinationPolicyInterface {
-       return new DestinationPolicy(self::hostResolver());
-   }
+    public static function destinationPolicy(): DestinationPolicyInterface
+    {
+        return new DestinationPolicy(self::hostResolver());
+    }
 
-   public static function oauth2TokenClient(): OAuth2TokenClient {
-       return new OAuth2TokenClient(self::destinationPolicy());
-   }
+    public static function oauth2TokenClient(): OAuth2TokenClient
+    {
+        return new OAuth2TokenClient(self::destinationPolicy());
+    }
 
-   public static function httpEngine(): HttpEngineInterface {
-       return new GenericHttpEngine(
-           self::authConfigSecretStore(),
-           self::credentialVault(),
-           new AuthenticationStrategyFactory(self::oauth2TokenClient()),
-           self::destinationPolicy()
-       );
-   }
+    public static function httpEngine(): HttpEngineInterface
+    {
+        return new GenericHttpEngine(
+            self::authConfigSecretStore(),
+            self::credentialVault(),
+            new AuthenticationStrategyFactory(self::oauth2TokenClient(), self::destinationPolicy()),
+            self::destinationPolicy(),
+        );
+    }
 
-   public static function listAuthConfigsService(): ListAuthConfigsService {
-       return new ListAuthConfigsService(self::authConfigRepository());
-   }
+    public static function listAuthConfigsService(): ListAuthConfigsService
+    {
+        return new ListAuthConfigsService(self::authConfigRepository());
+    }
 
-   public static function getAuthConfigService(): GetAuthConfigService {
-       return new GetAuthConfigService(self::authConfigRepository());
-   }
+    public static function getAuthConfigService(): GetAuthConfigService
+    {
+        return new GetAuthConfigService(self::authConfigRepository());
+    }
 
-   public static function assignConnectorTemplateService(): AssignConnectorTemplateService {
-       return new AssignConnectorTemplateService(
-           self::authConfigRepository(),
-           TemplateServiceProvider::repository()
-       );
-   }
+    public static function assignConnectorTemplateService(): AssignConnectorTemplateService
+    {
+        return new AssignConnectorTemplateService(
+            self::authConfigRepository(),
+            TemplateServiceProvider::repository(),
+        );
+    }
 
-   public static function createAuthConfigService(): CreateAuthConfigService {
-       return new CreateAuthConfigService(
-           self::authConfigRepository(),
-           self::authConfigSecretStore(),
-           self::credentialVault(),
-           self::destinationPolicy(),
-           new GlpiTransactionManager($GLOBALS['DB']),
-           new SynchronousEventDispatcher()
-       );
-   }
+    public static function createAuthConfigService(): CreateAuthConfigService
+    {
+        return new CreateAuthConfigService(
+            self::authConfigRepository(),
+            self::authConfigSecretStore(),
+            self::credentialVault(),
+            self::destinationPolicy(),
+            new GlpiTransactionManager($GLOBALS['DB']),
+            new SynchronousEventDispatcher(),
+        );
+    }
 
-   public static function updateAuthConfigService(): UpdateAuthConfigService {
-       return new UpdateAuthConfigService(
-           self::authConfigRepository(),
-           self::authConfigSecretStore(),
-           self::credentialVault(),
-           self::destinationPolicy(),
-           new GlpiTransactionManager($GLOBALS['DB'])
-       );
-   }
+    public static function updateAuthConfigService(): UpdateAuthConfigService
+    {
+        return new UpdateAuthConfigService(
+            self::authConfigRepository(),
+            self::authConfigSecretStore(),
+            self::credentialVault(),
+            self::destinationPolicy(),
+            new GlpiTransactionManager($GLOBALS['DB']),
+        );
+    }
 
     /**
      * CYCLE D'ACTIVATION (issu des deux relectures externes).
      */
-   public static function testAuthConfigService(): TestAuthConfigService {
-       return new TestAuthConfigService(
-           self::authConfigRepository(),
-           self::httpEngine()
-       );
-   }
+    public static function testAuthConfigService(): TestAuthConfigService
+    {
+        return new TestAuthConfigService(
+            self::authConfigRepository(),
+            self::httpEngine(),
+        );
+    }
 
-   public static function activateAuthConfigService(): ActivateAuthConfigService {
-       return new ActivateAuthConfigService(self::authConfigRepository());
-   }
+    public static function activateAuthConfigService(): ActivateAuthConfigService
+    {
+        return new ActivateAuthConfigService(self::authConfigRepository());
+    }
 
-   public static function disableAuthConfigService(): DisableAuthConfigService {
-       return new DisableAuthConfigService(self::authConfigRepository());
-   }
+    public static function disableAuthConfigService(): DisableAuthConfigService
+    {
+        return new DisableAuthConfigService(self::authConfigRepository());
+    }
 
-   public static function deleteAuthConfigService(): DeleteAuthConfigService {
-       return new DeleteAuthConfigService(
-           self::authConfigRepository(),
-           new AuthConfigUsageChecker($GLOBALS['DB']),
-           new GlpiTransactionManager($GLOBALS['DB']),
-           new GlpiConnectionArtifactsCleaner()
-       );
-   }
+    public static function deleteAuthConfigService(): DeleteAuthConfigService
+    {
+        return new DeleteAuthConfigService(
+            self::authConfigRepository(),
+            new AuthConfigUsageChecker($GLOBALS['DB']),
+            new GlpiTransactionManager($GLOBALS['DB']),
+            new GlpiConnectionArtifactsCleaner(),
+        );
+    }
 
 }

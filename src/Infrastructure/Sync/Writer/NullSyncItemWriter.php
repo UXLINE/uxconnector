@@ -25,12 +25,13 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Writer\SyncItemWriterInterface;
  * Always reports failure rather than silently pretending to have
  * written data: a SyncJob wired to this writer will correctly show
  * every fetched item as failed in its SyncExecution, which is an
- * honest, visible signal — never a silent no-op that looks like
+ * honest, visible signal - never a silent no-op that looks like
  * success.
  */
 final class NullSyncItemWriter implements SyncItemWriterInterface
 {
-   public function write(ReconciliationContext $context, array $mappedFields): bool {
-       return false;
-   }
+    public function write(ReconciliationContext $context, array $mappedFields): bool
+    {
+        return false;
+    }
 }

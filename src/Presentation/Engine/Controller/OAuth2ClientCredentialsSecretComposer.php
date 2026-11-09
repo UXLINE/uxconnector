@@ -21,7 +21,7 @@ namespace GlpiPlugin\Uxconnector\Presentation\Engine\Controller;
  * ID, client secret, optional scope).
  *
  * Kept as a standalone, testable class rather than inlined in
- * AuthConfigController::create() — same rationale as
+ * AuthConfigController::create() - same rationale as
  * FieldMappingRequestParser and EntityAssignmentStrategyRequestParser
  * in the Sync bounded context.
  */
@@ -34,33 +34,34 @@ final class OAuth2ClientCredentialsSecretComposer
      *         three required fields (token URL, client ID, client
      *         secret) were not all supplied.
      */
-   public function compose(array $request): ?string {
-       $tokenUrl = trim((string) ($request['oauth2_token_url'] ?? ''));
-       $clientId = trim((string) ($request['oauth2_client_id'] ?? ''));
-       $clientSecret = trim((string) ($request['oauth2_client_secret'] ?? ''));
-       $scope = trim((string) ($request['oauth2_scope'] ?? ''));
+    public function compose(array $request): ?string
+    {
+        $tokenUrl = trim((string) ($request['oauth2_token_url'] ?? ''));
+        $clientId = trim((string) ($request['oauth2_client_id'] ?? ''));
+        $clientSecret = trim((string) ($request['oauth2_client_secret'] ?? ''));
+        $scope = trim((string) ($request['oauth2_scope'] ?? ''));
 
-      if ($tokenUrl === '' || $clientId === '' || $clientSecret === '') {
-          return null;
-      }
+        if ($tokenUrl === '' || $clientId === '' || $clientSecret === '') {
+            return null;
+        }
 
-       $payload = [
-           'token_url' => $tokenUrl,
-           'client_id' => $clientId,
-           'client_secret' => $clientSecret,
-       ];
+        $payload = [
+            'token_url' => $tokenUrl,
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+        ];
 
-       if ($scope !== '') {
-           $payload['scope'] = $scope;
-       }
+        if ($scope !== '') {
+            $payload['scope'] = $scope;
+        }
 
-       try {
-           return json_encode($payload, JSON_THROW_ON_ERROR);
-       } catch (\JsonException $exception) {
-           throw new \RuntimeException(
-               'Failed to encode the OAuth2 Client Credentials configuration to JSON.',
-               previous: $exception
-           );
-       }
-   }
+        try {
+            return json_encode($payload, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $exception) {
+            throw new \RuntimeException(
+                'Failed to encode the OAuth2 Client Credentials configuration to JSON.',
+                previous: $exception,
+            );
+        }
+    }
 }

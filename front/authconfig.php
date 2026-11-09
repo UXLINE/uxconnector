@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\EngineServiceProvider;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\AuthConfigController;
+use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\GlpiRestV1SecretComposer;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\OAuth2ClientCredentialsSecretComposer;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\OAuth2PasswordSecretComposer;
 
@@ -32,7 +33,8 @@ $controller = new AuthConfigController(
     EngineServiceProvider::disableAuthConfigService(),
     EngineServiceProvider::deleteAuthConfigService(),
     new OAuth2ClientCredentialsSecretComposer(),
-    new OAuth2PasswordSecretComposer()
+    new OAuth2PasswordSecretComposer(),
+    new GlpiRestV1SecretComposer(),
 );
 
 // Les actions du cycle d'activation modifient l'état d'une
@@ -41,13 +43,13 @@ $controller = new AuthConfigController(
 if (isset($_POST['test'])) {
     Session::checkRight('plugin_uxconnector_authconfig', UPDATE);
     $controller->test($_POST);
-} else if (isset($_POST['activate'])) {
+} elseif (isset($_POST['activate'])) {
     Session::checkRight('plugin_uxconnector_authconfig', UPDATE);
     $controller->activate($_POST);
-} else if (isset($_POST['disable'])) {
+} elseif (isset($_POST['disable'])) {
     Session::checkRight('plugin_uxconnector_authconfig', UPDATE);
     $controller->disable($_POST);
-} else if (isset($_POST['delete'])) {
+} elseif (isset($_POST['delete'])) {
     Session::checkRight('plugin_uxconnector_authconfig', PURGE);
     $controller->delete($_POST);
 } else {
@@ -56,7 +58,7 @@ if (isset($_POST['test'])) {
         $_SERVER['PHP_SELF'],
         'tools',
         'PluginUxconnectorMenu',
-        'authconfig'
+        'authconfig',
     );
     $controller->index();
     Html::footer();

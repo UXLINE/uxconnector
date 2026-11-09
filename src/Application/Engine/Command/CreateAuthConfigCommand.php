@@ -23,7 +23,7 @@ use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
  * Input contract of the "create an AuthConfig" use case.
  *
  * RULE (Command Object pattern, ADR "un Command par cas d'usage") :
- * immutable, strongly typed, and completely ignorant of HTTP —
+ * immutable, strongly typed, and completely ignorant of HTTP -
  * whoever builds it (a Controller, a REST endpoint, a CLI command)
  * is responsible for converting raw input into Value Objects before
  * reaching this class.
@@ -36,13 +36,12 @@ use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
  */
 final readonly class CreateAuthConfigCommand
 {
-   public function __construct(
+    public function __construct(
         public AuthConfigName $name,
         public Endpoint $endpoint,
         public AuthMethod $authMethod,
         public ?string $plaintextSecret = null,
         public ?TestPath $testPath = null,
         public string $connectorId = 'custom'
-    ) {
-   }
+    ) {}
 }

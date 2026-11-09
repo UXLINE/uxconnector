@@ -10,19 +10,18 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
 final class GetSyncJobService
 {
-   public function __construct(
-      private readonly SyncJobRepositoryInterface $repository
-   ) {
-   }
+    public function __construct(
+        private readonly SyncJobRepositoryInterface $repository
+    ) {}
 
-   public function execute(SyncJobId $id): SyncJobDetailsDTO
-   {
-      $syncJob = $this->repository->findById($id);
+    public function execute(SyncJobId $id): SyncJobDetailsDTO
+    {
+        $syncJob = $this->repository->findById($id);
 
-      if ($syncJob === null) {
-         throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($id);
-      }
+        if ($syncJob === null) {
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($id);
+        }
 
-      return SyncJobDetailsDTO::fromEntity($syncJob);
-   }
+        return SyncJobDetailsDTO::fromEntity($syncJob);
+    }
 }

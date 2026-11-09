@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Application\Sync\PostProcessing;
 
+use GlpiPlugin\Uxconnector\Application\Sync\DTO\BatchProcessResult;
 use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncJob;
 
 /**
@@ -25,12 +26,8 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncJob;
  */
 interface InboundBatchProcessorInterface
 {
-   public function supports(SyncJob $syncJob): bool;
+    public function supports(SyncJob $syncJob): bool;
 
-   /**
-    * @param list<mixed> $items
-    *
-    * @return array{0:int,1:int} processed / failed
-    */
-   public function process(SyncJob $syncJob, array $items): array;
+    /** @param list<mixed> $items */
+    public function process(SyncJob $syncJob, array $items): BatchProcessResult;
 }

@@ -1,0 +1,26 @@
+<div class="uxconnector-syncfailures">
+    <h2>{{ __('Failed / warning items', 'uxconnector') }} - #{{ executionId }}</h2>
+    <p>
+        <a href="syncjob.php" class="btn btn-sm btn-outline-secondary">{{ __('← Back', 'uxconnector') }}</a>
+        <a href="syncexecution.failures.php?id={{ executionId }}&export=1" class="btn btn-sm btn-outline-primary">{{ __('Export CSV', 'uxconnector') }}</a>
+    </p>
+    {% if can_update and failures|length > 0 %}
+        <form method="post" action="syncexecution.failures.php" style="display:inline-block">
+            <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ executionId }}">
+            <button class="btn btn-sm btn-warning" name="retry_failed" type="submit">{{ __('Retry failed items', 'uxconnector') }}</button>
+        </form>
+    {% endif %}
+    {% if failures|length == 0 %}<p>{{ __('No detailed failure recorded.', 'uxconnector') }}</p>{% else %}
+    <table class="table card-table"><thead><tr>
+        <th>{{ __('Source', 'uxconnector') }}</th><th>{{ __('Target', 'uxconnector') }}</th><th>{{ __('Action', 'uxconnector') }}</th>
+        <th>{{ __('Category', 'uxconnector') }}</th><th>{{ __('Message', 'uxconnector') }}</th><th>{{ __('Page / cursor', 'uxconnector') }}</th><th>{{ __('Retry', 'uxconnector') }}</th>
+    </tr></thead><tbody>
+    {% for f in failures %}<tr>
+        <td>{{ f.sourceType }} #{{ f.sourceId }}{% if f.sourceLabel %}<br><small>{{ f.sourceLabel }}</small>{% endif %}</td>
+        <td>{{ f.targetType }}{% if f.targetId %} #{{ f.targetId }}{% endif %}</td><td>{{ f.action }} / {{ f.status }}</td>
+        <td>{{ f.category.value }}{% if f.errorCode %}<br><code>{{ f.errorCode }}</code>{% endif %}</td>
+        <td>{{ f.errorMessage }}{% if f.technicalContext %}<br><small>{{ f.technicalContext }}</small>{% endif %}</td>
+        <td>{{ f.page }}{% if f.cursor %}<br><small>{{ f.cursor }}</small>{% endif %}</td><td>{{ f.retryStatus }}</td>
+    </tr>{% endfor %}
+    </tbody></table>{% endif %}
+</div>

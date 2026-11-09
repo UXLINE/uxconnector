@@ -33,10 +33,13 @@ $controller = new SyncJobController(
     new FieldMappingRequestParser(),
     SyncServiceProvider::activateSyncJobService(),
     SyncServiceProvider::pauseSyncJobService(),
-    SyncServiceProvider::executeSyncJobService(),
     new EntityAssignmentStrategyRequestParser(),
     SyncServiceProvider::listSyncExecutionsService(),
-    new PaginationConfigRequestParser()
+    new PaginationConfigRequestParser(),
+    null,
+    SyncServiceProvider::queueSyncJobService(),
+    SyncServiceProvider::queueFullReplayService(),
+    SyncServiceProvider::fieldsTargetCatalog(),
 );
 
 // Les actions du cycle d'activation et l'exécution manuelle modifient
@@ -46,27 +49,30 @@ $controller = new SyncJobController(
 if (isset($_POST['bulk_activate'])) {
     Session::checkRight('plugin_uxconnector_syncjob', UPDATE);
     $controller->bulkActivate($_POST);
-} else if (isset($_POST['bulk_pause'])) {
+} elseif (isset($_POST['bulk_pause'])) {
     Session::checkRight('plugin_uxconnector_syncjob', UPDATE);
     $controller->bulkPause($_POST);
-} else if (isset($_POST['activate'])) {
+} elseif (isset($_POST['activate'])) {
     Session::checkRight('plugin_uxconnector_syncjob', UPDATE);
     $controller->activate($_POST);
-} else if (isset($_POST['pause'])) {
+} elseif (isset($_POST['pause'])) {
     Session::checkRight('plugin_uxconnector_syncjob', UPDATE);
     $controller->pause($_POST);
-} else if (isset($_POST['run_now'])) {
+} elseif (isset($_POST['run_now'])) {
     Session::checkRight('plugin_uxconnector_syncjob', UPDATE);
     $controller->runNow($_POST);
-} else if (isset($_GET['history'])) {
+} elseif (isset($_POST['full_replay'])) {
+    Session::checkRight('plugin_uxconnector_syncjob', UPDATE);
+    $controller->fullReplay($_POST);
+} elseif (isset($_GET['history'])) {
     // Action de lecture pure : le droit READ, déjà vérifié plus haut,
-    // suffit — pas besoin d'UPDATE pour consulter un historique.
+    // suffit - pas besoin d'UPDATE pour consulter un historique.
     Html::header(
         __('Synchronization history', 'uxconnector'),
         $_SERVER['PHP_SELF'],
         'tools',
         'PluginUxconnectorMenu',
-        'syncjob'
+        'syncjob',
     );
     $controller->history($_GET);
     Html::footer();
@@ -76,7 +82,7 @@ if (isset($_POST['bulk_activate'])) {
         $_SERVER['PHP_SELF'],
         'tools',
         'PluginUxconnectorMenu',
-        'syncjob'
+        'syncjob',
     );
     $controller->index();
     Html::footer();

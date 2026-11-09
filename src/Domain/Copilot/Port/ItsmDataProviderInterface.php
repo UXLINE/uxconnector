@@ -8,16 +8,16 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Model\CanonicalTicket;
 
 interface ItsmDataProviderInterface
 {
-       /**
+    /**
     * @param array<string, mixed> $criteria
     *
     * @return list<CanonicalTicket>
     */
-   public function searchTickets(array $criteria): array;
+    public function searchTickets(array $criteria): array;
 
     /** @return array<string,mixed> */
-   public function getTicketContext(int $ticketId): array;
+    public function getTicketContext(int $ticketId): array;
 
     /** @return array<string,mixed> */
-   public function capabilities(): array;
+    public function capabilities(): array;
 }

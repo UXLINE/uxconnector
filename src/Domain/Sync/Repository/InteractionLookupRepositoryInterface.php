@@ -9,8 +9,8 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncJob;
 /** Read model used by event-driven runtimes without widening SyncJobRepository. */
 interface InteractionLookupRepositoryInterface
 {
-   public function findByWebhookKey(string $webhookKey): ?SyncJob;
+    public function findByWebhookKey(string $webhookKey): ?SyncJob;
 
     /** @return list<SyncJob> */
-   public function findActiveForGlpiItem(string $targetItemtype): array;
+    public function findActiveForGlpiItem(string $targetItemtype): array;
 }

@@ -23,7 +23,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\EntityAssignmentStrategy;
  *
  * Kept as a standalone class rather than inlined in
  * SyncJobController::create() so it can be unit-tested without any
- * GLPI dependency — same rationale as FieldMappingRequestParser.
+ * GLPI dependency - same rationale as FieldMappingRequestParser.
  *
  * Configuration errors fail closed. Silently converting a malformed
  * multi-entity strategy into "no strategy" can write synchronized
@@ -37,82 +37,85 @@ final class EntityAssignmentStrategyRequestParser
     /**
      * @param array<string, mixed> $request Typically $_POST.
      */
-   public function parse(array $request): ?EntityAssignmentStrategy {
-       $strategy = trim((string) ($request['entity_strategy'] ?? ''));
+    public function parse(array $request): ?EntityAssignmentStrategy
+    {
+        $strategy = trim((string) ($request['entity_strategy'] ?? ''));
 
-       return match ($strategy) {
-           '' => null,
-           'fixed' => $this->parseFixed($request),
-           'mapped' => $this->parseMapped($request),
-           default => throw new \InvalidArgumentException(sprintf(
-               'Unknown entity assignment strategy "%s".',
-               $strategy
-           )),
-       };
-   }
-
-    /** @param array<string, mixed> $request */
-   private function parseFixed(array $request): EntityAssignmentStrategy {
-       $rawId = trim((string) ($request['entity_fixed_id'] ?? ''));
-
-      if (!$this->isNonNegativeInteger($rawId)) {
-          throw new \InvalidArgumentException(
-              'Fixed entity strategy requires a non-negative integer GLPI entity ID.'
-          );
-      }
-
-       return EntityAssignmentStrategy::fixed((int) $rawId);
-   }
+        return match ($strategy) {
+            '' => null,
+            'fixed' => $this->parseFixed($request),
+            'mapped' => $this->parseMapped($request),
+            default => throw new \InvalidArgumentException(sprintf(
+                'Unknown entity assignment strategy "%s".',
+                $strategy,
+            )),
+        };
+    }
 
     /** @param array<string, mixed> $request */
-   private function parseMapped(array $request): EntityAssignmentStrategy {
-       $sourceField = trim((string) ($request['entity_source_field'] ?? ''));
+    private function parseFixed(array $request): EntityAssignmentStrategy
+    {
+        $rawId = trim((string) ($request['entity_fixed_id'] ?? ''));
 
-      if ($sourceField === '') {
-          throw new \InvalidArgumentException(
-              'Mapped entity strategy requires a source field.'
-          );
-      }
+        if (!$this->isNonNegativeInteger($rawId)) {
+            throw new \InvalidArgumentException(
+                'Fixed entity strategy requires a non-negative integer GLPI entity ID.',
+            );
+        }
 
-       $mapping = $this->parseMappingRules((string) ($request['entity_mapping_rules'] ?? ''));
+        return EntityAssignmentStrategy::fixed((int) $rawId);
+    }
 
-      if ($mapping === []) {
-          throw new \InvalidArgumentException(
-              'Mapped entity strategy requires at least one valid mapping rule.'
-          );
-      }
+    /** @param array<string, mixed> $request */
+    private function parseMapped(array $request): EntityAssignmentStrategy
+    {
+        $sourceField = trim((string) ($request['entity_source_field'] ?? ''));
 
-       $rawPolicy = trim((string) ($request['entity_unknown_policy'] ?? 'fail'));
-       $unknownPolicy = UnknownEntityPolicy::tryFrom($rawPolicy);
+        if ($sourceField === '') {
+            throw new \InvalidArgumentException(
+                'Mapped entity strategy requires a source field.',
+            );
+        }
 
-      if ($unknownPolicy === null) {
-          throw new \InvalidArgumentException(sprintf(
-              'Unknown entity fallback policy "%s".',
-              $rawPolicy
-          ));
-      }
+        $mapping = $this->parseMappingRules((string) ($request['entity_mapping_rules'] ?? ''));
 
-       $defaultId = null;
-       $rawDefaultId = trim((string) ($request['entity_default_id'] ?? ''));
+        if ($mapping === []) {
+            throw new \InvalidArgumentException(
+                'Mapped entity strategy requires at least one valid mapping rule.',
+            );
+        }
 
-      if ($rawDefaultId !== '') {
-         if (!$this->isNonNegativeInteger($rawDefaultId)) {
-             throw new \InvalidArgumentException(
-                 'Default entity ID must be a non-negative integer.'
-             );
-         }
+        $rawPolicy = trim((string) ($request['entity_unknown_policy'] ?? 'fail'));
+        $unknownPolicy = UnknownEntityPolicy::tryFrom($rawPolicy);
 
-          $defaultId = (int) $rawDefaultId;
-      }
+        if ($unknownPolicy === null) {
+            throw new \InvalidArgumentException(sprintf(
+                'Unknown entity fallback policy "%s".',
+                $rawPolicy,
+            ));
+        }
 
-      if ($unknownPolicy === UnknownEntityPolicy::USE_DEFAULT && $defaultId === null) {
-          throw new \InvalidArgumentException(
-              'The USE_DEFAULT entity policy requires a default GLPI entity ID.'
-          );
-      }
+        $defaultId = null;
+        $rawDefaultId = trim((string) ($request['entity_default_id'] ?? ''));
 
-       return EntityAssignmentStrategy::mapped($sourceField, $mapping, $unknownPolicy, $defaultId);
-   }
+        if ($rawDefaultId !== '') {
+            if (!$this->isNonNegativeInteger($rawDefaultId)) {
+                throw new \InvalidArgumentException(
+                    'Default entity ID must be a non-negative integer.',
+                );
+            }
+
+            $defaultId = (int) $rawDefaultId;
+        }
+
+        if ($unknownPolicy === UnknownEntityPolicy::USE_DEFAULT && $defaultId === null) {
+            throw new \InvalidArgumentException(
+                'The USE_DEFAULT entity policy requires a default GLPI entity ID.',
+            );
+        }
+
+        return EntityAssignmentStrategy::mapped($sourceField, $mapping, $unknownPolicy, $defaultId);
+    }
 
     /**
      * Parses one "SourceValue=EntityId" rule per non-empty line.
@@ -121,48 +124,50 @@ final class EntityAssignmentStrategyRequestParser
      *
      * @return array<string, int>
      */
-   private function parseMappingRules(string $raw): array {
-       $mapping = [];
+    private function parseMappingRules(string $raw): array
+    {
+        $mapping = [];
 
-      foreach (preg_split('/\R/', $raw) ?: [] as $index => $line) {
-          $line = trim($line);
+        foreach (preg_split('/\R/', $raw) ?: [] as $index => $line) {
+            $line = trim($line);
 
-         if ($line === '') {
-            continue;
-         }
+            if ($line === '') {
+                continue;
+            }
 
-         if (!str_contains($line, '=')) {
-             throw new \InvalidArgumentException(sprintf(
-                 'Invalid entity mapping rule on line %d: expected "source value = entity ID".',
-                 $index + 1
-             ));
-         }
+            if (!str_contains($line, '=')) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Invalid entity mapping rule on line %d: expected "source value = entity ID".',
+                    $index + 1,
+                ));
+            }
 
-          [$sourceValue, $entityId] = explode('=', $line, 2);
-          $sourceValue = trim($sourceValue);
-          $entityId = trim($entityId);
+            [$sourceValue, $entityId] = explode('=', $line, 2);
+            $sourceValue = trim($sourceValue);
+            $entityId = trim($entityId);
 
-         if ($sourceValue === '' || !$this->isNonNegativeInteger($entityId)) {
-             throw new \InvalidArgumentException(sprintf(
-                 'Invalid entity mapping rule on line %d.',
-                 $index + 1
-             ));
-         }
+            if ($sourceValue === '' || !$this->isNonNegativeInteger($entityId)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Invalid entity mapping rule on line %d.',
+                    $index + 1,
+                ));
+            }
 
-         if (array_key_exists($sourceValue, $mapping)) {
-             throw new \InvalidArgumentException(sprintf(
-                 'Duplicate entity mapping source value "%s".',
-                 $sourceValue
-             ));
-         }
+            if (array_key_exists($sourceValue, $mapping)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Duplicate entity mapping source value "%s".',
+                    $sourceValue,
+                ));
+            }
 
-          $mapping[$sourceValue] = (int) $entityId;
-      }
+            $mapping[$sourceValue] = (int) $entityId;
+        }
 
-       return $mapping;
-   }
+        return $mapping;
+    }
 
-   private function isNonNegativeInteger(string $value): bool {
-       return $value !== '' && preg_match('/^\d+$/D', $value) === 1;
-   }
+    private function isNonNegativeInteger(string $value): bool
+    {
+        return $value !== '' && preg_match('/^\d+$/D', $value) === 1;
+    }
 }

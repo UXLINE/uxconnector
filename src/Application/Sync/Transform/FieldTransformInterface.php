@@ -11,7 +11,7 @@ namespace GlpiPlugin\Uxconnector\Application\Sync\Transform;
  */
 interface FieldTransformInterface
 {
-   public function name(): string;
+    public function name(): string;
 
-   public function apply(mixed $value): mixed;
+    public function apply(mixed $value): mixed;
 }

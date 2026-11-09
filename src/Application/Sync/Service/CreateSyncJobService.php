@@ -40,7 +40,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\AuthConfigReference;
  *
  * RULE-032/033 (adapted) : the referential-integrity check this
  * Service performs is exactly the one promised in
- * sql/install/install-2.0.0.php's migration comment — there is no
+ * sql/install/install-2.0.0.php's migration comment - there is no
  * SQL foreign key between syncjobs and authconfigs (different
  * bounded contexts), so the check happens here instead.
  */
@@ -52,8 +52,7 @@ final class CreateSyncJobService
         private readonly TargetFieldPolicy $targetFieldPolicy,
         private readonly TransactionManagerInterface $transaction,
         private readonly EventDispatcherInterface $events
-    ) {
-    }
+    ) {}
 
     /**
      * @throws SyncDirectionNotSupportedException if the command's direction
@@ -73,7 +72,7 @@ final class CreateSyncJobService
             $this->targetFieldPolicy->assertConfiguration(
                 $command->targetItemtype,
                 $command->matchField,
-                $command->fieldMappings
+                $command->fieldMappings,
             );
         }
 
@@ -97,11 +96,12 @@ final class CreateSyncJobService
                 $command->triggerType,
                 $command->externalObjectType,
                 $command->outboundConfig,
-                $command->webhookKey
+                $command->webhookKey,
             );
 
             $events = $syncJob->releaseEvents();
 
+            \GlpiPlugin\Uxconnector\Domain\Sync\Policy\JobSchedule::fromJob($syncJob);
             $syncJob = $this->syncJobRepository->save($syncJob);
 
             $this->transaction->commit();
@@ -122,7 +122,7 @@ final class CreateSyncJobService
     {
         if (!$this->authConfigRepository->exists(new AuthConfigId($authConfigId))) {
             throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigNotFoundException::forReference(
-                new AuthConfigReference($authConfigId)
+                new AuthConfigReference($authConfigId),
             );
         }
     }

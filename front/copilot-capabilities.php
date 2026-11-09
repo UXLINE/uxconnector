@@ -2,8 +2,13 @@
 
 declare(strict_types=1);
 
-use GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotGatewayResponder;
+use GlpiPlugin\Uxconnector\Bootstrap\CopilotGatewayResponderFactory;
 
 try {
-   (new CopilotGatewayResponder())->capabilities(); } catch (\Throwable $e) {
-   Toolbox::logInFile('uxconnector', "Copilot capabilities failed: {$e->getMessage()}\n"); \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(502); header('Content-Type: application/json'); echo '{"error":"upstream_failure"}'; }
+    CopilotGatewayResponderFactory::create()->capabilities();
+} catch (\Throwable $e) {
+    Toolbox::logInFile('uxconnector', "Copilot capabilities failed: {$e->getMessage()}\n");
+    \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(502);
+    header('Content-Type: application/json');
+    echo '{"error":"upstream_failure"}';
+}

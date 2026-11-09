@@ -33,10 +33,13 @@ $controller = new SyncJobController(
     new FieldMappingRequestParser(),
     SyncServiceProvider::activateSyncJobService(),
     SyncServiceProvider::pauseSyncJobService(),
-    SyncServiceProvider::executeSyncJobService(),
     new EntityAssignmentStrategyRequestParser(),
     SyncServiceProvider::listSyncExecutionsService(),
-    new PaginationConfigRequestParser()
+    new PaginationConfigRequestParser(),
+    null,
+    SyncServiceProvider::queueSyncJobService(),
+    null,
+    SyncServiceProvider::fieldsTargetCatalog(),
 );
 
 if (isset($_POST['add'])) {
@@ -49,7 +52,7 @@ if (isset($_POST['add'])) {
         $_SERVER['PHP_SELF'],
         'tools',
         'PluginUxconnectorMenu',
-        'syncjob'
+        'syncjob',
     );
     $controller->showCreateForm($_GET);
     Html::footer();

@@ -7,5 +7,5 @@ namespace GlpiPlugin\Uxconnector\Application\Sync\Pagination;
 interface PaginationStrategyInterface
 {
     /** @param array<mixed> $response */
-   public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string;
+    public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string;
 }

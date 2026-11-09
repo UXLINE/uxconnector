@@ -12,22 +12,22 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ObjectLinkId;
 
 interface ObjectLinkRepositoryInterface
 {
-   public function save(ObjectLink $objectLink): ObjectLink;
+    public function save(ObjectLink $objectLink): ObjectLink;
 
     /** Connection-level external identity lookup, shared by all interactions. */
-   public function findByExternalId(
+    public function findByExternalId(
         AuthConfigReference $authConfigReference,
         string $externalObjectType,
         ExternalId $externalId
     ): ?ObjectLink;
 
     /** Resolves the external equivalent of an already linked GLPI object. */
-   public function findByGlpiItem(
+    public function findByGlpiItem(
         AuthConfigReference $authConfigReference,
         TargetItemtype $itemtype,
         int $itemId,
         ?string $externalObjectType = null
     ): ?ObjectLink;
 
-   public function delete(ObjectLinkId $id): void;
+    public function delete(ObjectLinkId $id): void;
 }

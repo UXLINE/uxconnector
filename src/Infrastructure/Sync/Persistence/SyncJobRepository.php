@@ -24,142 +24,150 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
 final class SyncJobRepository implements SyncJobRepositoryInterface, InteractionLookupRepositoryInterface
 {
-   public function __construct(
+    public function __construct(
         private readonly SyncJobPersistenceMapper $mapper
-    ) {
-   }
+    ) {}
 
-   public function save(SyncJob $syncJob): SyncJob {
-       $data = $this->mapper->toPersistence($syncJob);
-       $model = new SyncJobItem();
+    public function save(SyncJob $syncJob): SyncJob
+    {
+        $data = $this->mapper->toPersistence($syncJob);
+        $model = new SyncJobItem();
 
-      if ($syncJob->id() === null) {
-          $generatedId = $model->add($data);
+        if ($syncJob->id() === null) {
+            $generatedId = $model->add($data);
 
-         if ($generatedId === false) {
-            throw new \RuntimeException('Failed to persist a new SyncJob.');
-         }
+            if ($generatedId === false) {
+                throw new \RuntimeException('Failed to persist a new SyncJob.');
+            }
 
-          $this->mapper->assignGeneratedId($syncJob, (int) $generatedId);
+            $this->mapper->assignGeneratedId($syncJob, (int) $generatedId);
 
-          $syncJobId = $syncJob->id();
-         if ($syncJobId === null) {
-            throw new \LogicException(
-               'Persisted SyncJob has no identifier.'
-            );
-         }
+            $syncJobId = $syncJob->id();
+            if ($syncJobId === null) {
+                throw new \LogicException(
+                    'Persisted SyncJob has no identifier.',
+                );
+            }
 
-          return $this->mustFindById($syncJobId);
-      }
+            return $this->mustFindById($syncJobId);
+        }
 
-      if (!$model->update($data)) {
-          throw new \RuntimeException(sprintf(
-              'Failed to update SyncJob #%d.',
-              $syncJob->id()->value()
-          ));
-      }
+        if (!$model->update($data)) {
+            throw new \RuntimeException(sprintf(
+                'Failed to update SyncJob #%d.',
+                $syncJob->id()->value(),
+            ));
+        }
 
-       return $this->mustFindById($syncJob->id());
-   }
+        return $this->mustFindById($syncJob->id());
+    }
 
-   public function findById(SyncJobId $id): ?SyncJob {
-       $model = new SyncJobItem();
+    public function findById(SyncJobId $id): ?SyncJob
+    {
+        $model = new SyncJobItem();
 
-      if (!$model->getFromDB($id->value())) {
-          return null;
-      }
+        if (!$model->getFromDB($id->value())) {
+            return null;
+        }
 
-       return $this->mapper->toDomain($model->fields);
-   }
-
-    /**
-     * @return list<SyncJob>
-     */
-   public function findAll(): array {
-       $model = new SyncJobItem();
-
-       return array_values(array_map(
-           fn (array $row): SyncJob => $this->mapper->toDomain($row),
-           $model->find()
-       ));
-   }
+        return $this->mapper->toDomain($model->fields);
+    }
 
     /**
      * @return list<SyncJob>
      */
-   public function findRunnable(): array {
-       $model = new SyncJobItem();
+    public function findAll(): array
+    {
+        $model = new SyncJobItem();
 
-       $rows = $model->find([
-           'status' => SyncJobStatus::ACTIVE->value,
-           'trigger_type' => InteractionTrigger::POLLING->value,
-           'direction' => SyncDirection::INBOUND->value,
-       ]);
+        return array_values(array_map(
+            fn(array $row): SyncJob => $this->mapper->toDomain($row),
+            $model->find(),
+        ));
+    }
 
-       return array_values(array_map(
-           fn (array $row): SyncJob => $this->mapper->toDomain($row),
-           $rows
-       ));
-   }
+    /**
+     * @return list<SyncJob>
+     */
+    public function findRunnable(): array
+    {
+        $model = new SyncJobItem();
 
-   public function findByWebhookKey(string $webhookKey): ?SyncJob {
-       $webhookKey = strtolower(trim($webhookKey));
-      if ($webhookKey === '') {
-          return null;
-      }
+        $rows = $model->find([
+            'status' => SyncJobStatus::ACTIVE->value,
+            'trigger_type' => InteractionTrigger::POLLING->value,
+            'direction' => SyncDirection::INBOUND->value,
+        ]);
 
-       $rows = (new SyncJobItem())->find([
-           'webhook_key' => $webhookKey,
-           'status' => SyncJobStatus::ACTIVE->value,
-           'trigger_type' => InteractionTrigger::WEBHOOK->value,
-           'direction' => SyncDirection::INBOUND->value,
-       ], [], 1);
+        return array_values(array_map(
+            fn(array $row): SyncJob => $this->mapper->toDomain($row),
+            $rows,
+        ));
+    }
 
-      foreach ($rows as $row) {
-          return $this->mapper->toDomain($row);
-      }
+    public function findByWebhookKey(string $webhookKey): ?SyncJob
+    {
+        $webhookKey = strtolower(trim($webhookKey));
+        if ($webhookKey === '') {
+            return null;
+        }
 
-       return null;
-   }
+        $rows = (new SyncJobItem())->find([
+            'webhook_key' => $webhookKey,
+            'status' => SyncJobStatus::ACTIVE->value,
+            'trigger_type' => InteractionTrigger::WEBHOOK->value,
+            'direction' => SyncDirection::INBOUND->value,
+        ], [], 1);
 
-   public function findActiveForGlpiItem(string $targetItemtype): array {
-       $rows = (new SyncJobItem())->find([
-           'status' => SyncJobStatus::ACTIVE->value,
-           'trigger_type' => InteractionTrigger::GLPI_EVENT->value,
-           'direction' => SyncDirection::OUTBOUND->value,
-           'target_itemtype' => $targetItemtype,
-       ]);
+        foreach ($rows as $row) {
+            return $this->mapper->toDomain($row);
+        }
 
-       return array_values(array_map(
-           fn (array $row): SyncJob => $this->mapper->toDomain($row),
-           $rows
-       ));
-   }
+        return null;
+    }
 
-   public function delete(SyncJobId $id): void {
-       $model = new SyncJobItem();
+    public function findActiveForGlpiItem(string $targetItemtype): array
+    {
+        $rows = (new SyncJobItem())->find([
+            'status' => SyncJobStatus::ACTIVE->value,
+            'trigger_type' => InteractionTrigger::GLPI_EVENT->value,
+            'direction' => SyncDirection::OUTBOUND->value,
+            'target_itemtype' => $targetItemtype,
+        ]);
 
-       // RULE-032 (adapted) : purge, not soft-delete — consistent
-       // with AuthConfigRepository's convention for this plugin.
-       $model->delete(['id' => $id->value()], true);
-   }
+        return array_values(array_map(
+            fn(array $row): SyncJob => $this->mapper->toDomain($row),
+            $rows,
+        ));
+    }
 
-   public function exists(SyncJobId $id): bool {
-       $model = new SyncJobItem();
+    public function delete(SyncJobId $id): void
+    {
+        $model = new SyncJobItem();
 
-       return $model->getFromDB($id->value());
-   }
+        // RULE-032 (adapted) : purge, not soft-delete - consistent
+        // with AuthConfigRepository's convention for this plugin.
+        $model->delete(['id' => $id->value()], true);
+    }
 
-   private function mustFindById(SyncJobId $id): SyncJob {
-       $syncJob = $this->findById($id);
+    public function exists(SyncJobId $id): bool
+    {
+        $model = new SyncJobItem();
 
-      if ($syncJob === null) {
-          throw new \RuntimeException(sprintf(
-              'SyncJob #%d was just persisted but could not be reloaded.',
-              $id->value()
-          ));
-      }
+        return $model->getFromDB($id->value());
+    }
 
-       return $syncJob;
-   }
+    private function mustFindById(SyncJobId $id): SyncJob
+    {
+        $syncJob = $this->findById($id);
+
+        if ($syncJob === null) {
+            throw new \RuntimeException(sprintf(
+                'SyncJob #%d was just persisted but could not be reloaded.',
+                $id->value(),
+            ));
+        }
+
+        return $syncJob;
+    }
 }

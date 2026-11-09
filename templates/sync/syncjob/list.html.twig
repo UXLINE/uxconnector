@@ -1,7 +1,7 @@
 {# ---------------------------------------------------------------------
    UXConnector plugin for GLPI
    ---------------------------------------------------------------------
-   Fragment HTML pur : aucun {% extends %} (REX résolu — cf.
+   Fragment HTML pur : aucun {% extends %} (REX résolu - cf.
    AbstractController et templates/engine/authconfig/list.html.twig
    pour le même principe appliqué au bounded context Engine).
 
@@ -105,7 +105,7 @@
                             {# ---------------------------------------------------
                                CYCLE D'ACTIVATION (issu de deux relectures externes) :
                                sans ces actions, un SyncJob créé depuis l'UI
-                               restait bloqué en DRAFT pour toujours — le CronTask
+                               restait bloqué en DRAFT pour toujours - le CronTask
                                ne reprend que les jobs retournés par findRunnable().
                                --------------------------------------------------- #}
                             {% if syncjob.status == 'draft' or syncjob.status == 'paused' %}
@@ -125,11 +125,18 @@
                                         {{ __('Pause', 'uxconnector') }}
                                     </button>
                                 </form>
-                                <form method="post" action="syncjob.php" class="d-inline">
+                                <form method="post" action="syncjob.php" class="d-inline uxconnector-run-form">
                                     <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="id" value="{{ syncjob.id }}">
-                                    <button type="submit" name="run_now" class="btn btn-sm btn-outline-primary">
+                                    <button type="submit" name="run_now" value="1" class="btn btn-sm btn-outline-primary">
                                         {{ __('Run now', 'uxconnector') }}
+                                    </button>
+                                </form>
+                                <form method="post" action="syncjob.php" class="d-inline uxconnector-run-form">
+                                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="id" value="{{ syncjob.id }}">
+                                    <button type="submit" name="full_replay" value="1" class="btn btn-sm btn-outline-warning" onclick="return confirm('{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('js') }}')">
+                                        {{ __('Replay from start', 'uxconnector') }}
                                     </button>
                                 </form>
                             {% endif %}
@@ -146,6 +153,18 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.uxconnector-run-form').forEach((runForm) => {
+        runForm.addEventListener('submit', (event) => {
+            if (runForm.dataset.uxSubmitting === '1') {
+                event.preventDefault();
+                return;
+            }
+            runForm.dataset.uxSubmitting = '1';
+            const submitter = event.submitter;
+            window.setTimeout(() => { if (submitter) submitter.disabled = true; }, 0);
+        });
+    });
+
     const rowSelectAll = document.getElementById('uxconnector-select-all-jobs');
     const toolbarSelectAll = document.getElementById('uxconnector-select-all-jobs-toolbar');
     const checkboxes = Array.from(document.querySelectorAll('.uxconnector-job-checkbox'));

@@ -34,62 +34,65 @@ final class SyncExecutionItem extends CommonDBTM
 {
     // See AuthConfigItem::$rightname's comment: must stay in sync
     // with PluginUxconnectorProfile::getRightDefinitions().
-   public static $rightname = 'plugin_uxconnector_syncjob';
+    public static $rightname = 'plugin_uxconnector_syncjob';
 
-   public static function getTable($classname = null): string {
-       return 'glpi_plugin_uxconnector_syncexecutions';
-   }
+    public static function getTable($classname = null): string
+    {
+        return 'glpi_plugin_uxconnector_syncexecutions';
+    }
 
-   public static function getTypeName($nb = 0): string {
-       return \_n('Synchronization execution', 'Synchronization executions', $nb, 'uxconnector');
-   }
+    public static function getTypeName($nb = 0): string
+    {
+        return \_n('Synchronization execution', 'Synchronization executions', $nb, 'uxconnector');
+    }
 
     /**
      * @return array<int, array<string, mixed>>
      */
-   public function rawSearchOptions(): array {
-       $options = parent::rawSearchOptions();
+    public function rawSearchOptions(): array
+    {
+        $options = parent::rawSearchOptions();
 
-       $options[] = [
-           'id'       => '2',
-           'table'    => $this->getTable(),
-           'field'    => 'status',
-           'name'     => \__('Status', 'uxconnector'),
-           'datatype' => 'string',
-       ];
+        $options[] = [
+            'id'       => '2',
+            'table'    => $this->getTable(),
+            'field'    => 'status',
+            'name'     => \__('Status', 'uxconnector'),
+            'datatype' => 'string',
+        ];
 
-       $options[] = [
-           'id'       => '3',
-           'table'    => $this->getTable(),
-           'field'    => 'started_at',
-           'name'     => \__('Started at', 'uxconnector'),
-           'datatype' => 'datetime',
-       ];
+        $options[] = [
+            'id'       => '3',
+            'table'    => $this->getTable(),
+            'field'    => 'started_at',
+            'name'     => \__('Started at', 'uxconnector'),
+            'datatype' => 'datetime',
+        ];
 
-       $options[] = [
-           'id'       => '4',
-           'table'    => $this->getTable(),
-           'field'    => 'finished_at',
-           'name'     => \__('Finished at', 'uxconnector'),
-           'datatype' => 'datetime',
-       ];
+        $options[] = [
+            'id'       => '4',
+            'table'    => $this->getTable(),
+            'field'    => 'finished_at',
+            'name'     => \__('Finished at', 'uxconnector'),
+            'datatype' => 'datetime',
+        ];
 
-       $options[] = [
-           'id'       => '5',
-           'table'    => $this->getTable(),
-           'field'    => 'items_processed',
-           'name'     => \__('Items processed', 'uxconnector'),
-           'datatype' => 'number',
-       ];
+        $options[] = [
+            'id'       => '5',
+            'table'    => $this->getTable(),
+            'field'    => 'items_processed',
+            'name'     => \__('Items processed', 'uxconnector'),
+            'datatype' => 'number',
+        ];
 
-       $options[] = [
-           'id'       => '6',
-           'table'    => $this->getTable(),
-           'field'    => 'items_failed',
-           'name'     => \__('Items failed', 'uxconnector'),
-           'datatype' => 'number',
-       ];
+        $options[] = [
+            'id'       => '6',
+            'table'    => $this->getTable(),
+            'field'    => 'items_failed',
+            'name'     => \__('Items failed', 'uxconnector'),
+            'datatype' => 'number',
+        ];
 
-       return $options;
-   }
+        return $options;
+    }
 }

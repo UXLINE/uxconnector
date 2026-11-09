@@ -20,10 +20,10 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ExternalId;
 /** Vendor-specific enrichment hook executed only after the generic item write succeeds. */
 interface InboundRecordPostProcessorInterface
 {
-   public function supports(SyncJob $syncJob): bool;
+    public function supports(SyncJob $syncJob): bool;
 
-   /**
-    * @param array<string, mixed> $sourceRecord
-    */
-   public function process(SyncJob $syncJob, array $sourceRecord, ExternalId $externalId): bool;
+    /**
+     * @param array<string, mixed> $sourceRecord
+     */
+    public function process(SyncJob $syncJob, array $sourceRecord, ExternalId $externalId): bool;
 }

@@ -11,15 +11,17 @@ enum InteractionTrigger: string
     case WEBHOOK = 'webhook';
     case GLPI_EVENT = 'glpi_event';
 
-   public function label(): string {
-       return match ($this) {
-           self::POLLING => 'Planifiée / manuelle',
-           self::WEBHOOK => 'Événement externe (webhook)',
-           self::GLPI_EVENT => 'Événement GLPI',
-       };
-   }
+    public function label(): string
+    {
+        return match ($this) {
+            self::POLLING => 'Planifiée / manuelle',
+            self::WEBHOOK => 'Événement externe (webhook)',
+            self::GLPI_EVENT => 'Événement GLPI',
+        };
+    }
 
-   public function isScheduled(): bool {
-       return $this === self::POLLING;
-   }
+    public function isScheduled(): bool
+    {
+        return $this === self::POLLING;
+    }
 }

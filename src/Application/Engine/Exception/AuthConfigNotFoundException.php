@@ -18,7 +18,8 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
 
 final class AuthConfigNotFoundException extends \RuntimeException
 {
-   public static function forId(AuthConfigId $id): self {
-       return new self(sprintf('AuthConfig #%d does not exist.', $id->value()));
-   }
+    public static function forId(AuthConfigId $id): self
+    {
+        return new self(sprintf('AuthConfig #%d does not exist.', $id->value()));
+    }
 }

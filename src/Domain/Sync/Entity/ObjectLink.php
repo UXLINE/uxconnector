@@ -32,7 +32,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
  * CORRECTIF (réconciliation, revue de code externe) : avant cet
  * agrégat, GlpiItemWriter retrouvait un enregistrement existant par
  * une simple recherche `WHERE <matchField> = <valeur> LIMIT 1` sur la
- * table de l'itemtype cible — si plusieurs enregistrements GLPI
+ * table de l'itemtype cible - si plusieurs enregistrements GLPI
  * partageaient la même valeur (deux Computer de même serial dans deux
  * entités différentes, par exemple), le premier trouvé était
  * silencieusement modifié, potentiellement le mauvais.
@@ -42,7 +42,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
  * première tentative de rapprochement d'un ExternalId encore inconnu.
  * Une fois ce lien créé, toute synchronisation suivante retrouve
  * l'objet GLPI directement par son identifiant (`itemId`), sans plus
- * jamais interroger la valeur métier — élimine le risque de collision
+ * jamais interroger la valeur métier - élimine le risque de collision
  * pour tout enregistrement déjà rapproché une première fois.
  *
  * ObjectLink ne duplique volontairement pas l'entité GLPI : son
@@ -57,11 +57,11 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
  */
 final class ObjectLink
 {
-   private ?ObjectLinkId $id = null;
+    private ?ObjectLinkId $id = null;
 
-   private DateTimeImmutable $lastSeenAt;
+    private DateTimeImmutable $lastSeenAt;
 
-   private function __construct(
+    private function __construct(
         private readonly SyncJobId $syncJobId,
         private readonly AuthConfigReference $authConfigReference,
         private readonly ExternalId $externalId,
@@ -69,15 +69,15 @@ final class ObjectLink
         private int $itemId,
         private readonly string $externalObjectType
     ) {
-       $this->lastSeenAt = new DateTimeImmutable();
-   }
+        $this->lastSeenAt = new DateTimeImmutable();
+    }
 
     /**
-     * Creates a brand new ObjectLink — either after a CREATE (a
+     * Creates a brand new ObjectLink - either after a CREATE (a
      * GLPI item was just added) or a LINK (an existing, previously
      * unknown GLPI item was adopted after a single MatchField match).
      */
-   public static function create(
+    public static function create(
         SyncJobId $syncJobId,
         AuthConfigReference $authConfigReference,
         ExternalId $externalId,
@@ -85,13 +85,13 @@ final class ObjectLink
         int $itemId,
         ?string $externalObjectType = null
     ): self {
-       return new self($syncJobId, $authConfigReference, $externalId, $itemtype, $itemId, self::normalizeExternalObjectType($externalObjectType ?? $itemtype->value));
-   }
+        return new self($syncJobId, $authConfigReference, $externalId, $itemtype, $itemId, self::normalizeExternalObjectType($externalObjectType ?? $itemtype->value));
+    }
 
     /**
      * Rehydrates an existing ObjectLink from persistence.
      */
-   public static function reconstitute(
+    public static function reconstitute(
         ObjectLinkId $id,
         SyncJobId $syncJobId,
         AuthConfigReference $authConfigReference,
@@ -101,68 +101,79 @@ final class ObjectLink
         DateTimeImmutable $lastSeenAt,
         ?string $externalObjectType = null
     ): self {
-       $link = new self($syncJobId, $authConfigReference, $externalId, $itemtype, $itemId, self::normalizeExternalObjectType($externalObjectType ?? $itemtype->value));
-       $link->id = $id;
-       $link->lastSeenAt = $lastSeenAt;
+        $link = new self($syncJobId, $authConfigReference, $externalId, $itemtype, $itemId, self::normalizeExternalObjectType($externalObjectType ?? $itemtype->value));
+        $link->id = $id;
+        $link->lastSeenAt = $lastSeenAt;
 
-       return $link;
-   }
+        return $link;
+    }
 
-   public function assignId(ObjectLinkId $id): void {
-      if ($this->id !== null) {
-          throw new \LogicException('ObjectLink identifier has already been assigned.');
-      }
+    public function assignId(ObjectLinkId $id): void
+    {
+        if ($this->id !== null) {
+            throw new \LogicException('ObjectLink identifier has already been assigned.');
+        }
 
-       $this->id = $id;
-   }
+        $this->id = $id;
+    }
 
     /**
      * Records that this link was used again by the most recent
-     * synchronization run — a simple, queryable freshness signal, not
+     * synchronization run - a simple, queryable freshness signal, not
      * itself a business invariant.
      */
-   public function touch(): void {
-       $this->lastSeenAt = new DateTimeImmutable();
-   }
+    public function touch(): void
+    {
+        $this->lastSeenAt = new DateTimeImmutable();
+    }
 
-   public function id(): ?ObjectLinkId {
-       return $this->id;
-   }
+    public function id(): ?ObjectLinkId
+    {
+        return $this->id;
+    }
 
 
-   public function syncJobId(): SyncJobId {
-       return $this->syncJobId;
-   }
+    public function syncJobId(): SyncJobId
+    {
+        return $this->syncJobId;
+    }
 
-   public function authConfigReference(): AuthConfigReference {
-       return $this->authConfigReference;
-   }
+    public function authConfigReference(): AuthConfigReference
+    {
+        return $this->authConfigReference;
+    }
 
-   public function externalId(): ExternalId {
-       return $this->externalId;
-   }
+    public function externalId(): ExternalId
+    {
+        return $this->externalId;
+    }
 
-   public function itemtype(): TargetItemtype {
-       return $this->itemtype;
-   }
+    public function itemtype(): TargetItemtype
+    {
+        return $this->itemtype;
+    }
 
-   public function itemId(): int {
-       return $this->itemId;
-   }
+    public function itemId(): int
+    {
+        return $this->itemId;
+    }
 
-   public function externalObjectType(): string {
-       return $this->externalObjectType;
-   }
+    public function externalObjectType(): string
+    {
+        return $this->externalObjectType;
+    }
 
-   private static function normalizeExternalObjectType(string $value): string {
-       $value = strtolower(trim($value));
-      if ($value === '' || preg_match('/^[a-z0-9][a-z0-9_.-]{0,63}$/D', $value) !== 1) {
-          throw new \InvalidArgumentException('Invalid external object type.');
-      }
-       return $value;
-   }
+    private static function normalizeExternalObjectType(string $value): string
+    {
+        $value = strtolower(trim($value));
+        if ($value === '' || preg_match('/^[a-z0-9][a-z0-9_.-]{0,63}$/D', $value) !== 1) {
+            throw new \InvalidArgumentException('Invalid external object type.');
+        }
+        return $value;
+    }
 
-   public function lastSeenAt(): DateTimeImmutable {
-       return $this->lastSeenAt;
-   }
+    public function lastSeenAt(): DateTimeImmutable
+    {
+        return $this->lastSeenAt;
+    }
 }

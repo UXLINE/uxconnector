@@ -18,17 +18,17 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpRequest;
 
 /**
  * Static bearer token authentication (as opposed to the OAuth2
- * strategies, which obtain and refresh their token dynamically —
+ * strategies, which obtain and refresh their token dynamically -
  * not yet implemented, see AuthenticationStrategyFactory).
  */
 final class BearerTokenAuthenticationStrategy implements AuthenticationStrategy
 {
-   public function __construct(
+    public function __construct(
         private readonly string $token
-    ) {
-   }
+    ) {}
 
-   public function authenticate(HttpRequest $request): HttpRequest {
-       return $request->withHeader('Authorization', 'Bearer ' . $this->token);
-   }
+    public function authenticate(HttpRequest $request): HttpRequest
+    {
+        return $request->withHeader('Authorization', 'Bearer ' . $this->token);
+    }
 }

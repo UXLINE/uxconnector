@@ -30,8 +30,7 @@ final class ProcessInboundWebhookService
         private readonly TargetFieldPolicy $targetFieldPolicy,
         private readonly TransactionManagerInterface $transaction,
         private readonly EventDispatcherInterface $events
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<mixed> $payload
@@ -75,7 +74,7 @@ final class ProcessInboundWebhookService
             if ($maxRecords > 0 && count($items) > $maxRecords) {
                 throw new \RuntimeException(sprintf(
                     'Webhook record safety limit of %d items exceeded.',
-                    $maxRecords
+                    $maxRecords,
                 ));
             }
             [$processed, $failed] = $this->processor->process($job, $items);

@@ -28,11 +28,13 @@ $controller = new SyncJobController(
     new FieldMappingRequestParser(),
     SyncServiceProvider::activateSyncJobService(),
     SyncServiceProvider::pauseSyncJobService(),
-    SyncServiceProvider::executeSyncJobService(),
     new EntityAssignmentStrategyRequestParser(),
     SyncServiceProvider::listSyncExecutionsService(),
     new PaginationConfigRequestParser(),
-    SyncServiceProvider::getSyncJobService()
+    SyncServiceProvider::getSyncJobService(),
+    SyncServiceProvider::queueSyncJobService(),
+    null,
+    SyncServiceProvider::fieldsTargetCatalog(),
 );
 
 Html::header(
@@ -40,7 +42,7 @@ Html::header(
     $_SERVER['PHP_SELF'],
     'tools',
     'PluginUxconnectorMenu',
-    'syncjob'
+    'syncjob',
 );
 
 $controller->showDetails($_GET);

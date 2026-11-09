@@ -64,6 +64,27 @@
 </div>
 
 
+{# Explicit operational actions are also available on the detail page so
+   administrators do not need to discover them in the list view. #}
+{% if can_update and syncjob.status == 'active' %}
+    <div class="mt-4 d-flex flex-wrap gap-2">
+        <form method="post" action="syncjob.php" class="uxconnector-run-form">
+            <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="id" value="{{ syncjob.id }}">
+            <button type="submit" name="run_now" value="1" class="btn btn-outline-primary">
+                <i class="ti ti-player-play"></i> {{ __('Run now', 'uxconnector') }}
+            </button>
+        </form>
+        <form method="post" action="syncjob.php" class="uxconnector-run-form">
+            <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="id" value="{{ syncjob.id }}">
+            <button type="submit" name="full_replay" value="1" class="btn btn-outline-warning" onclick="return confirm('{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('js') }}')">
+                <i class="ti ti-refresh"></i> {{ __('Replay from start', 'uxconnector') }}
+            </button>
+        </form>
+    </div>
+{% endif %}
+
 {# UXCONNECTOR_SYNCJOB_EDIT_ACTION #}
 {% if can_update %}
     <div class="mt-4">

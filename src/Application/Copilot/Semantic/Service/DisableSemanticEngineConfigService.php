@@ -10,24 +10,24 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Semantic\Repository\SemanticEngineConf
 
 final readonly class DisableSemanticEngineConfigService
 {
-   public function __construct(
+    public function __construct(
         private SemanticEngineConfigRepositoryInterface $repository
-    ) {
-   }
+    ) {}
 
-   public function execute(DisableSemanticEngineConfigCommand $command): SemanticEngineConfig {
-       $config = $this->repository->findById($command->id);
+    public function execute(DisableSemanticEngineConfigCommand $command): SemanticEngineConfig
+    {
+        $config = $this->repository->findById($command->id);
 
-      if ($config === null) {
-          throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigNotFoundException::forId($command->id);
-      }
+        if ($config === null) {
+            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigNotFoundException::forId($command->id);
+        }
 
-      if (!$config->isUsable() && $config->status()->value === 'disabled') {
-          return $config;
-      }
+        if (!$config->isUsable() && $config->status()->value === 'disabled') {
+            return $config;
+        }
 
-       $config->disable();
+        $config->disable();
 
-       return $this->repository->save($config);
-   }
+        return $this->repository->save($config);
+    }
 }

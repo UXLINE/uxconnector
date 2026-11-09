@@ -24,7 +24,7 @@ final class OpenApiDocumentFactory
             'openapi' => '3.0.3',
             'info' => [
                 'title' => 'UXConnector Copilot Gateway',
-                'version' => '2.18.3',
+                'version' => '2.18.6',
                 'description' => 'Read-only semantic and analytical ITSM tools for Microsoft Copilot Studio backed by GLPI.',
             ],
             'servers' => [['url' => rtrim($serverUrl, '/')]],
@@ -124,7 +124,7 @@ final class OpenApiDocumentFactory
                                     'default' => 50,
                                 ],
                             ],
-                        ]
+                        ],
                     ),
                 ],
                 '/plugins/uxconnector/front/copilot-incidentology-global.php' => [
@@ -147,9 +147,9 @@ final class OpenApiDocumentFactory
                                     ],
                                 ],
                             ],
-                        ]
+                        ],
                     ),
-               ],
+                ],
 
                 '/plugins/uxconnector/front/copilot-incidentology-typologies.php' => [
                     'post' => $this->analyticsOperation(
@@ -220,9 +220,9 @@ final class OpenApiDocumentFactory
                                     'description' => 'Alternative JSON-encoded mapping accepted by the backend. Prefer typology_mapping when possible.',
                                 ],
                             ],
-                        ]
+                        ],
                     ),
-               ],
+                ],
                 '/plugins/uxconnector/front/copilot-semantic-prepare.php' => [
                     'post' => $this->analyticsOperation(
                         'prepareSemanticTicketClassification',
@@ -239,9 +239,9 @@ final class OpenApiDocumentFactory
                                 'max_tickets' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 10000, 'default' => 500],
                                 'result_limit' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 500, 'default' => 100],
                             ],
-                        ]
+                        ],
                     ),
-               ],
+                ],
 
                 '/plugins/uxconnector/front/copilot-semantic-finalize.php' => [
                     'post' => $this->analyticsOperation(
@@ -285,9 +285,9 @@ final class OpenApiDocumentFactory
                                     ],
                                 ],
                             ],
-                        ]
+                        ],
                     ),
-               ],
+                ],
                 '/plugins/uxconnector/front/copilot-semantic-classification.php' => [
                     'post' => $this->analyticsOperation(
                         'analyzeSemanticTicketClassification',
@@ -335,9 +335,9 @@ final class OpenApiDocumentFactory
                                     'description' => 'Maximum per-ticket classification detail rows returned. Aggregate metrics still use the complete selected sample.',
                                 ],
                             ],
-                        ]
+                        ],
                     ),
-               ],
+                ],
                 '/plugins/uxconnector/front/copilot-compare.php' => [
                     'post' => $this->analyticsOperation('comparePeriods', 'Compare two ITSM periods.', 'Use when the user asks to compare two periods and explain differences in volume, backlog and resolution metrics. The response flags partial periods and provides normalized daily rates when raw totals are not directly comparable.', [
                         'type' => 'object',
@@ -347,7 +347,7 @@ final class OpenApiDocumentFactory
                             'period_b' => $periodSchema,
                         ],
                     ]),
-               ],
+                ],
             ],
         ];
     }

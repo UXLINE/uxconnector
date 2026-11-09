@@ -18,8 +18,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
 final readonly class ActivateSyncJobCommand
 {
-   public function __construct(
+    public function __construct(
         public SyncJobId $syncJobId
-    ) {
-   }
+    ) {}
 }

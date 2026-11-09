@@ -34,9 +34,9 @@ try {
     $key = WebhookRequestAuthenticator::fromEnvironment()->authenticate($_SERVER, $_GET, $raw);
 
     $payload = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
-   if (!is_array($payload)) {
-       throw new \RuntimeException('Webhook payload must be a JSON object.');
-   }
+    if (!is_array($payload)) {
+        throw new \RuntimeException('Webhook payload must be a JSON object.');
+    }
 
     $result = SyncServiceProvider::processInboundWebhookService()->execute($key, $payload);
     \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(200);

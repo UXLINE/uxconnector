@@ -23,5 +23,5 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
  */
 interface AuthConfigUsageCheckerInterface
 {
-   public function isUsed(AuthConfigId $id): bool;
+    public function isUsed(AuthConfigId $id): bool;
 }

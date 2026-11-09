@@ -1,0 +1,276 @@
+{
+  "id": "easyvista",
+  "version": "1.0.0",
+  "name": "EasyVista Service Manager",
+  "description": "Imports pilotes ITSM et parc via la REST API EasyVista Service Manager.",
+  "icon": "ti ti-plug",
+  "endpoint_hint": "https://{host}/api/v1/{account}",
+  "test_path_hint": "/version",
+  "auth_methods": [
+    "basic",
+    "bearer_token"
+  ],
+  "jobs": [
+    {
+      "id": "easyvista.incident.inbound.pilot",
+      "name": "EasyVista vers GLPI : importer les incidents",
+      "description": "Le filtre doit sélectionner exclusivement le type EasyVista voulu. Le numéro RFC sert de titre.",
+      "direction": "inbound",
+      "resource_path": "/requests?max_rows=25&fields=RFC_NUMBER,SUBMIT_DATE_UT&sort=RFC_NUMBER&search={{search|urlencode}}",
+      "collection_path": "records",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "@next"
+        }
+      },
+      "target_itemtype": "ticket",
+      "external_object_type": "request",
+      "external_id_field": "RFC_NUMBER",
+      "match_field": "externalid",
+      "field_mappings": [
+        {
+          "source": "RFC_NUMBER",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "RFC_NUMBER",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "SUBMIT_DATE_UT",
+          "target": "date",
+          "required": false,
+          "transform": "datetime_glpi"
+        },
+        {
+          "source": "@literal:1",
+          "target": "type",
+          "required": true
+        },
+        {
+          "source": "@literal:\"Importé depuis EasyVista Service Manager\"",
+          "target": "content",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "label": "Filtre EasyVista (valeur du paramètre search)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "easyvista.request.inbound.pilot",
+      "name": "EasyVista vers GLPI : importer les demandes de service",
+      "description": "Le filtre doit sélectionner exclusivement le type EasyVista voulu. Le numéro RFC sert de titre.",
+      "direction": "inbound",
+      "resource_path": "/requests?max_rows=25&fields=RFC_NUMBER,SUBMIT_DATE_UT&sort=RFC_NUMBER&search={{search|urlencode}}",
+      "collection_path": "records",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "@next"
+        }
+      },
+      "target_itemtype": "ticket",
+      "external_object_type": "request",
+      "external_id_field": "RFC_NUMBER",
+      "match_field": "externalid",
+      "field_mappings": [
+        {
+          "source": "RFC_NUMBER",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "RFC_NUMBER",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "SUBMIT_DATE_UT",
+          "target": "date",
+          "required": false,
+          "transform": "datetime_glpi"
+        },
+        {
+          "source": "@literal:2",
+          "target": "type",
+          "required": true
+        },
+        {
+          "source": "@literal:\"Importé depuis EasyVista Service Manager\"",
+          "target": "content",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "label": "Filtre EasyVista (valeur du paramètre search)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "easyvista.locations.inbound.pilot",
+      "name": "EasyVista vers GLPI : importer des lieux",
+      "description": "Importe les libellés français et les villes dans une entité de recette. Les lieux sont créés à plat.",
+      "direction": "inbound",
+      "resource_path": "/locations?max_rows=25&fields=LOCATION_ID,LOCATION_FR,CITY&sort=LOCATION_ID&search={{search|urlencode}}",
+      "collection_path": "records",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "@next"
+        }
+      },
+      "target_itemtype": "location",
+      "external_object_type": "location",
+      "external_id_field": "LOCATION_ID",
+      "match_field": "name",
+      "field_mappings": [
+        {
+          "source": "LOCATION_FR",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "CITY",
+          "target": "town",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "label": "Filtre EasyVista (valeur du paramètre search)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "easyvista.computers.inbound.pilot",
+      "name": "EasyVista vers GLPI : importer des ordinateurs",
+      "description": "Limiter le filtre à une famille d’ordinateurs et vérifier que les numéros de série sont uniques.",
+      "direction": "inbound",
+      "resource_path": "/assets?max_rows=25&fields=ASSET_ID,ASSET_LABEL,SERIAL_NUMBER,ASSET_TAG&sort=ASSET_ID&search={{search|urlencode}}",
+      "collection_path": "records",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "@next"
+        }
+      },
+      "target_itemtype": "computer",
+      "external_object_type": "asset",
+      "external_id_field": "ASSET_ID",
+      "match_field": "serial",
+      "field_mappings": [
+        {
+          "source": "SERIAL_NUMBER",
+          "target": "serial",
+          "required": true
+        },
+        {
+          "source": "ASSET_LABEL",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "ASSET_TAG",
+          "target": "otherserial",
+          "required": false
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "label": "Filtre EasyVista (valeur du paramètre search)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "easyvista.catalog-requests.inbound.pilot",
+      "name": "EasyVista vers GLPI : importer des entrées de catalogue",
+      "description": "Importe les libellés anglais sélectionnés comme catégories ITIL à plat.",
+      "direction": "inbound",
+      "resource_path": "/catalog-requests?max_rows=25&fields=SD_CATALOG_ID,TITLE_EN&sort=SD_CATALOG_ID&search={{search|urlencode}}",
+      "collection_path": "records",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "@next"
+        }
+      },
+      "target_itemtype": "itil_category",
+      "external_object_type": "catalog_request",
+      "external_id_field": "SD_CATALOG_ID",
+      "match_field": "name",
+      "field_mappings": [
+        {
+          "source": "TITLE_EN",
+          "target": "name",
+          "required": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "label": "Filtre EasyVista (valeur du paramètre search)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "easyvista.ticket.outbound",
+      "name": "GLPI vers EasyVista : créer un ticket",
+      "description": "Modèle désactivé. La réponse de création doit être rapprochée du numéro RFC avant activation.",
+      "available": false,
+      "direction": "outbound",
+      "trigger_type": "glpi_event",
+      "resource_path": "/requests",
+      "collection_path": "$",
+      "target_itemtype": "ticket",
+      "external_object_type": "request",
+      "external_id_field": "HREF",
+      "match_field": "externalid",
+      "parameters": [
+        {
+          "name": "catalog_code",
+          "label": "Code du catalogue EasyVista",
+          "required": true
+        },
+        {
+          "name": "recipient_mail",
+          "label": "Adresse du bénéficiaire de recette",
+          "required": true
+        }
+      ],
+      "outbound": {
+        "create": {
+          "method": "POST",
+          "path": "/requests",
+          "body": {
+            "requests": [
+              {
+                "Catalog_Code": "{{catalog_code}}",
+                "Recipient_Mail": "{{recipient_mail}}",
+                "TITLE": "@field:name",
+                "Description": "@field:content",
+                "workflow_start": false
+              }
+            ]
+          }
+        },
+        "response_external_id_path": "HREF"
+      }
+    }
+  ]
+}

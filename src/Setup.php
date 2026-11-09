@@ -25,9 +25,9 @@ namespace GlpiPlugin\Uxconnector;
 final class Setup
 {
     /**
-     * Single source of truth for the plugin version (SemVer).
+     * Plugin version exposed by this lifecycle class.
      */
-    public const VERSION = '2.18.3';
+    public const VERSION = '2.18.37';
 
     /**
      * Minimum GLPI version supported by this plugin.
@@ -73,7 +73,7 @@ final class Setup
      * Registers the plugin components at load time.
      *
      * RULE-HOOKMANAGER-002 : Setup delegates immediately and entirely
-     * to HookManager — it never registers a class, a menu, a right or
+     * to HookManager - it never registers a class, a menu, a right or
      * a CronTask itself.
      */
     public static function init(): void
@@ -110,7 +110,7 @@ final class Setup
     /**
      * Creates the database schema for a brand new installation.
      *
-     * RULE-SETUP-001/002 : this method only orchestrates — the actual
+     * RULE-SETUP-001/002 : this method only orchestrates - the actual
      * DDL lives in versioned, idempotent scripts under sql/install/.
      * No Repository, no Connector, no synchronization is ever invoked
      * from here.
@@ -124,7 +124,7 @@ final class Setup
 
         // ADR-10.10.02 : CronTask registration happens during
         // install/upgrade, never on every plugin_init() (HookManager
-        // never touches CronTask — see its class doc-block).
+        // never touches CronTask - see its class doc-block).
         Infrastructure\CronRegistry::register();
 
         return true;
@@ -143,8 +143,8 @@ final class Setup
         Infrastructure\CronRegistry::unregister();
 
         $rights = array_map(
-            static fn (array $definition): string => $definition['field'],
-            \PluginUxconnectorProfile::getRightDefinitions()
+            static fn(array $definition): string => $definition['field'],
+            \PluginUxconnectorProfile::getRightDefinitions(),
         );
 
         // Legacy right used by earlier UXConnector releases. It is no longer
@@ -152,12 +152,14 @@ final class Setup
         $rights[] = 'plugin_uxconnector_connector';
 
         \ProfileRight::deleteProfileRights(
-            array_values(array_unique($rights))
+            array_values(array_unique($rights)),
         );
 
         // Drop dependent tables before their parent tables. Migration::dropTable()
         // is existence-safe, making uninstall deterministic and replayable.
         $tables = [
+            'glpi_plugin_uxconnector_licenseassignments',
+            'glpi_plugin_uxconnector_syncfailures',
             'glpi_plugin_uxconnector_objectlinks',
             'glpi_plugin_uxconnector_sync_checkpoints',
             'glpi_plugin_uxconnector_syncexecutions',

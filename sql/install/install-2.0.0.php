@@ -58,11 +58,11 @@ return static function (Migration $migration): void {
             SQL;
 
         $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $authConfigTable: " . $DB->error()
+            "Failed to create table $authConfigTable: " . $DB->error(),
         );
     }
 
-    // 2.5.2 — AuthConfig connectivity tests now target a configurable
+    // 2.5.2 - AuthConfig connectivity tests now target a configurable
     // authenticated resource instead of assuming GET /. Existing rows use
     // "/" until an administrator recreates/updates the configuration with a
     // provider-specific test path.
@@ -71,7 +71,7 @@ return static function (Migration $migration): void {
             $authConfigTable,
             'test_path',
             'string',
-            ['after' => 'endpoint', 'value' => '/']
+            ['after' => 'endpoint', 'value' => '/'],
         );
 
         // Prior to 2.5.2, any HTTP response below 500 (including 401)
@@ -79,16 +79,16 @@ return static function (Migration $migration): void {
         // back to DRAFT so they cannot be activated without a strict 2xx
         // re-test after the upgrade.
         $DB->doQuery(
-            "UPDATE `$authConfigTable` SET `status` = 'draft' WHERE `status` = 'testing'"
+            "UPDATE `$authConfigTable` SET `status` = 'draft' WHERE `status` = 'testing'",
         ) || throw new \RuntimeException(
-            'Failed to reset legacy AuthConfig testing statuses: ' . $DB->error()
+            'Failed to reset legacy AuthConfig testing statuses: ' . $DB->error(),
         );
     }
 
     // RULE-VALUEOBJECT-003/CredentialVault design note : this table is
     // intentionally separate from `$authConfigTable`. It stores only
-    // the opaque, already-GLPIKey-protected payload — never a
-    // plaintext secret — and is deleted in cascade whenever its
+    // the opaque, already-GLPIKey-protected payload - never a
+    // plaintext secret - and is deleted in cascade whenever its
     // parent AuthConfig is purged (see AuthConfigSecretStore::delete()
     // called from AuthConfigRepository::delete()).
     $secretTable = 'glpi_plugin_uxconnector_authconfig_secrets';
@@ -108,7 +108,7 @@ return static function (Migration $migration): void {
             SQL;
 
         $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $secretTable: " . $DB->error()
+            "Failed to create table $secretTable: " . $DB->error(),
         );
     }
 
@@ -162,7 +162,7 @@ return static function (Migration $migration): void {
             SQL;
 
         $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $syncJobTable: " . $DB->error()
+            "Failed to create table $syncJobTable: " . $DB->error(),
         );
     }
 
@@ -195,11 +195,77 @@ return static function (Migration $migration): void {
             SQL;
 
         $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $syncExecutionTable: " . $DB->error()
+            "Failed to create table $syncExecutionTable: " . $DB->error(),
         );
     }
 
-    // 2.13.0 — opaque cursor checkpoints for incremental connectors
+    // 2.18.4 - asynchronous execution supervision and resumable checkpoints.
+    if ($DB->tableExists($syncExecutionTable)) {
+        $executionFields = [
+            'items_created' => ['integer', ['after' => 'items_processed', 'value' => 0]],
+            'items_updated' => ['integer', ['after' => 'items_created', 'value' => 0]],
+            'items_skipped' => ['integer', ['after' => 'items_updated', 'value' => 0]],
+            'items_warnings' => ['integer', ['after' => 'items_skipped', 'value' => 0]],
+            'phase' => ['string', ['after' => 'error_message', 'null' => true]],
+            'checkpoint_cursor' => ['text', ['after' => 'phase', 'null' => true]],
+            'checkpoint_page' => ['integer', ['after' => 'checkpoint_cursor', 'value' => 0]],
+            'source_id' => ['string', ['after' => 'checkpoint_page', 'null' => true]],
+            'last_success_source_id' => ['string', ['after' => 'source_id', 'null' => true]],
+            'last_success_at' => ['datetime', ['after' => 'last_success_source_id', 'null' => true]],
+            'heartbeat_at' => ['datetime', ['after' => 'last_success_at', 'null' => true]],
+            'resume_available' => ['bool', ['after' => 'heartbeat_at', 'value' => 0]],
+            'trigger_source' => ['string', ['after' => 'resume_available', 'value' => 'scheduled']],
+            // 2.18.24: cooperative cancellation and exact next-page replay reference.
+            'stop_requested' => ['bool', ['after' => 'trigger_source', 'value' => 0]],
+            'resume_path' => ['text', ['after' => 'stop_requested', 'null' => true]],
+        ];
+        foreach ($executionFields as $field => [$type, $options]) {
+            if (!$DB->fieldExists($syncExecutionTable, $field)) {
+                $migration->addField($syncExecutionTable, $field, $type, $options);
+            }
+        }
+        $migration->addKey($syncExecutionTable, ['status', 'started_at'], 'status_started_at');
+    }
+
+    // Per-item failures: enough information to diagnose/export/replay only failed records.
+    $syncFailureTable = 'glpi_plugin_uxconnector_syncfailures';
+    if (!$DB->tableExists($syncFailureTable)) {
+        $migration->displayMessage("Installing $syncFailureTable");
+        $query = <<<SQL
+            CREATE TABLE `$syncFailureTable` (
+                `id` int unsigned NOT NULL AUTO_INCREMENT,
+                `plugin_uxconnector_syncexecutions_id` int unsigned NOT NULL,
+                `plugin_uxconnector_syncjobs_id` int unsigned NOT NULL,
+                `source_type` varchar(64) NOT NULL DEFAULT 'record',
+                `source_id` varchar(191) NULL,
+                `source_label` varchar(255) NULL,
+                `target_type` varchar(64) NULL,
+                `target_id` int unsigned NULL,
+                `action` varchar(32) NOT NULL DEFAULT 'upsert',
+                `status` varchar(32) NOT NULL DEFAULT 'failed',
+                `error_category` varchar(64) NOT NULL DEFAULT 'unknown',
+                `error_code` varchar(128) NULL,
+                `error_message` text NOT NULL,
+                `technical_context` text NULL,
+                `source_snapshot` mediumtext NULL,
+                `attempt` int unsigned NOT NULL DEFAULT 1,
+                `page_number` int unsigned NOT NULL DEFAULT 0,
+                `cursor_value` text NULL,
+                `retry_status` varchar(32) NOT NULL DEFAULT 'not_retried',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `execution` (`plugin_uxconnector_syncexecutions_id`),
+                KEY `syncjob` (`plugin_uxconnector_syncjobs_id`),
+                KEY `source_id` (`source_id`),
+                KEY `retry_status` (`retry_status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+            SQL;
+        $DB->doQuery($query) || throw new \RuntimeException(
+            "Failed to create table $syncFailureTable: " . $DB->error(),
+        );
+    }
+
+    // 2.13.0 - opaque cursor checkpoints for incremental connectors
     // (Zendesk Incremental Ticket Export is the first bundled consumer).
     $syncCheckpointTable = 'glpi_plugin_uxconnector_sync_checkpoints';
 
@@ -218,7 +284,7 @@ return static function (Migration $migration): void {
             SQL;
 
         $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $syncCheckpointTable: " . $DB->error()
+            "Failed to create table $syncCheckpointTable: " . $DB->error(),
         );
     }
 
@@ -226,7 +292,7 @@ return static function (Migration $migration): void {
     // rapprochement entre un enregistrement externe et un objet GLPI,
     // pour ne plus jamais retomber sur une recherche ambiguë par
     // valeur métier (`match_field`) une fois ce rapprochement établi
-    // une première fois — voir Domain\Sync\Entity\ObjectLink.
+    // une première fois - voir Domain\Sync\Entity\ObjectLink.
     $objectLinkTable = 'glpi_plugin_uxconnector_objectlinks';
 
     if (!$DB->tableExists($objectLinkTable)) {
@@ -252,11 +318,11 @@ return static function (Migration $migration): void {
             SQL;
 
         $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $objectLinkTable: " . $DB->error()
+            "Failed to create table $objectLinkTable: " . $DB->error(),
         );
     }
 
-    // 2.9.0 — Copilot Gateway API clients. Secrets are never persisted: only a SHA-256 hash of the generated API key is stored.
+    // 2.9.0 - Copilot Gateway API clients. Secrets are never persisted: only a SHA-256 hash of the generated API key is stored.
     $copilotClientTable = 'glpi_plugin_uxconnector_copilotclients';
     if (!$DB->tableExists($copilotClientTable)) {
         $migration->displayMessage("Installing $copilotClientTable");
@@ -277,24 +343,24 @@ return static function (Migration $migration): void {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
             SQL;
         $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $copilotClientTable: " . $DB->error()
+            "Failed to create table $copilotClientTable: " . $DB->error(),
         );
     }
 
-    // 2.9.1 — identify whether an AI client reads the hosting GLPI directly
+    // 2.9.1 - identify whether an AI client reads the hosting GLPI directly
     // or delegates to a configured remote GLPI High-Level API connection.
     if ($DB->tableExists($copilotClientTable) && !$DB->fieldExists($copilotClientTable, 'provider_type')) {
         $migration->addField(
             $copilotClientTable,
             'provider_type',
             'string',
-            ['after' => 'api_key_hash', 'value' => 'glpi_hl_api']
+            ['after' => 'api_key_hash', 'value' => 'glpi_hl_api'],
         );
     }
 
     // RULE-MIGRATION additive : une instance déjà installée en
     // 2.x avant l'introduction d'ObjectLink porte une table
-    // `syncjobs` sans la colonne `external_id_field` — l'ajouter
+    // `syncjobs` sans la colonne `external_id_field` - l'ajouter
     // sans détruire les lignes existantes (Migration::addField()
     // est elle-même idempotente : elle ne réapplique rien si la
     // colonne existe déjà).
@@ -303,12 +369,12 @@ return static function (Migration $migration): void {
             $syncJobTable,
             'external_id_field',
             'string',
-            ['after' => 'match_field', 'value' => '']
+            ['after' => 'match_field', 'value' => ''],
         );
     }
 
     // RULE-MIGRATION additive : gestion des entités (§3.11 du document
-    // de synthèse projet) — colonne nullable, aucune valeur par défaut
+    // de synthèse projet) - colonne nullable, aucune valeur par défaut
     // requise : NULL signifie explicitement "aucune stratégie
     // configurée", un comportement neutre pour toute instance
     // mono-entité et pour tout SyncJob existant avant ce correctif.
@@ -317,11 +383,11 @@ return static function (Migration $migration): void {
             $syncJobTable,
             'entity_assignment_strategy',
             'text',
-            ['after' => 'external_id_field', 'null' => true]
+            ['after' => 'external_id_field', 'null' => true],
         );
     }
 
-    // 2.7.0 — generic response shape and pagination are now persisted on
+    // 2.7.0 - generic response shape and pagination are now persisted on
     // SyncJob. Existing jobs keep the historical behaviour deliberately:
     // collection at response root and no pagination until an administrator
     // configures them or recreates them from a catalogue template.
@@ -331,7 +397,7 @@ return static function (Migration $migration): void {
                 $syncJobTable,
                 'collection_path',
                 'string',
-                ['after' => 'external_id_field', 'value' => '$']
+                ['after' => 'external_id_field', 'value' => '$'],
             );
         }
 
@@ -340,7 +406,7 @@ return static function (Migration $migration): void {
                 $syncJobTable,
                 'pagination_config',
                 'text',
-                ['after' => 'collection_path', 'null' => true]
+                ['after' => 'collection_path', 'null' => true],
             );
         }
 
@@ -349,7 +415,7 @@ return static function (Migration $migration): void {
                 $syncJobTable,
                 'template_id',
                 'string',
-                ['after' => 'pagination_config', 'null' => true]
+                ['after' => 'pagination_config', 'null' => true],
             );
         }
 
@@ -358,14 +424,14 @@ return static function (Migration $migration): void {
                 $syncJobTable,
                 'template_version',
                 'string',
-                ['after' => 'template_id', 'null' => true]
+                ['after' => 'template_id', 'null' => true],
             );
         }
 
         $migration->addKey($syncJobTable, 'template_id', 'template_id');
     }
 
-    // 2.8.0 — a configured AuthConfig is now presented as a Connection.
+    // 2.8.0 - a configured AuthConfig is now presented as a Connection.
     // connector_id associates that instance with an optional catalogue definition
     // (jira, intune, ...); custom keeps the fully manual REST use case available.
     if ($DB->tableExists($authConfigTable)) {
@@ -374,13 +440,13 @@ return static function (Migration $migration): void {
                 $authConfigTable,
                 'connector_id',
                 'string',
-                ['after' => 'test_path', 'value' => 'custom']
+                ['after' => 'test_path', 'value' => 'custom'],
             );
         }
         $migration->addKey($authConfigTable, 'connector_id', 'connector_id');
     }
 
-    // 2.8.0 — Interaction runtime metadata. Polling remains the neutral default
+    // 2.8.0 - Interaction runtime metadata. Polling remains the neutral default
     // for every existing SyncJob; outbound/webhook behavior is opt-in only.
     if ($DB->tableExists($syncJobTable)) {
         if (!$DB->fieldExists($syncJobTable, 'trigger_type')) {
@@ -388,7 +454,7 @@ return static function (Migration $migration): void {
                 $syncJobTable,
                 'trigger_type',
                 'string',
-                ['after' => 'template_version', 'value' => 'polling']
+                ['after' => 'template_version', 'value' => 'polling'],
             );
         }
         if (!$DB->fieldExists($syncJobTable, 'external_object_type')) {
@@ -396,7 +462,7 @@ return static function (Migration $migration): void {
                 $syncJobTable,
                 'external_object_type',
                 'string',
-                ['after' => 'trigger_type', 'value' => 'record']
+                ['after' => 'trigger_type', 'value' => 'record'],
             );
         }
         if (!$DB->fieldExists($syncJobTable, 'outbound_config')) {
@@ -404,7 +470,7 @@ return static function (Migration $migration): void {
                 $syncJobTable,
                 'outbound_config',
                 'text',
-                ['after' => 'external_object_type', 'null' => true]
+                ['after' => 'external_object_type', 'null' => true],
             );
         }
         if (!$DB->fieldExists($syncJobTable, 'webhook_key')) {
@@ -412,14 +478,14 @@ return static function (Migration $migration): void {
                 $syncJobTable,
                 'webhook_key',
                 'string',
-                ['after' => 'outbound_config', 'null' => true]
+                ['after' => 'outbound_config', 'null' => true],
             );
         }
         $migration->addKey($syncJobTable, 'trigger_type', 'trigger_type');
         $migration->addKey($syncJobTable, 'webhook_key', 'webhook_key', 'UNIQUE');
     }
 
-    // 2.8.0 — ObjectLink remains the single reconciliation concept, but lookups
+    // 2.8.0 - ObjectLink remains the single reconciliation concept, but lookups
     // can now cross two interactions belonging to the same Connection. The old
     // per-job unique key is deliberately retained for safe upgrades; the new
     // connection-level indexes support cross-job resolution without deleting or
@@ -430,22 +496,22 @@ return static function (Migration $migration): void {
                 $objectLinkTable,
                 'external_object_type',
                 'string',
-                ['after' => 'external_id', 'value' => 'record']
+                ['after' => 'external_id', 'value' => 'record'],
             );
         }
         $migration->addKey(
             $objectLinkTable,
             ['auth_config_reference', 'external_object_type', 'external_id'],
-            'connection_external_lookup'
+            'connection_external_lookup',
         );
         $migration->addKey(
             $objectLinkTable,
             ['auth_config_reference', 'itemtype', 'item_id'],
-            'connection_item_lookup'
+            'connection_item_lookup',
         );
     }
 
-    // 2.5.1 — ObjectLink scope hardening. Older releases keyed an
+    // 2.5.1 - ObjectLink scope hardening. Older releases keyed an
     // external record only by AuthConfig + ExternalId. Two SyncJobs using the
     // same connector could therefore collide on the same external identifier.
     // Existing links are retained with syncjobs_id = 0 (legacy/inert); new
@@ -457,7 +523,7 @@ return static function (Migration $migration): void {
                 $objectLinkTable,
                 'plugin_uxconnector_syncjobs_id',
                 'fkey',
-                ['after' => 'auth_config_reference', 'value' => 0]
+                ['after' => 'auth_config_reference', 'value' => 0],
             );
         }
 
@@ -466,16 +532,16 @@ return static function (Migration $migration): void {
             $objectLinkTable,
             ['auth_config_reference', 'itemtype', 'plugin_uxconnector_syncjobs_id', 'external_id'],
             'uniq_scope_external',
-            'UNIQUE'
+            'UNIQUE',
         );
         $migration->addKey(
             $objectLinkTable,
             'plugin_uxconnector_syncjobs_id',
-            'plugin_uxconnector_syncjobs_id'
+            'plugin_uxconnector_syncjobs_id',
         );
     }
 
-    // 2.12.0 — semantic classification engine configuration.
+    // 2.12.0 - semantic classification engine configuration.
     // Endpoint/authentication/credential remain owned by Engine/AuthConfig.
     // `auth_config_reference` is deliberately an application reference only:
     // no cross-bounded-context SQL foreign key is introduced.
@@ -508,10 +574,10 @@ return static function (Migration $migration): void {
             SQL;
 
         $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $semanticEngineConfigTable: " . $DB->error()
+            "Failed to create table $semanticEngineConfigTable: " . $DB->error(),
         );
     }
-    // 2.17.1 — GLPI High-Level asset jobs created by 2.16.x used resource
+    // 2.17.1 - GLPI High-Level asset jobs created by 2.16.x used resource
     // paths without the `/api.php` prefix when the Connection endpoint was
     // stored as the tenant root URL. Migrate only the six bundled templates
     // and only when they still carry the legacy `/Assets/...` form.
@@ -531,12 +597,52 @@ return static function (Migration $migration): void {
               AND `resource_path` LIKE '/Assets/%';
             SQL;
         $DB->doQuery($query) || throw new \RuntimeException(
-            'Failed to migrate GLPI High-Level asset resource paths: ' . $DB->error()
+            'Failed to migrate GLPI High-Level asset resource paths: ' . $DB->error(),
+        );
+    }
+
+    // 2.18.20 - individualized Microsoft licence assignments. This table is
+    // additive and MUST survive plugin upgrades; only uninstall removes it.
+    $licenseAssignmentTable = 'glpi_plugin_uxconnector_licenseassignments';
+    if (!$DB->tableExists($licenseAssignmentTable)) {
+        $migration->displayMessage("Installing $licenseAssignmentTable");
+        $query = <<<SQL
+            CREATE TABLE `$licenseAssignmentTable` (
+                `id` int unsigned NOT NULL AUTO_INCREMENT,
+                `source_authconfig_id` int unsigned NOT NULL,
+                `source_location_id` varchar(128) NOT NULL,
+                `softwarelicenses_id` int unsigned NOT NULL DEFAULT 0,
+                `product` varchar(255) NOT NULL,
+                `beneficiary` varchar(255) NOT NULL DEFAULT '',
+                `registration_number` varchar(128) NOT NULL DEFAULT '',
+                `job_function` varchar(255) NOT NULL DEFAULT '',
+                `activation_source` varchar(128) NOT NULL DEFAULT '',
+                `deactivation_source` varchar(128) NOT NULL DEFAULT '',
+                `annual_price_source` varchar(128) NOT NULL DEFAULT '',
+                `monthly_price_source` varchar(128) NOT NULL DEFAULT '',
+                `assignment_status` varchar(128) NOT NULL DEFAULT '',
+                `entity_code` varchar(128) NOT NULL DEFAULT '',
+                `code_da` varchar(128) NOT NULL DEFAULT '',
+                `code_da_accounting` varchar(128) NOT NULL DEFAULT '',
+                `code_ets` varchar(128) NOT NULL DEFAULT '',
+                `code_db` varchar(128) NOT NULL DEFAULT '',
+                `code_na` varchar(128) NOT NULL DEFAULT '',
+                `code_nb` varchar(128) NOT NULL DEFAULT '',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `source_assignment` (`source_authconfig_id`,`source_location_id`),
+                KEY `softwarelicenses_id` (`softwarelicenses_id`),
+                KEY `beneficiary` (`beneficiary`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+            SQL;
+        $DB->doQuery($query) || throw new \RuntimeException(
+            'Unable to install licence assignments storage: ' . $DB->error(),
         );
     }
 
     // Rights registration (RULE-MIGRATION-002 : Migration::addRight()
-    // is itself idempotent — it never duplicates an existing grant on
+    // is itself idempotent - it never duplicates an existing grant on
     // re-run). PluginUxconnectorProfile::getRightDefinitions() is the
     // single source of truth for these two right names; every
     // Session::checkRight()/haveRight() call in the plugin, and both

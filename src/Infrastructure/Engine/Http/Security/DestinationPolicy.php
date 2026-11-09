@@ -28,18 +28,18 @@ use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
  * 172.16.0.0/12, 192.168.0.0/16): UXConnector's entire purpose is to
  * reach internal systems (Zabbix, MDM, internal REST APIs) that
  * legitimately live there. A policy blocking all private networks
- * would break the product's core use case — see this class's
+ * would break the product's core use case - see this class's
  * companion documentation in the project synthesis document, §6.6.
  *
  * The host is resolved to its actual IP address(es) before the check
- * (via HostResolverInterface) — checking the literal hostname string
+ * (via HostResolverInterface) - checking the literal hostname string
  * alone would not catch a name that simply resolves to a forbidden
  * address.
  *
  * Résiduel documenté : cette vérification a lieu à un instant T. Un
  * hôte dont la résolution DNS change entre cette vérification et la
  * connexion réelle effectuée par GenericHttpEngine (DNS rebinding)
- * n'est pas protégé par cette classe seule — une protection complète
+ * n'est pas protégé par cette classe seule - une protection complète
  * nécessiterait un « pinning » de l'adresse IP résolue jusqu'à
  * l'établissement effectif de la connexion, non implémenté ici.
  */
@@ -49,16 +49,15 @@ final class DestinationPolicy implements DestinationPolicyInterface
      * @var list<string>
      */
     private const BLOCKED_IPV4_CIDRS = [
-         '127.0.0.0/8',    // loopback
-         '0.0.0.0/8',      // "this network"
-         '169.254.0.0/16', // link-local, includes cloud instance metadata (169.254.169.254)
-         '100.64.0.0/10',  // carrier-grade NAT, used by some cloud metadata setups
-     ];
+        '127.0.0.0/8',    // loopback
+        '0.0.0.0/8',      // "this network"
+        '169.254.0.0/16', // link-local, includes cloud instance metadata (169.254.169.254)
+        '100.64.0.0/10',  // carrier-grade NAT, used by some cloud metadata setups
+    ];
 
     public function __construct(
         private readonly HostResolverInterface $resolver
-    ) {
-    }
+    ) {}
 
     public function assertAllowed(Endpoint $endpoint): void
     {
@@ -69,7 +68,7 @@ final class DestinationPolicy implements DestinationPolicyInterface
         }
 
         // parse_url() keeps the surrounding brackets for an IPv6
-        // literal host (e.g. "[::1]") — strip them before treating
+        // literal host (e.g. "[::1]") - strip them before treating
         // the value as a candidate IP address.
         $host = trim($host, '[]');
 
@@ -97,9 +96,9 @@ final class DestinationPolicy implements DestinationPolicyInterface
 
         $host = strtolower(rtrim($host, '.'));
         $patterns = array_values(array_filter(array_map(
-            static fn (string $value): string => strtolower(rtrim(trim($value), '.')),
-            explode(',', $raw)
-        ), static fn (string $value): bool => $value !== ''));
+            static fn(string $value): string => strtolower(rtrim(trim($value), '.')),
+            explode(',', $raw),
+        ), static fn(string $value): bool => $value !== ''));
 
         foreach ($patterns as $pattern) {
             if ($pattern === $host) {

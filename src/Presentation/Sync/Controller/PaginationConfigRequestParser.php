@@ -10,30 +10,31 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\PaginationConfig;
 final class PaginationConfigRequestParser
 {
     /** @param array<string,mixed> $request */
-   public function parse(array $request): PaginationConfig {
-       $type = trim((string) ($request['pagination_type'] ?? 'none'));
-      if ($type === '' || $type === 'none') {
-          return PaginationConfig::none();
-      }
+    public function parse(array $request): PaginationConfig
+    {
+        $type = trim((string) ($request['pagination_type'] ?? 'none'));
+        if ($type === '' || $type === 'none') {
+            return (new JobScheduleRequestParser())->apply(PaginationConfig::none(), $request);
+        }
 
-       $options = [];
-      foreach ([
-           'cursor_response_path',
-           'cursor_request_parameter',
-           'last_page_response_path',
-           'offset_response_path',
-           'offset_request_parameter',
-           'page_size_response_path',
-           'page_size',
-           'total_response_path',
-           'next_link_response_path',
-       ] as $key) {
-          $value = trim((string) ($request[$key] ?? ''));
-         if ($value !== '') {
-             $options[$key] = $value;
-         }
-      }
+        $options = [];
+        foreach ([
+            'cursor_response_path',
+            'cursor_request_parameter',
+            'last_page_response_path',
+            'offset_response_path',
+            'offset_request_parameter',
+            'page_size_response_path',
+            'page_size',
+            'total_response_path',
+            'next_link_response_path',
+        ] as $key) {
+            $value = trim((string) ($request[$key] ?? ''));
+            if ($value !== '') {
+                $options[$key] = $value;
+            }
+        }
 
-       return PaginationConfig::fromArray($type, $options);
-   }
+        return (new JobScheduleRequestParser())->apply(PaginationConfig::fromArray($type, $options), $request);
+    }
 }

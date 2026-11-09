@@ -16,21 +16,25 @@ namespace GlpiPlugin\Uxconnector\Domain\Sync\Exception;
 
 final class InvalidEntityAssignmentStrategyException extends \InvalidArgumentException
 {
-   public static function fixedEntityIdMustBePositive(): self {
-       return new self('A FIXED entity assignment strategy requires a positive entities_id.');
-   }
+    public static function fixedEntityIdMustBePositive(): self
+    {
+        return new self('A FIXED entity assignment strategy requires a positive entities_id.');
+    }
 
-   public static function mappedSourceFieldMustNotBeEmpty(): self {
-       return new self('A MAPPED entity assignment strategy requires a non-empty source field.');
-   }
+    public static function mappedSourceFieldMustNotBeEmpty(): self
+    {
+        return new self('A MAPPED entity assignment strategy requires a non-empty source field.');
+    }
 
-   public static function mappedTableMustNotBeEmpty(): self {
-       return new self('A MAPPED entity assignment strategy requires at least one source-value-to-entity mapping.');
-   }
+    public static function mappedTableMustNotBeEmpty(): self
+    {
+        return new self('A MAPPED entity assignment strategy requires at least one source-value-to-entity mapping.');
+    }
 
-   public static function defaultEntityIdRequiredForUseDefaultPolicy(): self {
-       return new self(
-           'UnknownEntityPolicy::USE_DEFAULT requires a default entities_id to fall back to.'
-       );
-   }
+    public static function defaultEntityIdRequiredForUseDefaultPolicy(): self
+    {
+        return new self(
+            'UnknownEntityPolicy::USE_DEFAULT requires a default entities_id to fall back to.',
+        );
+    }
 }

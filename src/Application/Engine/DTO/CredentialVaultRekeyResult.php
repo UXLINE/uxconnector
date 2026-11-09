@@ -23,15 +23,15 @@ final readonly class CredentialVaultRekeyResult
      * @param array<int, string> $errors AuthConfig id => error message,
      *        for every secret that failed to rotate.
      */
-   public function __construct(
+    public function __construct(
         public int $rotated,
         public int $skipped,
         public int $failed,
         public array $errors = []
-    ) {
-   }
+    ) {}
 
-   public function isFullySuccessful(): bool {
-       return $this->failed === 0;
-   }
+    public function isFullySuccessful(): bool
+    {
+        return $this->failed === 0;
+    }
 }

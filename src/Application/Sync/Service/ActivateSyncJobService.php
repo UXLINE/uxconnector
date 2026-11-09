@@ -23,7 +23,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
 
 /**
- * Orchestrates the "activate this SyncJob" use case — the second half
+ * Orchestrates the "activate this SyncJob" use case - the second half
  * of the activation cycle gap identified by two successive external
  * code reviews: a SyncJob created from the UI stayed in DRAFT
  * forever, so SyncJobCronTask (which only reprises `findRunnable()`)
@@ -36,11 +36,10 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
  */
 final class ActivateSyncJobService
 {
-   public function __construct(
+    public function __construct(
         private readonly SyncJobRepositoryInterface $repository,
         private readonly ?AuthConfigRepositoryInterface $authConfigRepository = null
-    ) {
-   }
+    ) {}
 
     /**
      * @throws SyncJobNotFoundException if the command's SyncJobId does not
@@ -49,26 +48,27 @@ final class ActivateSyncJobService
      *         FieldMapping configured, or is not in a status that allows
      *         activation.
      */
-   public function execute(ActivateSyncJobCommand $command): SyncJob {
-       $syncJob = $this->repository->findById($command->syncJobId);
+    public function execute(ActivateSyncJobCommand $command): SyncJob
+    {
+        $syncJob = $this->repository->findById($command->syncJobId);
 
-      if ($syncJob === null) {
-          throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($command->syncJobId);
-      }
+        if ($syncJob === null) {
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($command->syncJobId);
+        }
 
-      if ($this->authConfigRepository !== null) {
-          $reference = $syncJob->authConfigReference();
-          $authConfig = $this->authConfigRepository->findById(new AuthConfigId($reference->value()));
-         if ($authConfig === null) {
-             throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::referenceNotFound($reference);
-         }
-         if (!$authConfig->isUsable()) {
-             throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::notUsable($reference);
-         }
-      }
+        if ($this->authConfigRepository !== null) {
+            $reference = $syncJob->authConfigReference();
+            $authConfig = $this->authConfigRepository->findById(new AuthConfigId($reference->value()));
+            if ($authConfig === null) {
+                throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::referenceNotFound($reference);
+            }
+            if (!$authConfig->isUsable()) {
+                throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::notUsable($reference);
+            }
+        }
 
-       $syncJob->activate();
+        $syncJob->activate();
 
-       return $this->repository->save($syncJob);
-   }
+        return $this->repository->save($syncJob);
+    }
 }

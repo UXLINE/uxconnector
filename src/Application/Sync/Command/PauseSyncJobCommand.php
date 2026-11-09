@@ -18,8 +18,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
 final readonly class PauseSyncJobCommand
 {
-   public function __construct(
+    public function __construct(
         public SyncJobId $syncJobId
-    ) {
-   }
+    ) {}
 }

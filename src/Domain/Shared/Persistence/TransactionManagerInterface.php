@@ -19,14 +19,14 @@ namespace GlpiPlugin\Uxconnector\Domain\Shared\Persistence;
  * without knowing which persistence engine backs it.
  *
  * RULE-036/060 : a transaction covers exactly one use case and is
- * exclusively piloted by the Application Service — never by a
+ * exclusively piloted by the Application Service - never by a
  * Repository, never by the Domain.
  */
 interface TransactionManagerInterface
 {
-   public function begin(): void;
+    public function begin(): void;
 
-   public function commit(): void;
+    public function commit(): void;
 
-   public function rollback(): void;
+    public function rollback(): void;
 }

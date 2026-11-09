@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotGatewayResponder;
+use GlpiPlugin\Uxconnector\Bootstrap\CopilotGatewayResponderFactory;
 
 try {
-    (new CopilotGatewayResponder())->analytics('incidentology_typologies');
+    CopilotGatewayResponderFactory::create()->analytics('incidentology_typologies');
 } catch (\JsonException|\InvalidArgumentException $e) {
     \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(400);
     header('Content-Type: application/json; charset=utf-8');
@@ -18,8 +18,8 @@ try {
         'uxconnector',
         sprintf(
             "Copilot Incidentologue analytics failed: %s\n",
-            $e->getMessage()
-        )
+            $e->getMessage(),
+        ),
     );
 
     \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(502);

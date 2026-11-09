@@ -15,7 +15,7 @@ final readonly class SemanticTicketSourceResult
     /**
      * @param list<SemanticTicketInput> $tickets
      */
-   public function __construct(
+    public function __construct(
         public array $tickets,
         public int $candidateCount,
         public int $selectedCount,
@@ -23,16 +23,16 @@ final readonly class SemanticTicketSourceResult
         public bool $sourceScanTruncated,
         public int $textTruncatedTickets
     ) {
-      if ($this->candidateCount < 0 || $this->selectedCount < 0) {
-          throw new \InvalidArgumentException('Semantic ticket source counts must not be negative.');
-      }
+        if ($this->candidateCount < 0 || $this->selectedCount < 0) {
+            throw new \InvalidArgumentException('Semantic ticket source counts must not be negative.');
+        }
 
-      if ($this->selectedCount !== count($this->tickets)) {
-          throw new \InvalidArgumentException('Semantic ticket source selectedCount must match tickets length.');
-      }
+        if ($this->selectedCount !== count($this->tickets)) {
+            throw new \InvalidArgumentException('Semantic ticket source selectedCount must match tickets length.');
+        }
 
-      if ($this->selectedCount > $this->candidateCount) {
-          throw new \InvalidArgumentException('Semantic ticket source selectedCount cannot exceed candidateCount.');
-      }
-   }
+        if ($this->selectedCount > $this->candidateCount) {
+            throw new \InvalidArgumentException('Semantic ticket source selectedCount cannot exceed candidateCount.');
+        }
+    }
 }

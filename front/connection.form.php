@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use GlpiPlugin\Uxconnector\Infrastructure\Connection\ConnectionControllerFactory;
+use GlpiPlugin\Uxconnector\Bootstrap\ConnectionControllerFactory;
 
 $controller = ConnectionControllerFactory::create();
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
@@ -10,7 +10,7 @@ $isEdit = $id > 0;
 
 Session::checkRight(
     'plugin_uxconnector_authconfig',
-    $isEdit ? UPDATE : CREATE
+    $isEdit ? UPDATE : CREATE,
 );
 
 if (isset($_POST['create_connection'])) {
@@ -28,7 +28,7 @@ Html::header(
     $_SERVER['PHP_SELF'],
     'tools',
     'PluginUxconnectorMenu',
-    'connections'
+    'connections',
 );
 
 if ($isEdit) {

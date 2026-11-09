@@ -26,9 +26,10 @@ use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\SyncJobItem;
  */
 class PluginUxconnectorProfile extends Profile
 {
-   public static function getTypeName($nb = 0): string {
-       return __('UXConnector', 'uxconnector');
-   }
+    public static function getTypeName($nb = 0): string
+    {
+        return __('UXConnector', 'uxconnector');
+    }
 
     /**
      * Adds an UXConnector tab to GLPI's Profile edit screen.
@@ -37,29 +38,31 @@ class PluginUxconnectorProfile extends Profile
      * @param int $withtemplate
      * @return string
      */
-   public function getTabNameForItem($item, $withtemplate = 0) {
-      if (!($item instanceof Profile)
-           || !$item->getField('id')
-           || !Session::haveRight('profile', READ)
-       ) {
-          return '';
-      }
+    public function getTabNameForItem($item, $withtemplate = 0)
+    {
+        if (!($item instanceof Profile)
+             || !$item->getField('id')
+             || !Session::haveRight('profile', READ)
+        ) {
+            return '';
+        }
 
-       return self::createTabEntry(self::getTypeName());
-   }
+        return self::createTabEntry(self::getTypeName());
+    }
 
     /**
      * @param mixed $item
      * @param int $tabnum
      * @param int $withtemplate
      */
-   public static function displayTabContentForItem($item, $tabnum = 1, $withtemplate = 0) {
-      if ($item instanceof Profile && $item->getField('id')) {
-          self::showForProfile((int) $item->getField('id'));
-      }
+    public static function displayTabContentForItem($item, $tabnum = 1, $withtemplate = 0)
+    {
+        if ($item instanceof Profile && $item->getField('id')) {
+            self::showForProfile((int) $item->getField('id'));
+        }
 
-       return true;
-   }
+        return true;
+    }
 
     /**
      * Single source of truth for UXConnector rights.
@@ -70,58 +73,60 @@ class PluginUxconnectorProfile extends Profile
      *
      * @return list<array{itemtype: class-string<CommonDBTM>, field: string, label: string}>
      */
-   public static function getRightDefinitions(): array {
-       return [
-           [
-               'itemtype' => AuthConfigItem::class,
-               'field'    => 'plugin_uxconnector_authconfig',
-               'label'    => __('Authentication configurations', 'uxconnector'),
-           ],
-           [
-               'itemtype' => SyncJobItem::class,
-               'field'    => 'plugin_uxconnector_syncjob',
-               'label'    => __('Synchronization jobs', 'uxconnector'),
-           ],
-       ];
-   }
+    public static function getRightDefinitions(): array
+    {
+        return [
+            [
+                'itemtype' => AuthConfigItem::class,
+                'field'    => 'plugin_uxconnector_authconfig',
+                'label'    => __('Authentication configurations', 'uxconnector'),
+            ],
+            [
+                'itemtype' => SyncJobItem::class,
+                'field'    => 'plugin_uxconnector_syncjob',
+                'label'    => __('Synchronization jobs', 'uxconnector'),
+            ],
+        ];
+    }
 
     /**
      * Renders a GLPI-native editable rights matrix for one profile.
      */
-   public static function showForProfile(int $profilesId): void {
-       $profile = new Profile();
-      if (!$profile->getFromDB($profilesId)) {
-          return;
-      }
+    public static function showForProfile(int $profilesId): void
+    {
+        $profile = new Profile();
+        if (!$profile->getFromDB($profilesId)) {
+            return;
+        }
 
-       $canEdit = Session::haveRight('profile', UPDATE);
+        $canEdit = Session::haveRight('profile', UPDATE);
 
-       echo "<div class='firstbloc'>";
-       echo "<form name='form' method='post' action='" . htmlescape(Profile::getFormURL()) . "'>";
-       echo Html::hidden('id', ['value' => $profilesId]);
+        echo "<div class='firstbloc'>";
+        echo "<form name='form' method='post' action='" . htmlescape(Profile::getFormURL()) . "'>";
+        echo Html::hidden('id', ['value' => $profilesId]);
 
-       $profile->displayRightsChoiceMatrix(
-           self::getRightDefinitions(),
-           [
-               'title'   => self::getTypeName(),
-               'canedit' => $canEdit,
-           ]
-       );
+        $profile->displayRightsChoiceMatrix(
+            self::getRightDefinitions(),
+            [
+                'title'   => self::getTypeName(),
+                'canedit' => $canEdit,
+            ],
+        );
 
-      if ($canEdit) {
-          echo "<div class='center mt-3'>";
-          echo Html::submit(
-              _x('button', 'Save'),
-              [
-                  'name'  => 'update',
-                  'class' => 'btn btn-primary',
-                  'icon'  => 'ti ti-device-floppy',
-              ]
-          );
-          echo '</div>';
-      }
+        if ($canEdit) {
+            echo "<div class='center mt-3'>";
+            echo Html::submit(
+                _x('button', 'Save'),
+                [
+                    'name'  => 'update',
+                    'class' => 'btn btn-primary',
+                    'icon'  => 'ti ti-device-floppy',
+                ],
+            );
+            echo '</div>';
+        }
 
-       Html::closeForm();
-       echo '</div>';
-   }
+        Html::closeForm();
+        echo '</div>';
+    }
 }

@@ -8,10 +8,11 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Semantic\ValueObject\SemanticEngineCon
 
 final class SemanticEngineConfigNotFoundException extends \RuntimeException
 {
-   public static function forId(SemanticEngineConfigId $id): self {
-       return new self(sprintf(
-           'Semantic engine configuration #%d was not found.',
-           $id->value()
-       ));
-   }
+    public static function forId(SemanticEngineConfigId $id): self
+    {
+        return new self(sprintf(
+            'Semantic engine configuration #%d was not found.',
+            $id->value(),
+        ));
+    }
 }

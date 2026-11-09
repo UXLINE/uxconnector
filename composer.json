@@ -14,7 +14,6 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.0",
-        "glpi-project/coding-standard": "*",
         "glpi-project/phpstan-glpi": "^1.3",
         "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^11.0"
@@ -24,24 +23,8 @@
             "GlpiPlugin\\Uxconnector\\": "src/"
         }
     },
-    "autoload-dev": {
-        "psr-4": {
-            "GlpiPlugin\\Uxconnector\\Tests\\": "tests/"
-        }
-    },
-    "scripts": {
-        "test": "phpunit",
-        "analyse": "phpstan analyse",
-        "fix": "php-cs-fixer fix",
-        "lint:glpi": "phpcs --standard=GlpiStandard src setup.php hook.php front",
-        "test:zendesk-offline": "phpunit --testsuite ZendeskOffline",
-        "test:preflight": "sh tools/preflight-2.18.3.sh"
-    },
     "config": {
         "sort-packages": true,
-        "optimize-autoloader": true,
-        "allow-plugins": {
-            "dealerdirect/phpcodesniffer-composer-installer": true
-        }
+        "optimize-autoloader": true
     }
 }

@@ -8,13 +8,14 @@ use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\SyncJobEditController;
 
 Session::checkRight(
     'plugin_uxconnector_syncjob',
-    UPDATE
+    UPDATE,
 );
 
 $controller = new SyncJobEditController(
     SyncServiceProvider::getSyncJobForEditService(),
     SyncServiceProvider::updateSyncJobService(),
-    EngineServiceProvider::listAuthConfigsService()
+    EngineServiceProvider::listAuthConfigsService(),
+    SyncServiceProvider::fieldsTargetCatalog(),
 );
 
 if (isset($_POST['update'])) {
@@ -28,7 +29,7 @@ if (isset($_POST['update'])) {
         $_SERVER['PHP_SELF'],
         'tools',
         'PluginUxconnectorMenu',
-        'syncjob'
+        'syncjob',
     );
 
     $controller->showForm($_GET);

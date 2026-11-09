@@ -30,63 +30,63 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Security\CredentialVaultInterface;
  *
  * Doit être exécuté avec **les deux clés simultanément disponibles**
  * (avant l'ancienne configuration `GLPI_INSTANCE_KEY` ait été
- * définitivement écrasée) — voir tools/rekey-credential-vault.php
+ * définitivement écrasée) - voir tools/rekey-credential-vault.php
  * pour le point d'entrée opérationnel destiné à un administrateur.
  *
- * RULE-STRUCTURE-002 : responsabilité unique — orchestre uniquement
+ * RULE-STRUCTURE-002 : responsabilité unique - orchestre uniquement
  * la boucle de re-chiffrement ; ni la dérivation des clés
  * (`OpenSslCredentialVault`), ni la lecture de `GLPI_INSTANCE_KEY`
  * n'est de son ressort.
  */
 final class CredentialVaultRekeyService
 {
-   public function __construct(
+    public function __construct(
         private readonly AuthConfigRepositoryInterface $authConfigRepository,
         private readonly AuthConfigSecretStoreInterface $secretStore
-    ) {
-   }
+    ) {}
 
-   public function execute(CredentialVaultInterface $oldVault, CredentialVaultInterface $newVault): CredentialVaultRekeyResult {
-       $rotated = 0;
-       $skipped = 0;
-       $failed = 0;
-       $errors = [];
+    public function execute(CredentialVaultInterface $oldVault, CredentialVaultInterface $newVault): CredentialVaultRekeyResult
+    {
+        $rotated = 0;
+        $skipped = 0;
+        $failed = 0;
+        $errors = [];
 
-      foreach ($this->authConfigRepository->findAll() as $authConfig) {
-          $id = $authConfig->id();
+        foreach ($this->authConfigRepository->findAll() as $authConfig) {
+            $id = $authConfig->id();
 
-         if ($id === null) {
-            continue;
-         }
+            if ($id === null) {
+                continue;
+            }
 
-          $protectedSecret = $this->secretStore->get($id);
+            $protectedSecret = $this->secretStore->get($id);
 
-         if ($protectedSecret === null) {
-             // No secret stored for this AuthConfig (e.g.
-             // AuthMethod::NONE) — nothing to rotate.
-             $skipped++;
+            if ($protectedSecret === null) {
+                // No secret stored for this AuthConfig (e.g.
+                // AuthMethod::NONE) - nothing to rotate.
+                $skipped++;
 
-             continue;
-         }
+                continue;
+            }
 
-         try {
-             $plaintextSecret = $oldVault->reveal($protectedSecret);
-             $reProtectedSecret = $newVault->protect($plaintextSecret);
+            try {
+                $plaintextSecret = $oldVault->reveal($protectedSecret);
+                $reProtectedSecret = $newVault->protect($plaintextSecret);
 
-             $this->secretStore->put($id, $reProtectedSecret);
+                $this->secretStore->put($id, $reProtectedSecret);
 
-             $rotated++;
-         } catch (\Throwable $exception) {
-             // One AuthConfig's secret failing to rotate (e.g.
-             // already rotated by a previous partial run, or
-             // corrupted) must never abort the rest of the batch —
-             // same isolation principle as
-             // ExecuteSyncJobService::applyFieldMappings().
-             $failed++;
-             $errors[$id->value()] = $exception->getMessage();
-         }
-      }
+                $rotated++;
+            } catch (\Throwable $exception) {
+                // One AuthConfig's secret failing to rotate (e.g.
+                // already rotated by a previous partial run, or
+                // corrupted) must never abort the rest of the batch -
+                // same isolation principle as
+                // ExecuteSyncJobService::applyFieldMappings().
+                $failed++;
+                $errors[$id->value()] = $exception->getMessage();
+            }
+        }
 
-       return new CredentialVaultRekeyResult($rotated, $skipped, $failed, $errors);
-   }
+        return new CredentialVaultRekeyResult($rotated, $skipped, $failed, $errors);
+    }
 }

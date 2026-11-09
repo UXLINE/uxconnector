@@ -27,21 +27,22 @@ final class EventListenerFailedException extends \RuntimeException
      * @param class-string $eventClass
      * @param list<Throwable> $failures
      */
-   public function __construct(
+    public function __construct(
         string $eventClass,
         private readonly array $failures
     ) {
-       parent::__construct(sprintf(
-           '%d listener(s) failed while handling "%s".',
-           count($failures),
-           $eventClass
-       ), 0, $failures[0] ?? null);
-   }
+        parent::__construct(sprintf(
+            '%d listener(s) failed while handling "%s".',
+            count($failures),
+            $eventClass,
+        ), 0, $failures[0] ?? null);
+    }
 
     /**
      * @return list<Throwable>
      */
-   public function failures(): array {
-       return $this->failures;
-   }
+    public function failures(): array
+    {
+        return $this->failures;
+    }
 }

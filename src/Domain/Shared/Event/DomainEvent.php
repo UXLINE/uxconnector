@@ -29,12 +29,12 @@ interface DomainEvent
     /**
      * Returns the moment the event occurred.
      */
-   public function occurredAt(): DateTimeImmutable;
+    public function occurredAt(): DateTimeImmutable;
 
     /**
      * Returns the short, stable, machine-readable name of the event
      * (e.g. "engine.auth_config.created"), used for logging, the Event
      * Dispatcher subscription and audit trails.
      */
-   public function name(): string;
+    public function name(): string;
 }

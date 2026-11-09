@@ -25,5 +25,5 @@ namespace GlpiPlugin\Uxconnector\Domain\Shared\Event;
  */
 interface EventDispatcherInterface
 {
-   public function dispatch(DomainEvent $event): void;
+    public function dispatch(DomainEvent $event): void;
 }

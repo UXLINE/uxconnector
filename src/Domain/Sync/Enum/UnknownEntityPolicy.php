@@ -25,10 +25,11 @@ enum UnknownEntityPolicy: string
     case FAIL = 'fail';
     case USE_DEFAULT = 'use_default';
 
-   public function label(): string {
-       return match ($this) {
-           self::FAIL => 'Échouer',
-           self::USE_DEFAULT => 'Utiliser une entité par défaut',
-       };
-   }
+    public function label(): string
+    {
+        return match ($this) {
+            self::FAIL => 'Échouer',
+            self::USE_DEFAULT => 'Utiliser une entité par défaut',
+        };
+    }
 }

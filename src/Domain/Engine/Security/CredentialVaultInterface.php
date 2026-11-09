@@ -35,7 +35,7 @@ interface CredentialVaultInterface
      *
      * @throws CredentialVaultException if the secret could not be protected.
      */
-   public function protect(string $plaintextSecret): string;
+    public function protect(string $plaintextSecret): string;
 
     /**
      * Decrypts a value previously produced by protect().
@@ -43,5 +43,5 @@ interface CredentialVaultInterface
      * @throws CredentialVaultException if the value cannot be decrypted
      *         (corrupted payload, tampering detected, wrong key, ...).
      */
-   public function reveal(string $protectedSecret): string;
+    public function reveal(string $protectedSecret): string;
 }

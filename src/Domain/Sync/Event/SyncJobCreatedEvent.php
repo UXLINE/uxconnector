@@ -21,20 +21,22 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobName;
 
 final readonly class SyncJobCreatedEvent implements DomainEvent
 {
-   private DateTimeImmutable $occurredAt;
+    private DateTimeImmutable $occurredAt;
 
-   public function __construct(
+    public function __construct(
         public SyncJobName $name,
         public SyncDirection $direction
     ) {
-       $this->occurredAt = new DateTimeImmutable();
-   }
+        $this->occurredAt = new DateTimeImmutable();
+    }
 
-   public function occurredAt(): DateTimeImmutable {
-       return $this->occurredAt;
-   }
+    public function occurredAt(): DateTimeImmutable
+    {
+        return $this->occurredAt;
+    }
 
-   public function name(): string {
-       return 'sync.sync_job.created';
-   }
+    public function name(): string
+    {
+        return 'sync.sync_job.created';
+    }
 }

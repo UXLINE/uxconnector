@@ -24,7 +24,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\AuthConfigReference;
  * This is the referential-integrity check promised in
  * sql/install/install-2.0.0.php's migration comment: since
  * `auth_config_reference` deliberately carries no SQL foreign key
- * (Sync and Engine are separate bounded contexts — see
+ * (Sync and Engine are separate bounded contexts - see
  * AuthConfigReference's doc-block), the check happens here instead,
  * at creation time, in the Application layer.
  *
@@ -36,10 +36,11 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\AuthConfigReference;
  */
 final class SyncJobAuthConfigNotFoundException extends \InvalidArgumentException
 {
-   public static function forReference(AuthConfigReference $reference): self {
-       return new self(sprintf(
-           'AuthConfig #%d does not exist; a SyncJob cannot be created against it.',
-           $reference->value()
-       ));
-   }
+    public static function forReference(AuthConfigReference $reference): self
+    {
+        return new self(sprintf(
+            'AuthConfig #%d does not exist; a SyncJob cannot be created against it.',
+            $reference->value(),
+        ));
+    }
 }

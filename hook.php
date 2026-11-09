@@ -7,10 +7,11 @@ use GlpiPlugin\Uxconnector\Infrastructure\Sync\Runtime\SyncRuntimeGuard;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\SyncServiceProvider;
 
 /** Adapter from GLPI CommonDBTM hooks to the connector-agnostic outbound runtime. */
-function plugin_uxconnector_item_changed(CommonDBTM $item): void {
-   if (SyncRuntimeGuard::active()) {
-       return;
-   }
+function plugin_uxconnector_item_changed(CommonDBTM $item): void
+{
+    if (SyncRuntimeGuard::active()) {
+        return;
+    }
 
     $itemtype = match ($item::class) {
         Project::class => TargetItemtype::PROJECT,
@@ -25,21 +26,21 @@ function plugin_uxconnector_item_changed(CommonDBTM $item): void {
         default => null,
     };
 
-   if ($itemtype === null) {
-       return;
-   }
+    if ($itemtype === null) {
+        return;
+    }
 
     $itemId = (int) ($item->fields['id'] ?? 0);
-   if ($itemId <= 0) {
-       return;
-   }
+    if ($itemId <= 0) {
+        return;
+    }
 
-   try {
-       $result = SyncServiceProvider::dispatchGlpiItemEventService()->execute($itemtype, $itemId, $item->fields);
-      foreach ($result['errors'] as $error) {
-          Toolbox::logInFile('uxconnector', sprintf("Outbound interaction failed: %s\n", $error));
-      }
-   } catch (\Throwable $exception) {
-       Toolbox::logInFile('uxconnector', sprintf("Outbound dispatch failed: %s\n", $exception->getMessage()));
-   }
+    try {
+        $result = SyncServiceProvider::dispatchGlpiItemEventService()->execute($itemtype, $itemId, $item->fields);
+        foreach ($result['errors'] as $error) {
+            Toolbox::logInFile('uxconnector', sprintf("Outbound interaction failed: %s\n", $error));
+        }
+    } catch (\Throwable $exception) {
+        Toolbox::logInFile('uxconnector', sprintf("Outbound dispatch failed: %s\n", $exception->getMessage()));
+    }
 }

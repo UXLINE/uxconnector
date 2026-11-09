@@ -9,7 +9,7 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
 
 final readonly class UpdateSemanticEngineConfigCommand
 {
-   public function __construct(
+    public function __construct(
         public SemanticEngineConfigId $id,
         public string $name,
         public AuthConfigId $authConfigId,
@@ -19,6 +19,5 @@ final readonly class UpdateSemanticEngineConfigCommand
         public float $confidenceThreshold,
         public float $temperature,
         public string $classifierVersion
-    ) {
-   }
+    ) {}
 }

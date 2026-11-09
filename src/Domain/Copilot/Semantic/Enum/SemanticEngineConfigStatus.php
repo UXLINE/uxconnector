@@ -11,7 +11,8 @@ enum SemanticEngineConfigStatus: string
     case DISABLED = 'disabled';
     case ERROR = 'error';
 
-   public function isUsable(): bool {
-       return $this === self::ACTIVE;
-   }
+    public function isUsable(): bool
+    {
+        return $this === self::ACTIVE;
+    }
 }

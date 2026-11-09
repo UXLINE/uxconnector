@@ -18,11 +18,12 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncJobStatus;
 
 final class SyncJobNotRunnableException extends \RuntimeException
 {
-   public static function forStatus(SyncJobStatus $status): self {
-       return new self(sprintf(
-           'SyncJob cannot be executed from status "%s"; it must be "%s".',
-           $status->value,
-           SyncJobStatus::ACTIVE->value
-       ));
-   }
+    public static function forStatus(SyncJobStatus $status): self
+    {
+        return new self(sprintf(
+            'SyncJob cannot be executed from status "%s"; it must be "%s".',
+            $status->value,
+            SyncJobStatus::ACTIVE->value,
+        ));
+    }
 }

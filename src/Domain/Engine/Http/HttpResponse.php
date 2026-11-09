@@ -24,34 +24,37 @@ final readonly class HttpResponse
     /**
      * @param array<string, string> $headers
      */
-   public function __construct(
+    public function __construct(
         public int $statusCode,
         public array $headers,
         public string $body
-    ) {
-   }
+    ) {}
 
-   public function isSuccessful(): bool {
-       return $this->statusCode >= 200 && $this->statusCode < 300;
-   }
+    public function isSuccessful(): bool
+    {
+        return $this->statusCode >= 200 && $this->statusCode < 300;
+    }
 
-   public function isClientError(): bool {
-       return $this->statusCode >= 400 && $this->statusCode < 500;
-   }
+    public function isClientError(): bool
+    {
+        return $this->statusCode >= 400 && $this->statusCode < 500;
+    }
 
-   public function isServerError(): bool {
-       return $this->statusCode >= 500 && $this->statusCode < 600;
-   }
+    public function isServerError(): bool
+    {
+        return $this->statusCode >= 500 && $this->statusCode < 600;
+    }
 
-   public function header(string $name): ?string {
-      foreach ($this->headers as $headerName => $value) {
-         if (strcasecmp($headerName, $name) === 0) {
-            return $value;
-         }
-      }
+    public function header(string $name): ?string
+    {
+        foreach ($this->headers as $headerName => $value) {
+            if (strcasecmp($headerName, $name) === 0) {
+                return $value;
+            }
+        }
 
-       return null;
-   }
+        return null;
+    }
 
     /**
      * Decodes the body as JSON.
@@ -60,17 +63,18 @@ final readonly class HttpResponse
      *
      * @throws RuntimeException if the body is not valid JSON.
      */
-   public function json(): array {
-      try {
-          /** @var array<string, mixed> $decoded */
-          $decoded = json_decode($this->body, true, flags: JSON_THROW_ON_ERROR);
-      } catch (\JsonException $exception) {
-          throw new \RuntimeException(
-              'HttpResponse body is not valid JSON.',
-              previous: $exception
-          );
-      }
+    public function json(): array
+    {
+        try {
+            /** @var array<string, mixed> $decoded */
+            $decoded = json_decode($this->body, true, flags: JSON_THROW_ON_ERROR);
+        } catch (\JsonException $exception) {
+            throw new \RuntimeException(
+                'HttpResponse body is not valid JSON.',
+                previous: $exception,
+            );
+        }
 
-       return $decoded;
-   }
+        return $decoded;
+    }
 }

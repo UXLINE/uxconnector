@@ -21,8 +21,7 @@ final class UpdateSyncJobService
         private readonly AuthConfigRepositoryInterface $authConfigRepository,
         private readonly TargetFieldPolicy $targetFieldPolicy,
         private readonly TransactionManagerInterface $transaction
-    ) {
-    }
+    ) {}
 
     public function execute(UpdateSyncJobCommand $command): SyncJob
     {
@@ -30,23 +29,23 @@ final class UpdateSyncJobService
 
         if ($syncJob === null) {
             throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId(
-                $command->id
+                $command->id,
             );
         }
 
         if ($syncJob->isRunnable()) {
             throw new \DomainException(
-                'An active synchronization job must be paused before it can be modified.'
+                'An active synchronization job must be paused before it can be modified.',
             );
         }
 
         $authConfig = $this->authConfigRepository->findById(
-            new AuthConfigId($command->authConfigReference->value())
+            new AuthConfigId($command->authConfigReference->value()),
         );
 
         if ($authConfig === null) {
             throw new \RuntimeException(
-                'The selected connection does not exist.'
+                'The selected connection does not exist.',
             );
         }
 
@@ -55,7 +54,7 @@ final class UpdateSyncJobService
         $this->targetFieldPolicy->assertConfiguration(
             $command->targetItemtype,
             $command->matchField,
-            $command->fieldMappings
+            $command->fieldMappings,
         );
 
         $webhookKey = null;
@@ -80,12 +79,13 @@ final class UpdateSyncJobService
             $command->triggerType,
             $command->externalObjectType,
             $command->outboundConfig,
-            $webhookKey
+            $webhookKey,
         );
 
         $this->transaction->begin();
 
         try {
+            \GlpiPlugin\Uxconnector\Domain\Sync\Policy\JobSchedule::fromJob($syncJob);
             $saved = $this->syncJobRepository->save($syncJob);
             $this->transaction->commit();
 

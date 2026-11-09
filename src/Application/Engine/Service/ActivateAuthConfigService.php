@@ -24,15 +24,14 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Repository\AuthConfigRepositoryInterfac
  * Orchestrates the "activate this AuthConfig" use case.
  *
  * All the business rule lives in AuthConfig::activate() itself (only
- * reachable from TESTING) — this Service only loads the aggregate,
+ * reachable from TESTING) - this Service only loads the aggregate,
  * asks it to activate, and persists the result.
  */
 final class ActivateAuthConfigService
 {
-   public function __construct(
+    public function __construct(
         private readonly AuthConfigRepositoryInterface $repository
-    ) {
-   }
+    ) {}
 
     /**
      * @throws AuthConfigNotFoundException if the command's AuthConfigId
@@ -40,15 +39,16 @@ final class ActivateAuthConfigService
      * @throws InvalidAuthConfigStateException if the AuthConfig is not
      *         currently in TESTING status.
      */
-   public function execute(ActivateAuthConfigCommand $command): AuthConfig {
-       $authConfig = $this->repository->findById($command->authConfigId);
+    public function execute(ActivateAuthConfigCommand $command): AuthConfig
+    {
+        $authConfig = $this->repository->findById($command->authConfigId);
 
-      if ($authConfig === null) {
-          throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigNotFoundException::forId($command->authConfigId);
-      }
+        if ($authConfig === null) {
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigNotFoundException::forId($command->authConfigId);
+        }
 
-       $authConfig->activate();
+        $authConfig->activate();
 
-       return $this->repository->save($authConfig);
-   }
+        return $this->repository->save($authConfig);
+    }
 }

@@ -23,21 +23,24 @@ enum SyncDirection: string
     case OUTBOUND = 'outbound';
     case BIDIRECTIONAL = 'bidirectional';
 
-   public function label(): string {
-       return match ($this) {
-           self::INBOUND => 'Système externe → GLPI',
-           self::OUTBOUND => 'GLPI → Système externe',
-           self::BIDIRECTIONAL => 'Bidirectionnelle',
-       };
-   }
+    public function label(): string
+    {
+        return match ($this) {
+            self::INBOUND => 'Système externe → GLPI',
+            self::OUTBOUND => 'GLPI → Système externe',
+            self::BIDIRECTIONAL => 'Bidirectionnelle',
+        };
+    }
 
-   public function readsFromExternalSystem(): bool {
-       return $this !== self::OUTBOUND;
-   }
+    public function readsFromExternalSystem(): bool
+    {
+        return $this !== self::OUTBOUND;
+    }
 
-   public function writesToExternalSystem(): bool {
-       return $this !== self::INBOUND;
-   }
+    public function writesToExternalSystem(): bool
+    {
+        return $this !== self::INBOUND;
+    }
 
     /**
      * Whether UXConnector has a runtime for this direction. Bidirectional
@@ -48,13 +51,14 @@ enum SyncDirection: string
      * OUTBOUND et BIDIRECTIONAL étaient sélectionnables dans le
      * formulaire de création, mais ExecuteSyncJobService exécutait
      * systématiquement un GET vers le système externe suivi d'une
-     * écriture GLPI, quelle que soit la direction choisie —
+     * écriture GLPI, quelle que soit la direction choisie -
      * c'est-à-dire qu'il se comportait comme INBOUND en silence.
      * Cette méthode est l'unique source de vérité utilisée à la fois
      * pour filtrer les choix affichés (Presentation) et pour refuser
      * la création/l'exécution côté serveur (Application).
      */
-   public function isImplemented(): bool {
-       return $this !== self::BIDIRECTIONAL;
-   }
+    public function isImplemented(): bool
+    {
+        return $this !== self::BIDIRECTIONAL;
+    }
 }

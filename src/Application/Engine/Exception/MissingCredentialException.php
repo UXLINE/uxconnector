@@ -23,10 +23,11 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Enum\AuthMethod;
  */
 final class MissingCredentialException extends \InvalidArgumentException
 {
-   public static function forAuthMethod(AuthMethod $authMethod): self {
-       return new self(sprintf(
-           'Authentication method "%s" requires a credential, but none was provided.',
-           $authMethod->value
-       ));
-   }
+    public static function forAuthMethod(AuthMethod $authMethod): self
+    {
+        return new self(sprintf(
+            'Authentication method "%s" requires a credential, but none was provided.',
+            $authMethod->value,
+        ));
+    }
 }

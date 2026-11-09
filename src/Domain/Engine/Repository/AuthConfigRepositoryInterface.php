@@ -30,16 +30,16 @@ interface AuthConfigRepositoryInterface
      * Persists a new or existing AuthConfig and returns the aggregate
      * with its identifier assigned.
      */
-   public function save(AuthConfig $authConfig): AuthConfig;
+    public function save(AuthConfig $authConfig): AuthConfig;
 
-   public function findById(AuthConfigId $id): ?AuthConfig;
+    public function findById(AuthConfigId $id): ?AuthConfig;
 
     /**
      * @return list<AuthConfig>
      */
-   public function findAll(): array;
+    public function findAll(): array;
 
-   public function delete(AuthConfigId $id): void;
+    public function delete(AuthConfigId $id): void;
 
-   public function exists(AuthConfigId $id): bool;
+    public function exists(AuthConfigId $id): bool;
 }

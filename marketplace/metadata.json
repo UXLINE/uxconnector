@@ -1,16 +1,16 @@
 {
-    "id": "uxconnector",
-    "name": "UXConnector",
-    "version": "2.18.3",
-    "author": "HELPLINE",
-    "license": "GPL-3.0-or-later",
-    "category": "Integration",
-    "homepage": "https://www.helpline.fr",
-    "glpi": {
-        "min": "11.0.0",
-        "max": "12.0.0"
-    },
-    "php": {
-        "min": "8.2"
-    }
+  "id": "uxconnector",
+  "name": "UXConnector",
+  "version": "2.18.37",
+  "author": "HELPLINE",
+  "license": "GPL-3.0-or-later",
+  "category": "Integration",
+  "homepage": "https://www.helpline.fr",
+  "glpi": {
+    "min": "11.0.0",
+    "max": "12.0.0"
+  },
+  "php": {
+    "min": "8.2"
+  }
 }

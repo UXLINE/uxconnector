@@ -13,8 +13,7 @@ final class CursorPaginationStrategy implements PaginationStrategyInterface
         private readonly PaginationConfig $config,
         private readonly JsonPathValueReader $reader,
         private readonly QueryParameterUpdater $queryUpdater
-    ) {
-    }
+    ) {}
 
     public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string
     {
@@ -43,7 +42,7 @@ final class CursorPaginationStrategy implements PaginationStrategyInterface
             (string) $token,
             is_string($this->config->option('initial_parameter_to_remove_on_resume'))
                 ? (string) $this->config->option('initial_parameter_to_remove_on_resume')
-                : null
+                : null,
         );
     }
 }

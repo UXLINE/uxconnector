@@ -20,11 +20,10 @@ namespace GlpiPlugin\Uxconnector\Application\Engine\DTO;
  */
 final readonly class TestAuthConfigResult
 {
-   public function __construct(
+    public function __construct(
         public bool $success,
         public ?int $statusCode,
         public ?float $durationMs,
         public ?string $errorMessage
-    ) {
-   }
+    ) {}
 }

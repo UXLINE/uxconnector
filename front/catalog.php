@@ -10,7 +10,7 @@ Session::checkRight('plugin_uxconnector_syncjob', READ);
 
 $controller = new ConnectorCatalogController(
     TemplateServiceProvider::listService(),
-    TemplateServiceProvider::getService()
+    TemplateServiceProvider::getService(),
 );
 
 Html::header(
@@ -18,7 +18,7 @@ Html::header(
     $_SERVER['PHP_SELF'],
     'tools',
     'PluginUxconnectorMenu',
-    'catalog'
+    'catalog',
 );
 
 if (isset($_GET['connector']) && trim((string) $_GET['connector']) !== '') {

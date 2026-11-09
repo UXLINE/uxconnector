@@ -18,8 +18,7 @@ final class DeleteSyncJobService
         private readonly ?SyncExecutionRepositoryInterface $executionRepository = null,
         private readonly ?TransactionManagerInterface $transaction = null,
         private readonly ?SyncCheckpointRepositoryInterface $checkpointRepository = null
-    ) {
-    }
+    ) {}
 
     public function execute(DeleteSyncJobCommand $command): void
     {

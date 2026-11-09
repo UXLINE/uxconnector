@@ -17,26 +17,27 @@ use GlpiPlugin\Uxconnector\Presentation\Controller\AbstractController;
  */
 final class ConnectorCatalogController extends AbstractController
 {
-   public function __construct(
+    public function __construct(
         private readonly ListConnectorTemplatesService $listTemplates,
         private readonly GetConnectorTemplateService $getTemplate
-    ) {
-   }
+    ) {}
 
-   public function index(): void {
-       $this->render('template/catalog/list.html.twig', [
-           'connectors' => $this->listTemplates->execute(),
-       ]);
-   }
+    public function index(): void
+    {
+        $this->render('template/catalog/list.html.twig', [
+            'connectors' => $this->listTemplates->execute(),
+        ]);
+    }
 
-   public function show(string $connectorId): void {
-      try {
-          $this->render('template/catalog/detail.html.twig', [
-              'connector' => $this->getTemplate->execute($connectorId),
-          ]);
-      } catch (\Throwable $exception) {
-          \Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
-          $this->redirect('/plugins/uxconnector/front/catalog.php');
-      }
-   }
+    public function show(string $connectorId): void
+    {
+        try {
+            $this->render('template/catalog/detail.html.twig', [
+                'connector' => $this->getTemplate->execute($connectorId),
+            ]);
+        } catch (\Throwable $exception) {
+            \Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            $this->redirect('/plugins/uxconnector/front/catalog.php');
+        }
+    }
 }

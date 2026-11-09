@@ -27,10 +27,11 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Enum\AuthMethod;
  */
 final class AuthMethodNotSupportedException extends \InvalidArgumentException
 {
-   public static function forMethod(AuthMethod $authMethod): self {
-       return new self(sprintf(
-           'Authentication method "%s" is not yet supported by this plugin.',
-           $authMethod->value
-       ));
-   }
+    public static function forMethod(AuthMethod $authMethod): self
+    {
+        return new self(sprintf(
+            'Authentication method "%s" is not yet supported by this plugin.',
+            $authMethod->value,
+        ));
+    }
 }

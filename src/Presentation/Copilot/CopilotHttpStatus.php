@@ -9,7 +9,7 @@ namespace GlpiPlugin\Uxconnector\Presentation\Copilot;
  */
 final class CopilotHttpStatus
 {
-   private const REASONS = [
+    private const REASONS = [
         200 => 'OK',
         201 => 'Created',
         204 => 'No Content',
@@ -27,28 +27,29 @@ final class CopilotHttpStatus
         503 => 'Service Unavailable',
     ];
 
-   public static function send(int $status): void {
-       $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1';
+    public static function send(int $status): void
+    {
+        $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1';
 
-      if (!in_array(
-               $protocol,
-               ['HTTP/1.0', 'HTTP/1.1', 'HTTP/2', 'HTTP/2.0', 'HTTP/3'],
-               true
-           )
-       ) {
-          $protocol = 'HTTP/1.1';
-      }
+        if (!in_array(
+            $protocol,
+            ['HTTP/1.0', 'HTTP/1.1', 'HTTP/2', 'HTTP/2.0', 'HTTP/3'],
+            true,
+        )
+        ) {
+            $protocol = 'HTTP/1.1';
+        }
 
-       $reason = self::REASONS[$status] ?? '';
+        $reason = self::REASONS[$status] ?? '';
 
-       header(
-           sprintf(
-               '%s %d%s',
-               $protocol,
-               $status,
-               $reason !== '' ? ' ' . $reason : ''
-           ),
-           true
-       );
-   }
+        header(
+            sprintf(
+                '%s %d%s',
+                $protocol,
+                $status,
+                $reason !== '' ? ' ' . $reason : '',
+            ),
+            true,
+        );
+    }
 }

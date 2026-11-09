@@ -1,0 +1,107 @@
+{
+  "id": "glpi_rest_v1",
+  "version": "2.18.31",
+  "name": "GLPI REST v1 - GLPI 9/10",
+  "description": "GLPI REST v1 (GLPI 9/10). Separate, independent legacy Location transformation jobs for Telecom, Network and Microsoft licensing. Each source requires its own connection.",
+  "icon": "ti ti-plug-connected",
+  "endpoint_hint": "https://glpi-source.example.tld/apirest.php",
+  "test_path_hint": "/listSearchOptions/Location",
+  "auth_methods": [
+    "glpi_rest_v1"
+  ],
+  "jobs": [
+    {
+      "id": "glpi_rest_v1.indigo.telecom.locations.normalize",
+      "version": "2.18.14",
+      "name": "INDIGO - Lieux Télécom GLPI 10 → Lieux / Lignes GLPI 11",
+      "description": "Job INDIGO dédié : lit les objets Location du GLPI 10, distingue les vrais sites des pseudo-lignes à partir du champ N° de ligne, puis redistribue les 34 colonnes utiles vers les objets GLPI 11 prévus par la matrice : Location, Line, Fields (2 champs Lieu + 14 champs Ligne), Phone/NetworkEquipment, Item_Line, Item_DeviceSimcard et Infocom. Le champ Utilisateur source alimente caller_name uniquement ; aucun utilisateur GLPI n’est créé automatiquement.",
+      "direction": "inbound",
+      "resource_path": "/search/Location?range=0-99",
+      "collection_path": "data",
+      "pagination": {
+        "type": "range",
+        "options": {
+          "range_request_parameter": "range",
+          "page_size": "100",
+          "total_response_path": "totalcount"
+        }
+      },
+      "target_itemtype": "line",
+      "match_field": "caller_num",
+      "external_id_field": "id",
+      "external_object_type": "glpi_rest_v1_location_telecom_line",
+      "field_mappings": [
+        {
+          "source": "line_number",
+          "target": "caller_num",
+          "required": false
+        }
+      ],
+      "parameters": [],
+      "trigger_type": "polling",
+      "available": true
+    },
+    {
+      "id": "glpi_rest_v1.indigo.network.locations.normalize",
+      "version": "2.18.31",
+      "name": "INDIGO - GLPI10 Réseau → Sites et équipements",
+      "description": "Job distinct Réseau : transforme les pseudo-lieux de GLPI 10 en sites et NetworkEquipment natifs, en conservant les champs métier dans Fields et les coûts financiers sur le matériel. Sur les objets existants, seuls les champs vides sont complétés ; les données consolidées sont conservées.",
+      "direction": "inbound",
+      "resource_path": "/search/Location?range=0-99",
+      "collection_path": "data",
+      "pagination": {
+        "type": "range",
+        "options": {
+          "range_request_parameter": "range",
+          "page_size": "100",
+          "total_response_path": "totalcount"
+        }
+      },
+      "target_itemtype": "network_equipment",
+      "match_field": "serial",
+      "external_id_field": "id",
+      "external_object_type": "indigo_glpi10_network_location",
+      "field_mappings": [
+        {
+          "source": "serial",
+          "target": "serial",
+          "required": false
+        }
+      ],
+      "parameters": [],
+      "trigger_type": "polling",
+      "available": true
+    },
+    {
+      "id": "glpi_rest_v1.indigo.microsoft.licences.normalize",
+      "version": "2.18.31",
+      "name": "INDIGO - GLPI10 Microsoft → Logiciels et licences individuelles",
+      "description": "Une licence native distincte par affectation source, sous un logiciel commun par produit. Les 21 champs du bloc INDIGO Microsoft sont alimentés. Une unité affectée par ligne, sans déduire les quantités achetées. Les anciens pools et affectations UXConnector sont conservés. Aucun rapprochement utilisateur sur le seul nom ou matricule.",
+      "direction": "inbound",
+      "resource_path": "/search/Location?range=0-99",
+      "collection_path": "data",
+      "pagination": {
+        "type": "range",
+        "options": {
+          "range_request_parameter": "range",
+          "page_size": "100",
+          "total_response_path": "totalcount"
+        }
+      },
+      "target_itemtype": "software_license",
+      "match_field": "name",
+      "external_id_field": "id",
+      "external_object_type": "indigo_glpi10_microsoft_location",
+      "field_mappings": [
+        {
+          "source": "product",
+          "target": "name",
+          "required": false
+        }
+      ],
+      "parameters": [],
+      "trigger_type": "polling",
+      "available": true
+    }
+  ]
+}

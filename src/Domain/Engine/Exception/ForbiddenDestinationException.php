@@ -23,7 +23,7 @@ final class ForbiddenDestinationException extends \RuntimeException
             'Loopback, link-local and cloud metadata addresses can never ' .
             'be contacted by this plugin.',
             $host,
-            $resolvedIp
+            $resolvedIp,
         ));
     }
 
@@ -31,7 +31,7 @@ final class ForbiddenDestinationException extends \RuntimeException
     {
         return new self(sprintf(
             'Destination host "%s" could not be resolved to any address.',
-            $host
+            $host,
         ));
     }
 
@@ -39,7 +39,7 @@ final class ForbiddenDestinationException extends \RuntimeException
     {
         return new self(sprintf(
             'Destination host "%s" is not present in the configured UXConnector host allowlist.',
-            $host
+            $host,
         ));
     }
 }

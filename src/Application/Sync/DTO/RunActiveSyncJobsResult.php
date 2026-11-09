@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace GlpiPlugin\Uxconnector\Application\Sync\DTO;
 
 /**
- * Outcome of one RunActiveSyncJobsService pass — everything
+ * Outcome of one RunActiveSyncJobsService pass - everything
  * SyncJobCronTask needs to log and report to GLPI, without touching
  * a single Domain or Repository type itself.
  */
@@ -27,19 +27,20 @@ final readonly class RunActiveSyncJobsResult
      *        could not turn into a FAILED SyncExecution (e.g. the
      *        SyncExecution repository itself being unavailable).
      */
-   public function __construct(
+    public function __construct(
         public int $totalJobs,
         public int $succeeded,
         public int $failed,
         public array $errors = []
-    ) {
-   }
+    ) {}
 
-   public function hasRun(): bool {
-       return $this->totalJobs > 0;
-   }
+    public function hasRun(): bool
+    {
+        return $this->totalJobs > 0;
+    }
 
-   public function isFullySuccessful(): bool {
-       return $this->totalJobs > 0 && $this->failed === 0;
-   }
+    public function isFullySuccessful(): bool
+    {
+        return $this->totalJobs > 0 && $this->failed === 0;
+    }
 }

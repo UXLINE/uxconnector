@@ -10,32 +10,32 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Semantic\Repository\SemanticEngineConf
 
 final readonly class UpdateSemanticEngineConfigService
 {
-   public function __construct(
+    public function __construct(
         private SemanticEngineConfigRepositoryInterface $repository,
         private SemanticEngineConnectionValidator $connectionValidator
-    ) {
-   }
+    ) {}
 
-   public function execute(UpdateSemanticEngineConfigCommand $command): SemanticEngineConfig {
-       $config = $this->repository->findById($command->id);
+    public function execute(UpdateSemanticEngineConfigCommand $command): SemanticEngineConfig
+    {
+        $config = $this->repository->findById($command->id);
 
-      if ($config === null) {
-          throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigNotFoundException::forId($command->id);
-      }
+        if ($config === null) {
+            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigNotFoundException::forId($command->id);
+        }
 
-       $this->connectionValidator->requireCompatible($command->authConfigId);
+        $this->connectionValidator->requireCompatible($command->authConfigId);
 
-       $config->reconfigure(
-           $command->name,
-           $command->authConfigId->value(),
-           $command->model,
-           $command->inferencePath,
-           $command->batchSize,
-           $command->confidenceThreshold,
-           $command->temperature,
-           $command->classifierVersion
-       );
+        $config->reconfigure(
+            $command->name,
+            $command->authConfigId->value(),
+            $command->model,
+            $command->inferencePath,
+            $command->batchSize,
+            $command->confidenceThreshold,
+            $command->temperature,
+            $command->classifierVersion,
+        );
 
-       return $this->repository->save($config);
-   }
+        return $this->repository->save($config);
+    }
 }

@@ -39,14 +39,15 @@ final class HookManager
     /**
      * Registers every hook/class declaration used by the plugin.
      */
-   public static function register(): void {
-       self::registerPluginClasses();
-       self::registerMenus();
-       self::registerProfileRights();
-       self::registerSecuredFields();
-       self::registerMachineEndpoints();
-       self::registerItemEvents();
-   }
+    public static function register(): void
+    {
+        self::registerPluginClasses();
+        self::registerMenus();
+        self::registerProfileRights();
+        self::registerSecuredFields();
+        self::registerMachineEndpoints();
+        self::registerItemEvents();
+    }
 
     /**
      * Declares the CommonDBTM-derived classes owned by the Engine and
@@ -59,27 +60,28 @@ final class HookManager
      * from registerMenus() below, rather than piggy-backing on
      * another object's tab bar.
      */
-   private static function registerPluginClasses(): void {
-       Plugin::registerClass(AuthConfigItem::class, [
-           'addtabon' => [],
-       ]);
+    private static function registerPluginClasses(): void
+    {
+        Plugin::registerClass(AuthConfigItem::class, [
+            'addtabon' => [],
+        ]);
 
-       Plugin::registerClass(AuthConfigSecretItem::class, [
-           'addtabon' => [],
-       ]);
+        Plugin::registerClass(AuthConfigSecretItem::class, [
+            'addtabon' => [],
+        ]);
 
-       Plugin::registerClass(SyncJobItem::class, [
-           'addtabon' => [],
-       ]);
+        Plugin::registerClass(SyncJobItem::class, [
+            'addtabon' => [],
+        ]);
 
-       Plugin::registerClass(SyncExecutionItem::class, [
-           'addtabon' => [],
-       ]);
+        Plugin::registerClass(SyncExecutionItem::class, [
+            'addtabon' => [],
+        ]);
 
-       Plugin::registerClass(ObjectLinkItem::class, [
-           'addtabon' => [],
-       ]);
-   }
+        Plugin::registerClass(ObjectLinkItem::class, [
+            'addtabon' => [],
+        ]);
+    }
 
     /**
      * Declares the plugin's entry in GLPI's main navigation.
@@ -88,68 +90,73 @@ final class HookManager
      * classes CommonDBTM métier, la classe de menu doit être une
      * classe legacy sans namespace ('PluginUxconnectorMenu'), et sa
      * déclaration dans $PLUGIN_HOOKS['menu_toadd'] doit utiliser le
-     * nom de classe directement sous forme de chaîne — jamais
+     * nom de classe directement sous forme de chaîne - jamais
      * '::class' sur une classe namespacée, jamais de FQCN.
      */
-   private static function registerMenus(): void {
-       global $PLUGIN_HOOKS;
+    private static function registerMenus(): void
+    {
+        global $PLUGIN_HOOKS;
 
-       $PLUGIN_HOOKS['menu_toadd']['uxconnector'] = [
-           'tools' => 'PluginUxconnectorMenu',
-       ];
-   }
+        $PLUGIN_HOOKS['menu_toadd']['uxconnector'] = [
+            'tools' => 'PluginUxconnectorMenu',
+        ];
+    }
 
     /**
      * Attaches the plugin's rights matrix to GLPI's own Profile edit
-     * screen — same REX-driven legacy convention as registerMenus()
+     * screen - same REX-driven legacy convention as registerMenus()
      * (see inc/profile.class.php's doc-block).
      */
-   private static function registerProfileRights(): void {
-       Plugin::registerClass('PluginUxconnectorProfile', [
-           'addtabon' => ['Profile'],
-       ]);
-   }
+    private static function registerProfileRights(): void
+    {
+        Plugin::registerClass('PluginUxconnectorProfile', [
+            'addtabon' => ['Profile'],
+        ]);
+    }
     /**
      * Registers the encrypted AuthConfig secret field with GLPI so the core
      * security:change_key command rotates UXConnector credentials together
      * with GLPI's own encrypted values.
      */
-   private static function registerSecuredFields(): void {
-       global $PLUGIN_HOOKS;
+    private static function registerSecuredFields(): void
+    {
+        global $PLUGIN_HOOKS;
 
-       $PLUGIN_HOOKS[Hooks::SECURED_FIELDS]['uxconnector'] = [
-           'glpi_plugin_uxconnector_authconfig_secrets.protected_secret',
-       ];
-   }
+        $PLUGIN_HOOKS[Hooks::SECURED_FIELDS]['uxconnector'] = [
+            'glpi_plugin_uxconnector_authconfig_secrets.protected_secret',
+        ];
+    }
 
 
     /** Public endpoint is authenticated by the interaction's 256-bit webhook key. */
-   private static function registerMachineEndpoints(): void {
-       Firewall::addPluginStrategyForLegacyScripts(
-           'uxconnector',
-           '#^/front/(webhook|copilot|copilot-openapi|copilot-search|copilot-context|copilot-capabilities|copilot-ticket-summary|copilot-ticket-trends|copilot-categories|copilot-sla|copilot-sla-breaches|copilot-groups|copilot-technicians|copilot-compare|copilot-incidentology-global|copilot-incidentology-groups|copilot-incidentology-typologies|copilot-semantic-classification|copilot-semantic-prepare|copilot-semantic-finalize)\.php$#',
-           Firewall::STRATEGY_NO_CHECK
-       );
-   }
+    private static function registerMachineEndpoints(): void
+    {
+        Firewall::addPluginStrategyForLegacyScripts(
+            'uxconnector',
+            '#^/front/(webhook|copilot|copilot-openapi|copilot-search|copilot-context|copilot-capabilities|copilot-ticket-summary|copilot-ticket-trends|copilot-categories|copilot-sla|copilot-sla-breaches|copilot-groups|copilot-technicians|copilot-compare|copilot-incidentology-global|copilot-incidentology-groups|copilot-incidentology-typologies|copilot-semantic-classification|copilot-semantic-prepare|copilot-semantic-finalize)\.php$#',
+            Firewall::STRATEGY_NO_CHECK,
+        );
+    }
 
     /** GLPI changes that may drive active outbound interactions. */
-   private static function registerItemEvents(): void {
-       global $PLUGIN_HOOKS;
+    private static function registerItemEvents(): void
+    {
+        global $PLUGIN_HOOKS;
 
-       $callbacks = [
-           'Project' => 'plugin_uxconnector_item_changed',
-           'Ticket' => 'plugin_uxconnector_item_changed',
-           'Computer' => 'plugin_uxconnector_item_changed',
-           'Monitor' => 'plugin_uxconnector_item_changed',
-           'NetworkEquipment' => 'plugin_uxconnector_item_changed',
-           'Peripheral' => 'plugin_uxconnector_item_changed',
-           'Phone' => 'plugin_uxconnector_item_changed',
-           'Printer' => 'plugin_uxconnector_item_changed',
-           'User' => 'plugin_uxconnector_item_changed',
-       ];
+        $callbacks = [
+            'Project' => 'plugin_uxconnector_item_changed',
+            'Ticket' => 'plugin_uxconnector_item_changed',
+            'Computer' => 'plugin_uxconnector_item_changed',
+            'Monitor' => 'plugin_uxconnector_item_changed',
+            'NetworkEquipment' => 'plugin_uxconnector_item_changed',
+            'Peripheral' => 'plugin_uxconnector_item_changed',
+            'Phone' => 'plugin_uxconnector_item_changed',
+            'Printer' => 'plugin_uxconnector_item_changed',
+            'User' => 'plugin_uxconnector_item_changed',
+        ];
 
-       $PLUGIN_HOOKS['item_add']['uxconnector'] = $callbacks;
-       $PLUGIN_HOOKS['item_update']['uxconnector'] = $callbacks;
-   }
+        $PLUGIN_HOOKS['item_add']['uxconnector'] = $callbacks;
+        $PLUGIN_HOOKS['item_update']['uxconnector'] = $callbacks;
+    }
 
 }

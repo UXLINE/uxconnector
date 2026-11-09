@@ -19,14 +19,14 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
 interface SyncJobRepositoryInterface
 {
-   public function save(SyncJob $syncJob): SyncJob;
+    public function save(SyncJob $syncJob): SyncJob;
 
-   public function findById(SyncJobId $id): ?SyncJob;
+    public function findById(SyncJobId $id): ?SyncJob;
 
     /**
      * @return list<SyncJob>
      */
-   public function findAll(): array;
+    public function findAll(): array;
 
     /**
      * Returns every SyncJob eligible for execution right now
@@ -34,10 +34,10 @@ interface SyncJobRepositoryInterface
      *
      * @return list<SyncJob>
      */
-   public function findRunnable(): array;
+    public function findRunnable(): array;
 
 
-   public function delete(SyncJobId $id): void;
+    public function delete(SyncJobId $id): void;
 
-   public function exists(SyncJobId $id): bool;
+    public function exists(SyncJobId $id): bool;
 }

@@ -18,7 +18,8 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpRequest;
 
 final class NoneAuthenticationStrategy implements AuthenticationStrategy
 {
-   public function authenticate(HttpRequest $request): HttpRequest {
-       return $request;
-   }
+    public function authenticate(HttpRequest $request): HttpRequest
+    {
+        return $request;
+    }
 }

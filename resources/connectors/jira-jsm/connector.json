@@ -1,0 +1,129 @@
+{
+  "id": "jira-jsm",
+  "version": "1.0.0",
+  "name": "Jira Service Management Cloud",
+  "description": "Imports pilotes des incidents et demandes visibles dans un portail JSM Cloud.",
+  "icon": "ti ti-brand-jira",
+  "endpoint_hint": "https://{site}.atlassian.net",
+  "test_path_hint": "/rest/servicedeskapi/request?limit=1",
+  "auth_methods": [
+    "basic",
+    "bearer_token"
+  ],
+  "jobs": [
+    {
+      "id": "jira-jsm.incident.inbound.pilot",
+      "name": "JSM Cloud : importer les incidents dans GLPI",
+      "description": "Pilote sur un type de demande du portail. Importe la clé Jira, le titre, la date de création et le type GLPI.",
+      "direction": "inbound",
+      "resource_path": "/rest/servicedeskapi/request?serviceDeskId={{service_desk_id|urlencode}}&requestTypeId={{request_type_id|urlencode}}&start=0&limit=25",
+      "collection_path": "values",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "_links.next"
+        }
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "issueId",
+      "external_object_type": "issue",
+      "trigger_type": "polling",
+      "field_mappings": [
+        {
+          "source": "issueKey",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "summary",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "createdDate.iso8601",
+          "target": "date",
+          "transform": "datetime_glpi"
+        },
+        {
+          "source": "@literal:1",
+          "target": "type",
+          "required": true
+        },
+        {
+          "source": "@literal:\"Importé depuis Jira Service Management\"",
+          "target": "content"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "service_desk_id",
+          "label": "Identifiant numérique du portail JSM",
+          "required": true
+        },
+        {
+          "name": "request_type_id",
+          "label": "Identifiant numérique du type de demande JSM",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "jira-jsm.request.inbound.pilot",
+      "name": "JSM Cloud : importer les demandes dans GLPI",
+      "description": "Pilote sur un type de demande du portail. Importe la clé Jira, le titre, la date de création et le type GLPI.",
+      "direction": "inbound",
+      "resource_path": "/rest/servicedeskapi/request?serviceDeskId={{service_desk_id|urlencode}}&requestTypeId={{request_type_id|urlencode}}&start=0&limit=25",
+      "collection_path": "values",
+      "pagination": {
+        "type": "next_link",
+        "options": {
+          "next_link_response_path": "_links.next"
+        }
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "issueId",
+      "external_object_type": "issue",
+      "trigger_type": "polling",
+      "field_mappings": [
+        {
+          "source": "issueKey",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "summary",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "createdDate.iso8601",
+          "target": "date",
+          "transform": "datetime_glpi"
+        },
+        {
+          "source": "@literal:2",
+          "target": "type",
+          "required": true
+        },
+        {
+          "source": "@literal:\"Importé depuis Jira Service Management\"",
+          "target": "content"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "service_desk_id",
+          "label": "Identifiant numérique du portail JSM",
+          "required": true
+        },
+        {
+          "name": "request_type_id",
+          "label": "Identifiant numérique du type de demande JSM",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

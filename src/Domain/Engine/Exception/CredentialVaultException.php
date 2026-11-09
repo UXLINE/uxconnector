@@ -25,24 +25,28 @@ namespace GlpiPlugin\Uxconnector\Domain\Engine\Exception;
  */
 final class CredentialVaultException extends \RuntimeException
 {
-   public static function encryptionKeyUnavailable(): self {
-       return new self(
-           'No encryption key is available to protect or reveal AuthConfig secrets.'
-       );
-   }
+    public static function encryptionKeyUnavailable(): self
+    {
+        return new self(
+            'No encryption key is available to protect or reveal AuthConfig secrets.',
+        );
+    }
 
-   public static function protectionFailed(): self {
-       return new self('The secret could not be encrypted.');
-   }
+    public static function protectionFailed(): self
+    {
+        return new self('The secret could not be encrypted.');
+    }
 
-   public static function revealFailed(): self {
-       return new self(
-           'The stored secret could not be decrypted: it may be corrupted, ' .
-           'tampered with, or was encrypted with a different key.'
-       );
-   }
+    public static function revealFailed(): self
+    {
+        return new self(
+            'The stored secret could not be decrypted: it may be corrupted, ' .
+            'tampered with, or was encrypted with a different key.',
+        );
+    }
 
-   public static function malformedPayload(): self {
-       return new self('The stored secret payload is malformed.');
-   }
+    public static function malformedPayload(): self
+    {
+        return new self('The stored secret payload is malformed.');
+    }
 }

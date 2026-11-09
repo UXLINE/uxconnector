@@ -21,23 +21,23 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
  * Read-only use case: lists every SyncJob as DTOs.
  *
  * CQRS (adapted) : a pure Query never opens a transaction and never
- * dispatches a Domain Event — same convention as
+ * dispatches a Domain Event - same convention as
  * ListAuthConfigsService (Engine bounded context).
  */
 final class ListSyncJobsService
 {
-   public function __construct(
+    public function __construct(
         private readonly SyncJobRepositoryInterface $repository
-    ) {
-   }
+    ) {}
 
     /**
      * @return list<SyncJobDTO>
      */
-   public function execute(): array {
-       return array_map(
-           static fn ($syncJob): SyncJobDTO => SyncJobDTO::fromEntity($syncJob),
-           $this->repository->findAll()
-       );
-   }
+    public function execute(): array
+    {
+        return array_map(
+            static fn($syncJob): SyncJobDTO => SyncJobDTO::fromEntity($syncJob),
+            $this->repository->findAll(),
+        );
+    }
 }

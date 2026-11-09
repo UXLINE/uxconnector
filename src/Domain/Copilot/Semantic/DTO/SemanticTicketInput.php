@@ -12,26 +12,27 @@ namespace GlpiPlugin\Uxconnector\Domain\Copilot\Semantic\DTO;
  */
 final readonly class SemanticTicketInput
 {
-   public function __construct(
+    public function __construct(
         public int $ticketId,
         public string $title,
         public string $description,
         public ?string $declaredType = null,
         public ?string $category = null
     ) {
-      if ($this->ticketId <= 0) {
-          throw new \InvalidArgumentException('Semantic ticket id must be positive.');
-      }
-   }
+        if ($this->ticketId <= 0) {
+            throw new \InvalidArgumentException('Semantic ticket id must be positive.');
+        }
+    }
 
     /** @return array<string, int|string|null> */
-   public function toProviderArray(): array {
-       return [
-           'ticket_id' => $this->ticketId,
-           'title' => $this->title,
-           'description' => $this->description,
-           'declared_type' => $this->declaredType,
-           'itil_category' => $this->category,
-       ];
-   }
+    public function toProviderArray(): array
+    {
+        return [
+            'ticket_id' => $this->ticketId,
+            'title' => $this->title,
+            'description' => $this->description,
+            'declared_type' => $this->declaredType,
+            'itil_category' => $this->category,
+        ];
+    }
 }

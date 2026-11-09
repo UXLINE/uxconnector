@@ -31,20 +31,22 @@ enum SyncJobStatus: string
     case PAUSED = 'paused';
     case ERROR = 'error';
 
-   public function label(): string {
-       return match ($this) {
-           self::DRAFT => 'Brouillon',
-           self::ACTIVE => 'Active',
-           self::PAUSED => 'En pause',
-           self::ERROR => 'En erreur',
-       };
-   }
+    public function label(): string
+    {
+        return match ($this) {
+            self::DRAFT => 'Brouillon',
+            self::ACTIVE => 'Active',
+            self::PAUSED => 'En pause',
+            self::ERROR => 'En erreur',
+        };
+    }
 
     /**
      * Whether a SyncJob in this status may be picked up by
      * SyncJobCronTask for execution.
      */
-   public function isRunnable(): bool {
-       return $this === self::ACTIVE;
-   }
+    public function isRunnable(): bool
+    {
+        return $this === self::ACTIVE;
+    }
 }

@@ -18,8 +18,7 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
 
 final readonly class DeleteAuthConfigCommand
 {
-   public function __construct(
+    public function __construct(
         public AuthConfigId $authConfigId
-    ) {
-   }
+    ) {}
 }

@@ -1,0 +1,250 @@
+{
+  "id": "matrix42",
+  "version": "1.0.0",
+  "name": "Matrix42 Enterprise Service Management",
+  "description": "Deux modèles entrants pour un pilote à une page. Deux modèles sortants préparés et désactivés.",
+  "icon": "ti ti-arrows-exchange",
+  "endpoint_hint": "https://matrix42.example.invalid/m42Services",
+  "test_path_hint": "/api/data/fragments/SPSActivityClassBase?columns=Subject&pagesize=1",
+  "auth_methods": [
+    "bearer_token"
+  ],
+  "jobs": [
+    {
+      "id": "matrix42.incident.inbound.pilot",
+      "name": "Matrix42 Incidents → GLPI Tickets (pilote)",
+      "description": "Lit une seule page sur un périmètre A-SQL obligatoire. Réconciliation par GUID de fragment. Crée ou actualise le ticket dans l’entité de recette. Utiliser un filtre propre à ce type de ticket.",
+      "available": true,
+      "direction": "inbound",
+      "trigger_type": "polling",
+      "external_object_type": "matrix42_activity_fragment",
+      "resource_path": "/api/data/fragments/SPSActivityClassBase?columns=Subject%2CDescriptionHTML&where={{where|urlencode}}&pagesize=10&pagenumber={{page_number|urlencode}}&sort=ID%20ASC",
+      "collection_path": "$",
+      "pagination": {
+        "type": "none"
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "ID",
+      "field_mappings": [
+        {
+          "source": "ID",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "Subject",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "DescriptionHTML",
+          "target": "content",
+          "required": false
+        },
+        {
+          "source": "@literal:1",
+          "target": "type",
+          "required": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "where",
+          "label": "Filtre A-SQL obligatoire",
+          "description": "Expression vérifiée pour limiter le lot à des GUID de test et au type Matrix42 attendu. Saisir le texte brut.",
+          "required": true,
+          "default": null
+        },
+        {
+          "name": "page_number",
+          "label": "Numéro de page confirmé par le GET",
+          "description": "Saisir le numéro de première page validé sur l’instance pour le pilote.",
+          "required": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "id": "matrix42.request.inbound.pilot",
+      "name": "Matrix42 Demandes de service → GLPI Tickets (pilote)",
+      "description": "Lit une seule page sur un périmètre A-SQL obligatoire. Réconciliation par GUID de fragment. Crée ou actualise le ticket dans l’entité de recette. Utiliser un filtre propre à ce type de ticket.",
+      "available": true,
+      "direction": "inbound",
+      "trigger_type": "polling",
+      "external_object_type": "matrix42_activity_fragment",
+      "resource_path": "/api/data/fragments/SPSActivityClassBase?columns=Subject%2CDescriptionHTML&where={{where|urlencode}}&pagesize=10&pagenumber={{page_number|urlencode}}&sort=ID%20ASC",
+      "collection_path": "$",
+      "pagination": {
+        "type": "none"
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "ID",
+      "field_mappings": [
+        {
+          "source": "ID",
+          "target": "externalid",
+          "required": true
+        },
+        {
+          "source": "Subject",
+          "target": "name",
+          "required": true
+        },
+        {
+          "source": "DescriptionHTML",
+          "target": "content",
+          "required": false
+        },
+        {
+          "source": "@literal:2",
+          "target": "type",
+          "required": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "where",
+          "label": "Filtre A-SQL obligatoire",
+          "description": "Expression vérifiée pour limiter le lot à des GUID de test et au type Matrix42 attendu. Saisir le texte brut.",
+          "required": true,
+          "default": null
+        },
+        {
+          "name": "page_number",
+          "label": "Numéro de page confirmé par le GET",
+          "description": "Saisir le numéro de première page validé sur l’instance pour le pilote.",
+          "required": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "id": "matrix42.incident.outbound",
+      "name": "GLPI Ticket → Matrix42 Incident (préparé)",
+      "description": "Modèle désactivé. Vérifier le contrat de création, le GUID objet en réponse, la reprise après échec et la mise à jour avec l’identité du fragment. Exige une entité source dédiée.",
+      "available": false,
+      "direction": "outbound",
+      "trigger_type": "glpi_event",
+      "external_object_type": "matrix42_incident_object",
+      "resource_path": "/api/data/objects/{{ci_name|urlencode}}",
+      "collection_path": "$",
+      "pagination": {
+        "type": "none"
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "ID",
+      "field_mappings": [],
+      "outbound": {
+        "create": {
+          "method": "POST",
+          "path": "/api/data/objects/{{ci_name|urlencode}}",
+          "body": {
+            "SPSActivityClassBase": {
+              "Subject": "@field:name",
+              "DescriptionHTML": "@field:content",
+              "Category": "{{category_fragment_id}}",
+              "Initiator": "{{initiator_fragment_id}}"
+            }
+          }
+        },
+        "response_external_id_path": "{{response_guid_path}}"
+      },
+      "parameters": [
+        {
+          "name": "ci_name",
+          "label": "Nom technique du CI cible",
+          "description": "Vérifier dans Administration → Intégration → Services Web et dans le schéma client.",
+          "required": true,
+          "default": "SPSActivityTypeIncident"
+        },
+        {
+          "name": "category_fragment_id",
+          "label": "GUID du fragment catégorie",
+          "description": "Catégorie technique autorisée sur ce flux.",
+          "required": true,
+          "default": null
+        },
+        {
+          "name": "initiator_fragment_id",
+          "label": "GUID du fragment initiateur",
+          "description": "Compte pilote autorisé. Remplacer par un mapping d’identité pour une exploitation métier.",
+          "required": true,
+          "default": null
+        },
+        {
+          "name": "response_guid_path",
+          "label": "Chemin JSON du GUID objet",
+          "description": "À renseigner seulement après validation du contrat. Une réponse scalaire ou vide demande une adaptation du moteur.",
+          "required": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "id": "matrix42.request.outbound",
+      "name": "GLPI Ticket → Matrix42 Demande de service (préparé)",
+      "description": "Modèle désactivé. Vérifier le contrat de création, le GUID objet en réponse, la reprise après échec et la mise à jour avec l’identité du fragment. Exige une entité source dédiée.",
+      "available": false,
+      "direction": "outbound",
+      "trigger_type": "glpi_event",
+      "external_object_type": "matrix42_request_object",
+      "resource_path": "/api/data/objects/{{ci_name|urlencode}}",
+      "collection_path": "$",
+      "pagination": {
+        "type": "none"
+      },
+      "target_itemtype": "ticket",
+      "match_field": "externalid",
+      "external_id_field": "ID",
+      "field_mappings": [],
+      "outbound": {
+        "create": {
+          "method": "POST",
+          "path": "/api/data/objects/{{ci_name|urlencode}}",
+          "body": {
+            "SPSActivityClassBase": {
+              "Subject": "@field:name",
+              "DescriptionHTML": "@field:content",
+              "Category": "{{category_fragment_id}}",
+              "Initiator": "{{initiator_fragment_id}}"
+            }
+          }
+        },
+        "response_external_id_path": "{{response_guid_path}}"
+      },
+      "parameters": [
+        {
+          "name": "ci_name",
+          "label": "Nom technique du CI cible",
+          "description": "Vérifier dans Administration → Intégration → Services Web et dans le schéma client.",
+          "required": true,
+          "default": null
+        },
+        {
+          "name": "category_fragment_id",
+          "label": "GUID du fragment catégorie",
+          "description": "Catégorie technique autorisée sur ce flux.",
+          "required": true,
+          "default": null
+        },
+        {
+          "name": "initiator_fragment_id",
+          "label": "GUID du fragment initiateur",
+          "description": "Compte pilote autorisé. Remplacer par un mapping d’identité pour une exploitation métier.",
+          "required": true,
+          "default": null
+        },
+        {
+          "name": "response_guid_path",
+          "label": "Chemin JSON du GUID objet",
+          "description": "À renseigner seulement après validation du contrat. Une réponse scalaire ou vide demande une adaptation du moteur.",
+          "required": true,
+          "default": null
+        }
+      ]
+    }
+  ]
+}

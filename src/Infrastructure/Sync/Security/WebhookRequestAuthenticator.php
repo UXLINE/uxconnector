@@ -51,7 +51,7 @@ final class WebhookRequestAuthenticator
         return new self(
             requireHmac: getenv('UXCONNECTOR_REQUIRE_WEBHOOK_HMAC') === '1',
             allowLegacyQueryKey: getenv('UXCONNECTOR_ALLOW_LEGACY_WEBHOOK_QUERY_KEY') === '1',
-            maxClockSkewSeconds: self::environmentClockSkew()
+            maxClockSkewSeconds: self::environmentClockSkew(),
         );
     }
 

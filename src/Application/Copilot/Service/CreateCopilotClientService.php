@@ -8,12 +8,13 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Repository\CopilotClientRepositoryInte
 
 final readonly class CreateCopilotClientService
 {
-   public function __construct(private CopilotClientRepositoryInterface $repository) {}
+    public function __construct(private CopilotClientRepositoryInterface $repository) {}
 
-   /**
-    * @return array{id: int, key: string}
-    */
-   public function execute(string $name, string $providerType, int $authConfigReference = 0): array {
-       return $this->repository->create($name, $providerType, $authConfigReference);
-   }
+    /**
+     * @return array{id: int, key: string}
+     */
+    public function execute(string $name, string $providerType, int $authConfigReference = 0): array
+    {
+        return $this->repository->create($name, $providerType, $authConfigReference);
+    }
 }

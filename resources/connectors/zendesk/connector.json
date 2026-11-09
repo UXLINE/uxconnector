@@ -1,6 +1,6 @@
 {
   "id": "zendesk",
-  "version": "2.15.0",
+  "version": "2.18.31",
   "name": "Zendesk Support",
   "description": "Migration Zendesk vers GLPI optimisée pour les reprises volumétriques : bootstrap des référentiels, catégories ITIL depuis le champ Sujet, import initial des tickets non clos via Search Export, puis delta incrémentiel par curseur.",
   "icon": "ti ti-brand-zendesk",
@@ -14,7 +14,7 @@
   "jobs": [
     {
       "id": "zendesk.users.bootstrap",
-      "version": "2.15.0",
+      "version": "2.18.29",
       "name": "1 - Zendesk Users → GLPI Users",
       "description": "Crée ou rapproche les utilisateurs Zendesk avant l'import des tickets. L'adresse e-mail devient le login GLPI et l'ID Zendesk est conservé dans ObjectLink.",
       "direction": "inbound",
@@ -30,6 +30,17 @@
       "match_field": "name",
       "external_id_field": "id",
       "field_mappings": [
+        {
+          "source": "email",
+          "target": "email",
+          "required": false,
+          "transform": "trim"
+        },
+        {
+          "source": "phone",
+          "target": "phone",
+          "required": false
+        },
         {
           "source": "email",
           "target": "name",
@@ -127,20 +138,21 @@
         }
       ],
       "trigger_type": "polling",
-      "external_object_type": "zendesk_organization"
+      "external_object_type": "zendesk_organization",
+      "retired": true
     },
     {
       "id": "zendesk.itilcategories.bootstrap",
-      "version": "2.15.0",
-      "name": "4 - Zendesk Sujets utilisés → GLPI Catégories ITIL",
-      "description": "Parcourt uniquement les tickets Zendesk non clos via Search Export, détecte dynamiquement le champ tagger Sujet (topic__), crée uniquement les catégories réellement utilisées et reconstruit l’arborescence Zendesk séparée par ::.",
+      "version": "2.18.15",
+      "name": "4 - Zendesk Catalogue Sujets → GLPI Catégories ITIL",
+      "description": "Lit directement le champ Sujet et ses options paginées Zendesk sans parcourir les tickets. Conserve les tags topic__ comme identités stables et matérialise les segments :: dans la hiérarchie GLPI.",
       "direction": "inbound",
-      "resource_path": "/api/v2/search/export.json?filter[type]=ticket&query=status%3Cclosed&page[size]={{page_size}}",
-      "collection_path": "results",
+      "resource_path": "/api/v2/ticket_fields.json?per_page=100",
+      "collection_path": "ticket_fields",
       "pagination": {
         "type": "next_link",
         "options": {
-          "next_link_response_path": "links.next"
+          "next_link_response_path": "next_page"
         }
       },
       "target_itemtype": "itil_category",
@@ -148,20 +160,12 @@
       "external_id_field": "id",
       "field_mappings": [
         {
-          "source": "subject",
+          "source": "title",
           "target": "name",
           "required": true
         }
       ],
-      "parameters": [
-        {
-          "name": "page_size",
-          "label": "Tickets analysés par page",
-          "required": true,
-          "default": "100",
-          "description": "Zendesk recommande 100 résultats par page pour Search Export. Seuls les tickets non clos sont récupérés."
-        }
-      ],
+      "parameters": [],
       "trigger_type": "polling",
       "external_object_type": "zendesk_topic"
     },
@@ -199,13 +203,14 @@
       ],
       "trigger_type": "polling",
       "external_object_type": "zendesk_ticket_form",
-      "available": false
+      "available": false,
+      "retired": true
     },
     {
       "id": "zendesk.tickets.nonclosed.inbound",
       "version": "2.15.0",
       "name": "5 - Zendesk Reprise initiale non close → GLPI Tickets",
-      "description": "Import initial volumétrique des tickets Zendesk new/open/pending/hold/solved via Search Export status<closed. Traitement page par page (100 recommandé) sans accumulation mémoire. Demandeurs, assignés, groupes, entités, catégorie Sujet, suivis et pièces jointes sont reconstruits.",
+      "description": "Import initial volumétrique des tickets Zendesk new/open/pending/hold/solved via Search Export status<closed. Traitement page par page (100 recommandé) sans accumulation mémoire. Demandeurs, assignés, groupes, entités, catégorie Sujet, suivis et pièces jointes sont reconstruits. Protection des valeurs cibles déjà renseignées. Suivis conservés ; téléchargements des PJ et captures désactivés par défaut. Un curseur Search Export refusé par HTTP 422 provoque au maximum un redémarrage de la requête, sans changement du filtre.",
       "direction": "inbound",
       "resource_path": "/api/v2/search/export.json?filter[type]=ticket&query=status%3Cclosed&page[size]={{page_size}}",
       "collection_path": "results",
@@ -275,7 +280,7 @@
       "id": "zendesk.tickets.delta.inbound",
       "version": "2.15.0",
       "name": "6 - Zendesk Delta incrémentiel → GLPI Tickets",
-      "description": "À activer après la reprise initiale. Récupère uniquement les tickets créés ou modifiés depuis le checkpoint Zendesk. Un ticket déjà importé qui devient closed est mis à jour dans GLPI ; un ticket closed jamais importé est ignoré. Le curseur est sauvegardé page par page tant que la page est sans erreur.",
+      "description": "À activer après la reprise initiale. Le statut des tickets déjà liés suit le statut Zendesk converti. Le groupe et le technicien Zendesk sont ajoutés si leur correspondance GLPI existe, avec déduplication et conservation des affectations existantes. Les catégories introuvables sont signalées avec le libellé du Sujet lorsqu'il est disponible. PJ désactivées par défaut.",
       "direction": "inbound",
       "resource_path": "/api/v2/incremental/tickets/cursor.json?start_time={{start_time}}&per_page={{per_page}}&exclude_deleted={{exclude_deleted}}",
       "collection_path": "tickets",
@@ -361,7 +366,7 @@
       "id": "zendesk.tickets.active.inbound",
       "version": "2.15.0",
       "name": "Compatibilité 2.13 - Zendesk Tickets actifs/non clos",
-      "description": "Alias de compatibilité pour les interactions 2.13 existantes. Les nouveaux projets doivent utiliser zendesk.tickets.nonclosed.inbound.",
+      "description": "Alias de compatibilité pour les interactions 2.13 existantes. Les nouveaux projets doivent utiliser zendesk.tickets.nonclosed.inbound. Protection des valeurs cibles déjà renseignées. Suivis conservés ; téléchargements des PJ et captures désactivés par défaut.",
       "available": false,
       "direction": "inbound",
       "resource_path": "/api/v2/incremental/tickets/cursor.json?start_time={{start_time}}&per_page={{per_page}}&exclude_deleted={{exclude_deleted}}",
@@ -441,13 +446,14 @@
         }
       ],
       "trigger_type": "polling",
-      "external_object_type": "ticket"
+      "external_object_type": "ticket",
+      "retired": true
     },
     {
       "id": "zendesk.tickets.inbound",
       "version": "2.15.0",
       "name": "Zendesk Tous les tickets → GLPI Tickets",
-      "description": "Flux complet conservé pour compatibilité et usages hors projet. Désactivé dans le catalogue de ce scénario de migration afin d'éviter l'import accidentel des tickets closed.",
+      "description": "Flux complet conservé pour compatibilité et usages hors projet. Désactivé dans le catalogue de ce scénario de migration afin d'éviter l'import accidentel des tickets closed. Protection des valeurs cibles déjà renseignées. Suivis conservés ; téléchargements des PJ et captures désactivés par défaut.",
       "available": false,
       "direction": "inbound",
       "resource_path": "/api/v2/incremental/tickets/cursor.json?start_time={{start_time}}&per_page={{per_page}}&exclude_deleted={{exclude_deleted}}",
@@ -527,7 +533,8 @@
         }
       ],
       "trigger_type": "polling",
-      "external_object_type": "ticket"
+      "external_object_type": "ticket",
+      "retired": true
     }
   ]
 }
