@@ -2,7 +2,7 @@
 <root>
     <name>UXConnector</name>
     <key>uxconnector</key>
-    <state>dev</state>
+    <state>stable</state>
     <description>
         <short>
             <fr>Moteur de connecteurs générique et configurable pour GLPI.</fr>
