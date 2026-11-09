@@ -1,6 +1,6 @@
 # UXConnector pour GLPI
 
-**Version de recette 2.18.37** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
+**Version publiée [2.18.37](https://github.com/UXLINE/uxconnector/releases/tag/v2.18.37)** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
 
 UXConnector connecte GLPI à des services externes. Il configure les connexions HTTP, les mappings et les jobs de synchronisation. Selon le modèle, un job peut être exécuté manuellement, planifié, déclenché par un webhook ou par un événement GLPI.
 
