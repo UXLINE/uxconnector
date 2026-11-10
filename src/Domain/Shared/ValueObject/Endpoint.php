@@ -68,7 +68,8 @@ final readonly class Endpoint
 
         if (parse_url($trimmed, PHP_URL_QUERY) !== null || parse_url($trimmed, PHP_URL_FRAGMENT) !== null) {
             throw new \InvalidArgumentException(
-                'Endpoint must be a base URL without query string or fragment; put resource-specific parameters in the resource path.',
+                'Endpoint must be a base URL without query string or fragment; put resource-specific '
+                    . 'parameters in the resource path.',
             );
         }
 

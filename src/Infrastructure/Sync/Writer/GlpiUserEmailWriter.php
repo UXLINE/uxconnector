@@ -10,7 +10,9 @@ use GlpiPlugin\Uxconnector\Infrastructure\Sync\Runtime\SyncRuntimeGuard;
 /** Email mapping fills missing email records; existing addresses and LDAP ownership are retained. */
 final class GlpiUserEmailWriter
 {
-    public function __construct(private readonly DBmysql $db) {}
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
     public function normalize(mixed $value): ?string
     {
@@ -51,12 +53,14 @@ final class GlpiUserEmailWriter
     private function writeLocked(int $userId, string $email): bool
     {
         $rows = [];
-        foreach ($this->db->request([
+        foreach (
+            $this->db->request([
             'SELECT' => ['id', 'email', 'is_default'],
             'FROM' => 'glpi_useremails',
             'WHERE' => ['users_id' => $userId],
             'ORDER' => ['id ASC'],
-        ]) as $row) {
+            ]) as $row
+        ) {
             $rows[] = $row;
         }
         $defaults = array_values(array_filter($rows, static fn(array $row): bool => (int) $row['is_default'] === 1));

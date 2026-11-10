@@ -6,7 +6,7 @@ use GlpiPlugin\Uxconnector\Bootstrap\CopilotGatewayResponderFactory;
 
 try {
     CopilotGatewayResponderFactory::create()->analytics('ticket_trends');
-} catch (\JsonException|\InvalidArgumentException $e) {
+} catch (\JsonException | \InvalidArgumentException $e) {
     \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(400);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['error' => 'invalid_request', 'message' => $e->getMessage()]);

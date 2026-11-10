@@ -12,44 +12,43 @@ final class ExecutionStopRequestRepository implements ExecutionStopRequestReposi
 {
     private const TABLE = 'glpi_plugin_uxconnector_syncexecutions';
 
-    public function __construct(private readonly DBmysql $db) {}
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
     public function requestStop(SyncExecutionId $id): bool
     {
-        // SQL conditions are atomic: a completed execution cannot be stopped.
-        $ok = $this->db->doQuery(sprintf(
-            "UPDATE `%s` SET `stop_requested` = 1 WHERE `id` = %d AND `status` = 'running'",
+        // Keep the status in the update predicate to prevent a check-then-write race.
+        $this->db->update(
             self::TABLE,
-            $id->value(),
-        ));
-        if ($ok === false) {
-            throw new \RuntimeException('Unable to record stop request; check plugin database migration.');
-        }
+            ['stop_requested' => 1],
+            ['id' => $id->value(), 'status' => 'running', 'stop_requested' => 0]
+        );
         return $this->isStopRequested($id);
     }
 
     public function clearStopRequest(SyncExecutionId $id): void
     {
-        if ($this->db->doQuery(sprintf(
-            "UPDATE `%s` SET `stop_requested` = 0 WHERE `id` = %d AND `status` = 'pending'",
+        $this->db->update(
             self::TABLE,
-            $id->value(),
-        )) === false) {
-            throw new \RuntimeException('Unable to clear stop request when requeuing.');
-        }
+            ['stop_requested' => 0],
+            ['id' => $id->value(), 'status' => 'pending', 'stop_requested' => 1]
+        );
     }
 
     public function isStopRequested(SyncExecutionId $id): bool
     {
-        $result = $this->db->doQuery(sprintf(
-            'SELECT `stop_requested` FROM `%s` WHERE `id` = %d',
-            self::TABLE,
-            $id->value(),
-        ));
-        if ($result === false) {
-            throw new \RuntimeException('Unable to check stop request; check plugin database migration.');
+        foreach (
+            $this->db->request([
+            'SELECT' => ['stop_requested'],
+            'FROM' => self::TABLE,
+            'WHERE' => ['id' => $id->value()],
+            'LIMIT' => 1,
+            ]) as $row
+        ) {
+            return in_array((int) ($row['stop_requested'] ?? 0), [1, self::CANCELLATION_REQUESTED], true);
         }
-        $row = $this->db->fetchAssoc($result);
-        return is_array($row) && (int) ($row['stop_requested'] ?? 0) === 1;
+
+        return false;
     }
 }

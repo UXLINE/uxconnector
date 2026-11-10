@@ -1,6 +1,7 @@
 <?php
 
 /** Public stateless machine-to-machine endpoint for inbound interactions. */
+
 declare(strict_types=1);
 
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Security\WebhookRequestAuthenticator;

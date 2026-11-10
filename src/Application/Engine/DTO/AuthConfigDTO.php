@@ -42,7 +42,8 @@ final readonly class AuthConfigDTO
         public bool $isUsable,
         public string $createdAt,
         public string $updatedAt
-    ) {}
+    ) {
+    }
 
     public static function fromEntity(AuthConfig $authConfig): self
     {

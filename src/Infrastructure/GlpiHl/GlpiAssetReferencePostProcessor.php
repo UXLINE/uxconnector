@@ -30,7 +30,8 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
     public function __construct(
         private readonly DBmysql $db,
         private readonly ObjectLinkRepositoryInterface $objectLinks
-    ) {}
+    ) {
+    }
 
     public function supports(SyncJob $syncJob): bool
     {

@@ -23,7 +23,9 @@ final class GlpiTargetFieldsWriter
     /** @var array<string,array<string,array{container_id:int,container_name:string,field_name:string,type:string}>> */
     private array $metadata = [];
 
-    public function __construct(private readonly DBmysql $db) {}
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
     /** @return list<string> */
     public function writableTargetsFor(string $itemtype): array
@@ -80,7 +82,12 @@ final class GlpiTargetFieldsWriter
             $meta = $definition['meta'];
             $class = \PluginFieldsContainer::getClassname($itemtype, $meta['container_name']);
             if (!class_exists($class)) {
-                throw new \RuntimeException(sprintf('Fields generated class "%s" is unavailable. Regenerate the Fields plugin files.', $class));
+                throw new \RuntimeException(
+                    sprintf(
+                        'Fields generated class "%s" is unavailable. Regenerate the Fields plugin files.',
+                        $class
+                    )
+                );
             }
             $instance = \GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\NativeItemFactory::create($class);
             $table = $class::getTable();
@@ -98,22 +105,31 @@ final class GlpiTargetFieldsWriter
             if ($existing === null) {
                 $id = $instance->add($payload);
                 if (!$id) {
-                    throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException('TARGET_FIELDS_CREATE_FAILED');
+                    throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException(
+                        'TARGET_FIELDS_CREATE_FAILED'
+                    );
                 }
                 $changed = true;
                 continue;
             }
             $delta = [];
             foreach ($definition['values'] as $field => $value) {
-                if (\GlpiPlugin\Uxconnector\Domain\Sync\Policy\ExistingValuePolicy::isEmpty($field, $existing[$field] ?? null)
-                    && !\GlpiPlugin\Uxconnector\Domain\Sync\Policy\ExistingValuePolicy::isEmpty($field, $value)) {
+                if (
+                    \GlpiPlugin\Uxconnector\Domain\Sync\Policy\ExistingValuePolicy::isEmpty(
+                        $field,
+                        $existing[$field] ?? null
+                    )
+                    && !\GlpiPlugin\Uxconnector\Domain\Sync\Policy\ExistingValuePolicy::isEmpty($field, $value)
+                ) {
                     $delta[$field] = $value;
                 }
             }
             if ($delta !== []) {
                 $delta['id'] = (int) $existing['id'];
                 if (!$instance->update($delta)) {
-                    throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException('TARGET_FIELDS_UPDATE_FAILED');
+                    throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException(
+                        'TARGET_FIELDS_UPDATE_FAILED'
+                    );
                 }
                 $changed = true;
             }
@@ -144,7 +160,13 @@ final class GlpiTargetFieldsWriter
                     }
                 }
             }
-            if ($itemtype === 'SoftwareLicense' && in_array($label, ["Date d’activation", 'Date de désactivation'], true)) {
+            if (
+                $itemtype === 'SoftwareLicense' && in_array(
+                    $label,
+                    ["Date d’activation", 'Date de désactivation'],
+                    true
+                )
+            ) {
                 $normalized = static fn(string $text): string => mb_strtolower(str_replace('’', "'", $text));
                 $candidates = array_values(array_unique(array_merge($candidates, array_keys(array_filter(
                     $metadata,
@@ -159,7 +181,14 @@ final class GlpiTargetFieldsWriter
                 }
             }
             if (count($matches) > 1) {
-                throw new \RuntimeException(sprintf('Target Fields label "%s" is ambiguous for itemtype %s: canonical and alias fields both exist.', $label, $itemtype));
+                throw new \RuntimeException(
+                    sprintf(
+                        'Target Fields label "%s" is ambiguous for itemtype %s: canonical and alias fields both '
+                        . 'exist.',
+                        $label,
+                        $itemtype
+                    )
+                );
             }
             if ($matches === []) {
                 $missing[] = $label;
@@ -169,7 +198,8 @@ final class GlpiTargetFieldsWriter
         }
         if ($missing !== []) {
             throw new \RuntimeException(sprintf(
-                'Missing target Fields configuration for %s: %s. Check active fields, object type and supported labels before running this GLPI migration job.',
+                'Missing target Fields configuration for %s: %s. Check active fields, object type and '
+                    . 'supported labels before running this GLPI migration job.',
                 $itemtype,
                 implode(', ', $missing),
             ));
@@ -183,7 +213,11 @@ final class GlpiTargetFieldsWriter
         if (isset($this->metadata[$itemtype])) {
             return $this->metadata[$itemtype];
         }
-        if (!$this->db->tableExists('glpi_plugin_fields_containers') || !$this->db->tableExists('glpi_plugin_fields_fields') || !class_exists('PluginFieldsContainer')) {
+        if (
+            !$this->db->tableExists('glpi_plugin_fields_containers') || !$this->db->tableExists(
+                'glpi_plugin_fields_fields'
+            ) || !class_exists('PluginFieldsContainer')
+        ) {
             throw new \RuntimeException('The GLPI Fields plugin must be installed and active on the target instance.');
         }
         $result = [];
@@ -204,11 +238,18 @@ final class GlpiTargetFieldsWriter
             ]);
             foreach ($fields as $field) {
                 $label = trim((string) ($field['label'] ?? ''));
-                if ($label === '' || (string) ($field['type'] ?? '') === 'header' || (int) ($field['is_readonly'] ?? 0) === 1) {
+                if (
+                    $label === '' || (string) ($field['type'] ?? '') === 'header' || (int) (
+                        $field['is_readonly'] ?? 0) === 1
+                ) {
                     continue;
                 }
                 if (isset($result[$label])) {
-                    throw new \RuntimeException(sprintf('Target Fields label "%s" is ambiguous for itemtype %s.', $label, $itemtype));
+                    throw new \RuntimeException(sprintf(
+                        'Target Fields label "%s" is ambiguous for itemtype %s.',
+                        $label,
+                        $itemtype
+                    ));
                 }
                 $result[$label] = [
                     'container_id' => (int) $container['id'],
@@ -236,19 +277,27 @@ final class GlpiTargetFieldsWriter
     {
         $class = \PluginFieldsContainer::getClassname($itemtype, $meta['container_name']);
         if (!class_exists($class) || !is_subclass_of($class, \CommonDBTM::class)) {
-            throw new \RuntimeException('TARGET_FIELDS_CLASS_UNAVAILABLE: restore the Fields generated files before running this job.');
+            throw new \RuntimeException(
+                'TARGET_FIELDS_CLASS_UNAVAILABLE: restore the Fields generated files before running this job.'
+            );
         }
         if (!$this->db->tableExists($class::getTable())) {
             throw new \RuntimeException('TARGET_FIELDS_TABLE_UNAVAILABLE: verify the Fields installation.');
         }
         if ($meta['type'] === 'dropdown') {
             if (!class_exists('PluginFieldsDropdown')) {
-                throw new \RuntimeException('TARGET_FIELDS_DROPDOWN_CLASS_UNAVAILABLE: verify the Fields installation.');
+                throw new \RuntimeException(
+                    'TARGET_FIELDS_DROPDOWN_CLASS_UNAVAILABLE: verify the Fields installation.'
+                );
             }
             $dropdown = \PluginFieldsDropdown::getClassname($meta['field_name']);
-            if (!class_exists($dropdown) || !is_subclass_of($dropdown, \CommonDBTM::class)
-                || !$this->db->tableExists($dropdown::getTable())) {
-                throw new \RuntimeException('TARGET_FIELDS_DROPDOWN_CLASS_UNAVAILABLE: restore the Fields generated dropdown files.');
+            if (
+                !class_exists($dropdown) || !is_subclass_of($dropdown, \CommonDBTM::class)
+                || !$this->db->tableExists($dropdown::getTable())
+            ) {
+                throw new \RuntimeException(
+                    'TARGET_FIELDS_DROPDOWN_CLASS_UNAVAILABLE: restore the Fields generated dropdown files.'
+                );
             }
         }
         $column = $this->columnName($meta);
@@ -274,7 +323,9 @@ final class GlpiTargetFieldsWriter
     private function normalizeFieldValue(mixed $value, array $meta): mixed
     {
         if (!is_scalar($value)) {
-            throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException('SOURCE_FIELDS_VALUE_INVALID');
+            throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException(
+                'SOURCE_FIELDS_VALUE_INVALID'
+            );
         }
         $text = trim((string) $value);
         if ($meta['type'] === 'dropdown') {
@@ -284,7 +335,9 @@ final class GlpiTargetFieldsWriter
             $found = null;
             foreach ($rows as $row) {
                 if ($found !== null) {
-                    throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException('TARGET_FIELDS_DROPDOWN_AMBIGUOUS');
+                    throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException(
+                        'TARGET_FIELDS_DROPDOWN_AMBIGUOUS'
+                    );
                 }
                 $found = (int) $row['id'];
             }
@@ -294,12 +347,15 @@ final class GlpiTargetFieldsWriter
             $dropdown = \GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\NativeItemFactory::create($class);
             $id = (int) $dropdown->add(['name' => $text]);
             if ($id <= 0) {
-                throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException('TARGET_FIELDS_DROPDOWN_CREATE_FAILED');
+                throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException(
+                    'TARGET_FIELDS_DROPDOWN_CREATE_FAILED'
+                );
             }
             return $id;
         }
         if ($meta['type'] === 'date' || $meta['type'] === 'datetime') {
-            $formats = $meta['type'] === 'date' ? ['d/m/Y', 'Y-m-d'] : ['Y-m-d H:i:s', 'Y-m-d H:i', 'd/m/Y H:i:s', 'd/m/Y H:i'];
+            $formats = $meta['type'] === 'date' ? ['d/m/Y', 'Y-m-d'] : ['Y-m-d H:i:s', 'Y-m-d H:i', 'd/m/Y H:i:s',
+                'd/m/Y H:i'];
             foreach ($formats as $format) {
                 $date = \DateTimeImmutable::createFromFormat('!' . $format, $text);
                 $errors = \DateTimeImmutable::getLastErrors();
@@ -307,12 +363,16 @@ final class GlpiTargetFieldsWriter
                     return $date->format($meta['type'] === 'date' ? 'Y-m-d' : 'Y-m-d H:i:s');
                 }
             }
-            throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException('SOURCE_DATE_INVALID');
+            throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException(
+                'SOURCE_DATE_INVALID'
+            );
         }
         if (in_array($meta['type'], ['number', 'integer', 'decimal'], true)) {
             $number = str_replace(["\xc2\xa0", "\xe2\x80\xaf", ' ', ','], ['', '', '', '.'], $text);
             if (!preg_match('/^-?\d+(?:\.\d+)?$/D', $number)) {
-                throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException('SOURCE_NUMBER_INVALID');
+                throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException(
+                    'SOURCE_NUMBER_INVALID'
+                );
             }
             return $number;
         }
@@ -320,7 +380,9 @@ final class GlpiTargetFieldsWriter
             return match (strtolower($text)) {
                 '1', 'yes', 'oui', 'true' => 1,
                 '0', 'no', 'non', 'false', '' => 0,
-                default => throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException('SOURCE_BOOLEAN_INVALID'),
+                default => throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\ProfileMigrationException(
+                    'SOURCE_BOOLEAN_INVALID'
+                ),
             };
         }
         return $value;

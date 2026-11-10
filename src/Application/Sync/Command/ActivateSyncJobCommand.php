@@ -20,5 +20,6 @@ final readonly class ActivateSyncJobCommand
 {
     public function __construct(
         public SyncJobId $syncJobId
-    ) {}
+    ) {
+    }
 }

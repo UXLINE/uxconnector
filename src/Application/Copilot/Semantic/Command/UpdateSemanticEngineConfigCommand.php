@@ -19,5 +19,6 @@ final readonly class UpdateSemanticEngineConfigCommand
         public float $confidenceThreshold,
         public float $temperature,
         public string $classifierVersion
-    ) {}
+    ) {
+    }
 }

@@ -28,7 +28,8 @@ final class QueueFullReplayService
         private readonly SyncCheckpointRepositoryInterface $checkpoints,
         private readonly TransactionManagerInterface $transaction,
         private readonly ExecutionMutexInterface $mutex
-    ) {}
+    ) {
+    }
 
     public function execute(SyncJobId $id): SyncExecution
     {
@@ -46,7 +47,9 @@ final class QueueFullReplayService
             // check + enqueue. It is released on commit before any import runs.
             $this->mutex->lock($id);
             if ($this->executions->hasOpenExecution($id)) {
-                throw new \RuntimeException('Cannot replay from the beginning while an execution is pending or running.');
+                throw new \RuntimeException(
+                    'Cannot replay from the beginning while an execution is pending or running.'
+                );
             }
 
             $this->checkpoints->delete($id);

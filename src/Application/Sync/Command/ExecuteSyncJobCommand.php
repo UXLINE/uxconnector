@@ -12,5 +12,6 @@ final readonly class ExecuteSyncJobCommand
     public function __construct(
         public SyncJobId $syncJobId,
         public ?SyncExecutionId $existingExecutionId = null
-    ) {}
+    ) {
+    }
 }

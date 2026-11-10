@@ -11,7 +11,9 @@ use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\GlpiTargetFieldsWriter;
 /** Displays only active, real Fields attributes for the selected GLPI type. */
 final class FieldsTargetCatalog implements TargetFieldsCatalogInterface
 {
-    public function __construct(private readonly DBmysql $db) {}
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
     /** @return list<string> */
     public function writableFor(string $itemtype): array

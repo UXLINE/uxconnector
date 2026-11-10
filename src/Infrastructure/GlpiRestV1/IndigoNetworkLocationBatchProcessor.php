@@ -95,18 +95,33 @@ final class IndigoNetworkLocationBatchProcessor extends AbstractLegacyLocationBa
             if ($existing !== null && (int) ($existing['is_deleted'] ?? 0) !== 0) {
                 throw new \RuntimeException('TARGET_EQUIPMENT_DELETED');
             }
-            if ($existing !== null && (int) ($existing['locations_id'] ?? 0) > 0 && (int) $existing['locations_id'] !== $siteId) {
+            if (
+                $existing !== null && (int) (
+                    $existing['locations_id'] ?? 0) > 0 && (int) $existing['locations_id'] !== $siteId
+            ) {
                 throw new \RuntimeException('SERIAL_ALREADY_ATTACHED_TO_DIFFERENT_SITE');
             }
-            $existing ??= $this->firstUnique('glpi_networkequipments', ['name' => $name, 'locations_id' => $siteId, 'is_deleted' => 0]);
+            $existing ??= $this->firstUnique('glpi_networkequipments', ['name' => $name, 'locations_id' => $siteId,
+                    'is_deleted' => 0]);
         }
         $equipmentData = $this->nonempty([
             'name' => $name,
             'serial' => $serial,
             'locations_id' => $siteId,
-            'networkequipmenttypes_id' => (int) ($existing['networkequipmenttypes_id'] ?? 0) > 0 ? (int) $existing['networkequipmenttypes_id'] : $this->resolveDropdown('glpi_networkequipmenttypes', '\\NetworkEquipmentType', $type),
-            'networkequipmentmodels_id' => (int) ($existing['networkequipmentmodels_id'] ?? 0) > 0 ? (int) $existing['networkequipmentmodels_id'] : $this->resolveDropdown('glpi_networkequipmentmodels', '\\NetworkEquipmentModel', $model),
-            'states_id' => (int) ($existing['states_id'] ?? 0) > 0 ? (int) $existing['states_id'] : $this->resolveDropdown('glpi_states', '\\State', $this->value($row, $map, 'status')),
+            'networkequipmenttypes_id' => (int) ($existing['networkequipmenttypes_id'] ?? 0) > 0
+                ? (int) $existing['networkequipmenttypes_id'] : $this->resolveDropdown(
+                    'glpi_networkequipmenttypes',
+                    '\\NetworkEquipmentType',
+                    $type
+                ),
+            'networkequipmentmodels_id' => (int) ($existing['networkequipmentmodels_id'] ?? 0) > 0
+                ? (int) $existing['networkequipmentmodels_id'] : $this->resolveDropdown(
+                    'glpi_networkequipmentmodels',
+                    '\\NetworkEquipmentModel',
+                    $model
+                ),
+            'states_id' => (int) ($existing['states_id'] ?? 0) > 0 ? (int) $existing['states_id']
+                : $this->resolveDropdown('glpi_states', '\\State', $this->value($row, $map, 'status')),
             'comment' => $this->value($row, $map, 'comment'),
         ]);
         $this->stage = 'equipment_write';
@@ -126,7 +141,13 @@ final class IndigoNetworkLocationBatchProcessor extends AbstractLegacyLocationBa
             $action = $delta === [] ? 'skip' : 'update';
         }
         $this->targetId = $id;
-        $this->rememberLink($job, $sourceId, TargetItemtype::NETWORK_EQUIPMENT, $id, 'glpi_rest_v1_indigo_network_equipment');
+        $this->rememberLink(
+            $job,
+            $sourceId,
+            TargetItemtype::NETWORK_EQUIPMENT,
+            $id,
+            'glpi_rest_v1_indigo_network_equipment'
+        );
         $this->stage = 'equipment_fields';
         $changed = $this->fieldsWriter->write('NetworkEquipment', $id, [
             'Entité Inpark' => $this->value($row, $map, 'entity_code'),

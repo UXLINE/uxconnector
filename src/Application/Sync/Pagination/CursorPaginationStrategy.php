@@ -13,7 +13,8 @@ final class CursorPaginationStrategy implements PaginationStrategyInterface
         private readonly PaginationConfig $config,
         private readonly JsonPathValueReader $reader,
         private readonly QueryParameterUpdater $queryUpdater
-    ) {}
+    ) {
+    }
 
     public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string
     {

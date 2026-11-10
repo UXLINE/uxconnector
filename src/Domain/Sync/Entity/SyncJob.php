@@ -133,7 +133,9 @@ final class SyncJob
         $this->collectionPath = $collectionPath ?? CollectionPath::root();
         $this->paginationConfig = $paginationConfig ?? PaginationConfig::none();
         $this->templateId = $templateId !== null && trim($templateId) !== '' ? trim($templateId) : null;
-        $this->templateVersion = $templateVersion !== null && trim($templateVersion) !== '' ? trim($templateVersion) : null;
+        $this->templateVersion = $templateVersion !== null && trim($templateVersion) !== '' ? trim(
+            $templateVersion
+        ) : null;
         $this->triggerType = $triggerType ?? InteractionTrigger::POLLING;
         $this->externalObjectType = self::normalizeExternalObjectType($externalObjectType ?? $targetItemtype->value);
         $this->outboundConfig = $outboundConfig ?? OutboundConfig::none();
@@ -298,8 +300,9 @@ final class SyncJob
 
         $normalizedWebhookKey = self::normalizeWebhookKey($webhookKey);
 
-        if ($direction === SyncDirection::INBOUND
-           && $fieldMappings !== []
+        if (
+            $direction === SyncDirection::INBOUND
+            && $fieldMappings !== []
         ) {
             $matchFieldFound = false;
 
@@ -317,9 +320,10 @@ final class SyncJob
             }
         }
 
-        if ($direction === SyncDirection::OUTBOUND
-           && $entityAssignmentStrategy !== null
-           && !$entityAssignmentStrategy->isFixed()
+        if (
+            $direction === SyncDirection::OUTBOUND
+            && $entityAssignmentStrategy !== null
+            && !$entityAssignmentStrategy->isFixed()
         ) {
             throw new \DomainException(
                 'Outbound interactions support only a fixed GLPI entity as source scope.',
@@ -420,15 +424,19 @@ final class SyncJob
     public function activate(): void
     {
         if ($this->direction === SyncDirection::INBOUND && $this->fieldMappings === []) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::cannotActivateWithoutFieldMappings();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException
+                ::cannotActivateWithoutFieldMappings();
         }
 
         if ($this->direction === SyncDirection::OUTBOUND && !$this->outboundConfig->isConfigured()) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::cannotActivateWithoutOutboundConfig();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException
+                ::cannotActivateWithoutOutboundConfig();
         }
 
         if (!in_array($this->status, [SyncJobStatus::DRAFT, SyncJobStatus::PAUSED], true)) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::cannotActivateFromStatus($this->status);
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::cannotActivateFromStatus(
+                $this->status
+            );
         }
 
         $this->status = SyncJobStatus::ACTIVE;
@@ -633,7 +641,8 @@ final class SyncJob
                 }
             }
 
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::assetIdentityRequiresMappedIdentityField();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException
+                ::assetIdentityRequiresMappedIdentityField();
         }
 
         foreach ($this->fieldMappings as $mapping) {
@@ -642,6 +651,8 @@ final class SyncJob
             }
         }
 
-        throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::matchFieldNotMapped($this->matchField);
+        throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::matchFieldNotMapped(
+            $this->matchField
+        );
     }
 }

@@ -31,7 +31,8 @@ final class ActivateAuthConfigService
 {
     public function __construct(
         private readonly AuthConfigRepositoryInterface $repository
-    ) {}
+    ) {
+    }
 
     /**
      * @throws AuthConfigNotFoundException if the command's AuthConfigId
@@ -44,7 +45,9 @@ final class ActivateAuthConfigService
         $authConfig = $this->repository->findById($command->authConfigId);
 
         if ($authConfig === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigNotFoundException::forId($command->authConfigId);
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigNotFoundException::forId(
+                $command->authConfigId
+            );
         }
 
         $authConfig->activate();

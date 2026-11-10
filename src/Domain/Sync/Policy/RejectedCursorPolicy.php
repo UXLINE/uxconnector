@@ -15,13 +15,17 @@ final class RejectedCursorPolicy
             return null;
         }
         $parts = parse_url($path);
-        if (!is_array($parts) || isset($parts['host']) || isset($parts['scheme'])
-            || !in_array($parts['path'] ?? '', ['/api/v2/search/export.json', '/api/v2/search/export'], true)) {
+        if (
+            !is_array($parts) || isset($parts['host']) || isset($parts['scheme'])
+            || !in_array($parts['path'] ?? '', ['/api/v2/search/export.json', '/api/v2/search/export'], true)
+        ) {
             return null;
         }
         parse_str($parts['query'] ?? '', $query);
-        if (!is_array($query['page'] ?? null) || !is_string($query['page']['after'] ?? null)
-            || $query['page']['after'] === '') {
+        if (
+            !is_array($query['page'] ?? null) || !is_string($query['page']['after'] ?? null)
+            || $query['page']['after'] === ''
+        ) {
             return null;
         }
         unset($query['page']['after']);

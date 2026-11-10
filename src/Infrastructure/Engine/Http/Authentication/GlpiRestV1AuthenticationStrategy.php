@@ -27,8 +27,10 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
         private readonly ErrorClassification $errorClassification = new ErrorClassification()
     ) {
         $config = json_decode($secret, true);
-        if (!is_array($config) || !is_string($config['app_token'] ?? null) || !is_string($config['user_token'] ?? null)
-            || trim($config['app_token']) === '' || trim($config['user_token']) === '') {
+        if (
+            !is_array($config) || !is_string($config['app_token'] ?? null) || !is_string($config['user_token'] ?? null)
+            || trim($config['app_token']) === '' || trim($config['user_token']) === ''
+        ) {
             throw new \RuntimeException('Malformed GLPI REST v1 credential configuration.');
         }
         $this->config = $config;
@@ -161,7 +163,9 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
             }
         }
 
-        throw new \RuntimeException('GLPI REST v1 transport failure after retry budget: ' . $this->safeTransportMessage($lastError));
+        throw new \RuntimeException(
+            'GLPI REST v1 transport failure after retry budget: ' . $this->safeTransportMessage($lastError)
+        );
     }
 
     private function sleepBackoff(int $attempt): void
@@ -172,6 +176,10 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
 
     private function safeTransportMessage(string $message): string
     {
-        return preg_replace('/(token|authorization|password|secret)[^\s]*/i', '[redacted]', $message) ?: 'transport error';
+        return preg_replace(
+            '/(token|authorization|password|secret)[^\s]*/i',
+            '[redacted]',
+            $message
+        ) ?: 'transport error';
     }
 }

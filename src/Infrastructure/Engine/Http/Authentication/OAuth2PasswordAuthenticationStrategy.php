@@ -18,14 +18,19 @@ final class OAuth2PasswordAuthenticationStrategy implements RenewableSessionAuth
         private readonly string $username,
         private readonly string $password,
         private readonly ?string $scope,
-    ) {}
+    ) {
+    }
 
     public function responseRequiresRenewal(HttpResponse $response): bool
     {
         return $response->statusCode === 401;
     }
-    public function invalidateSession(): void {}
-    public function closeSession(): void {}
+    public function invalidateSession(): void
+    {
+    }
+    public function closeSession(): void
+    {
+    }
 
     public function authenticate(HttpRequest $request): HttpRequest
     {

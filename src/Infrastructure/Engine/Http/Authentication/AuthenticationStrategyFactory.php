@@ -32,7 +32,8 @@ final class AuthenticationStrategyFactory
     public function __construct(
         private readonly OAuth2TokenClient $oauth2TokenClient,
         private readonly DestinationPolicyInterface $destinationPolicy
-    ) {}
+    ) {
+    }
 
     /**
      * @throws HttpEngineException if $authMethod requires a credential
@@ -69,7 +70,10 @@ final class AuthenticationStrategyFactory
             // Authorization Code needs an interactive browser redirect
             // and user consent - structurally incompatible with an
             // unattended CronTask run, not merely "not implemented yet".
-            AuthMethod::OAUTH2_AUTHORIZATION_CODE => throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::unsupportedAuthMethod($authMethod),
+            AuthMethod::OAUTH2_AUTHORIZATION_CODE =>
+                throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::unsupportedAuthMethod(
+                    $authMethod
+                ),
         };
     }
 
@@ -88,7 +92,8 @@ final class AuthenticationStrategyFactory
     {
         $config = json_decode($secret, true);
 
-        if (!is_array($config)
+        if (
+            !is_array($config)
              || !isset($config['token_url'], $config['client_id'], $config['client_secret'])
              || !is_string($config['token_url'])
              || !is_string($config['client_id'])
@@ -118,10 +123,12 @@ final class AuthenticationStrategyFactory
         $config = json_decode($secret, true);
         foreach (['token_url', 'client_id', 'client_secret', 'username', 'password'] as $key) {
             if (!is_array($config) || !isset($config[$key]) || !is_string($config[$key]) || $config[$key] === '') {
-                throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::malformedOAuth2Configuration();
+                throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException
+                    ::malformedOAuth2Configuration();
             }
         }
-        $scope = isset($config['scope']) && is_string($config['scope']) && $config['scope'] !== '' ? $config['scope'] : null;
+        $scope = isset($config['scope']) && is_string($config['scope']) && $config['scope'] !== '' ? $config['scope']
+            : null;
         return new OAuth2PasswordAuthenticationStrategy(
             $this->oauth2TokenClient,
             $config['token_url'],

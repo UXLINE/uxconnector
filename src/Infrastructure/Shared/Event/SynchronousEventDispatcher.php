@@ -68,7 +68,10 @@ final class SynchronousEventDispatcher implements EventDispatcherInterface
         }
 
         if ($failures !== []) {
-            throw new \GlpiPlugin\Uxconnector\Infrastructure\Shared\Event\EventListenerFailedException($eventClass, $failures);
+            throw new \GlpiPlugin\Uxconnector\Infrastructure\Shared\Event\EventListenerFailedException(
+                $eventClass,
+                $failures
+            );
         }
     }
 }

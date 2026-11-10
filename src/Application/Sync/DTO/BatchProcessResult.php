@@ -13,5 +13,6 @@ final readonly class BatchProcessResult
         public int $updated = 0,
         public int $skipped = 0,
         public int $warnings = 0
-    ) {}
+    ) {
+    }
 }

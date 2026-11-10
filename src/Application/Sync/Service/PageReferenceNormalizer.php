@@ -34,7 +34,8 @@ final class PageReferenceNormalizer
             throw new \RuntimeException('Configured endpoint could not be parsed.');
         }
 
-        if (strtolower((string) $ref['scheme']) !== strtolower((string) $endpoint['scheme'])
+        if (
+            strtolower((string) $ref['scheme']) !== strtolower((string) $endpoint['scheme'])
              || strtolower((string) $ref['host']) !== strtolower((string) $endpoint['host'])
              || (int) ($ref['port'] ?? $this->defaultPort((string) $ref['scheme']))
                  !== (int) ($endpoint['port'] ?? $this->defaultPort((string) $endpoint['scheme']))

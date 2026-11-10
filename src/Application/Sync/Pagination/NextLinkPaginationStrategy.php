@@ -12,7 +12,8 @@ final class NextLinkPaginationStrategy implements PaginationStrategyInterface
     public function __construct(
         private readonly PaginationConfig $config,
         private readonly JsonPathValueReader $reader
-    ) {}
+    ) {
+    }
 
     public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string
     {

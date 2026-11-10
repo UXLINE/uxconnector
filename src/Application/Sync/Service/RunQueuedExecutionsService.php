@@ -17,7 +17,8 @@ final class RunQueuedExecutionsService
         private readonly SyncExecutionRepositoryInterface $executionRepository,
         private readonly SyncJobExecutorInterface $executeSyncJobService,
         private readonly ProcessQueuedFailureRetriesService $failureRetries
-    ) {}
+    ) {
+    }
 
     public function execute(bool $processRetries = true): RunActiveSyncJobsResult
     {
@@ -46,7 +47,16 @@ final class RunQueuedExecutionsService
                 $result = $this->executeSyncJobService->execute(
                     new ExecuteSyncJobCommand($queued->syncJobId(), $executionId),
                 );
-                if (in_array($result->status(), [SyncExecutionStatus::FAILED, SyncExecutionStatus::INTERRUPTED], true)) {
+                if ($result->status() === SyncExecutionStatus::CANCELLED) {
+                    break;
+                }
+                if (
+                    in_array(
+                        $result->status(),
+                        [SyncExecutionStatus::FAILED, SyncExecutionStatus::INTERRUPTED],
+                        true
+                    )
+                ) {
                     ++$failed;
                 } else {
                     ++$succeeded;

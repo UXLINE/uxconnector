@@ -32,8 +32,10 @@ final readonly class SyncExecutionDTO
         public ?string $heartbeatAt,
         public bool $resumeAvailable,
         public string $triggerSource,
-        public bool $stopRequested
-    ) {}
+        public bool $stopRequested,
+        public bool $cancellationRequested = false
+    ) {
+    }
 
     public static function fromEntity(SyncExecution $execution): self
     {
@@ -67,6 +69,7 @@ final readonly class SyncExecutionDTO
             $execution->resumeAvailable(),
             $execution->triggerSource(),
             $execution->stopRequested(),
+            $execution->cancellationRequested(),
         );
     }
 }

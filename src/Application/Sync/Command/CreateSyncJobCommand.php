@@ -61,5 +61,6 @@ final readonly class CreateSyncJobCommand
         public ?string $externalObjectType = null,
         public ?OutboundConfig $outboundConfig = null,
         public ?string $webhookKey = null
-    ) {}
+    ) {
+    }
 }

@@ -7,6 +7,7 @@ namespace GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence;
 use DateTimeImmutable;
 use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncExecution;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncExecutionStatus;
+use GlpiPlugin\Uxconnector\Domain\Sync\Repository\ExecutionStopRequestRepositoryInterface as StopRequest;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncExecutionId;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
@@ -15,14 +16,20 @@ final class SyncExecutionPersistenceMapper
     /** @param array<string,mixed> $row */
     public function toDomain(array $row): SyncExecution
     {
-        foreach (['id','plugin_uxconnector_syncjobs_id','status','started_at','items_processed','items_failed'] as $field) {
+        foreach (
+            ['id','plugin_uxconnector_syncjobs_id','status','started_at','items_processed',
+                'items_failed'] as $field
+        ) {
             if (!array_key_exists($field, $row)) {
                 throw new \RuntimeException(sprintf('Cannot hydrate SyncExecution: missing "%s" field.', $field));
             }
         }
         $status = SyncExecutionStatus::tryFrom((string) $row['status']);
         if ($status === null) {
-            throw new \RuntimeException(sprintf('Corrupted SyncExecution row #%s: unknown status.', (string) $row['id']));
+            throw new \RuntimeException(sprintf(
+                'Corrupted SyncExecution row #%s: unknown status.',
+                (string) $row['id']
+            ));
         }
         return SyncExecution::reconstitute(
             new SyncExecutionId((int) $row['id']),
@@ -46,8 +53,10 @@ final class SyncExecutionPersistenceMapper
             $this->nullableDate($row['heartbeat_at'] ?? null),
             (bool) ($row['resume_available'] ?? false),
             (string) ($row['trigger_source'] ?? 'scheduled'),
-            (bool) ($row['stop_requested'] ?? false),
+            (int) ($row['stop_requested'] ?? 0) === 1,
             isset($row['resume_path']) && (string) $row['resume_path'] !== '' ? (string) $row['resume_path'] : null,
+            $status === SyncExecutionStatus::RUNNING
+                && (int) ($row['stop_requested'] ?? 0) === StopRequest::CANCELLATION_REQUESTED,
         );
     }
 

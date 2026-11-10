@@ -28,7 +28,8 @@ final class ListSyncJobsService
 {
     public function __construct(
         private readonly SyncJobRepositoryInterface $repository
-    ) {}
+    ) {
+    }
 
     /**
      * @return list<SyncJobDTO>

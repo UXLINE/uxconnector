@@ -17,7 +17,8 @@ $forwardedProto = trim(
 
 if (in_array($forwardedProto, ['http', 'https'], true)) {
     $scheme = $forwardedProto;
-} elseif (!empty($_SERVER['HTTPS'])
+} elseif (
+    !empty($_SERVER['HTTPS'])
     && $_SERVER['HTTPS'] !== 'off'
 ) {
     $scheme = 'https';

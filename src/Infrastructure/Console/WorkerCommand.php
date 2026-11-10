@@ -28,7 +28,12 @@ final class WorkerCommand extends Command
         // OS access to GLPI configuration authorizes this system worker.
         // Targeted retries remain owned by the single GLPI ExecutionQueue task.
         $result = SyncServiceProvider::runQueuedExecutionsService()->execute(false);
-        $output->writeln(sprintf('%d job(s), %d succeeded, %d failed.', $result->totalJobs, $result->succeeded, $result->failed));
+        $output->writeln(sprintf(
+            '%d job(s), %d succeeded, %d failed.',
+            $result->totalJobs,
+            $result->succeeded,
+            $result->failed
+        ));
         return $result->failed > 0 ? Command::FAILURE : Command::SUCCESS;
     }
 }

@@ -19,7 +19,8 @@ final class RecoverStaleExecutionsService
         private readonly int $staleAfterMinutes = 30,
         private readonly ?SyncJobRepositoryInterface $jobs = null,
         private readonly ?SyncWorkLockInterface $lock = null
-    ) {}
+    ) {
+    }
 
     public function execute(): int
     {
@@ -38,11 +39,15 @@ final class RecoverStaleExecutionsService
                 // Re-read under ownership; the worker may have finished since
                 // findRunning() produced its snapshot.
                 $current = $execution->id() === null ? null : $this->repository->findById($execution->id());
-                if ($current === null || $current->status() !== SyncExecutionStatus::RUNNING
-                    || ($current->heartbeatAt() ?? $current->startedAt()) >= $threshold) {
+                if (
+                    $current === null || $current->status() !== SyncExecutionStatus::RUNNING
+                    || ($current->heartbeatAt() ?? $current->startedAt()) >= $threshold
+                ) {
                     continue;
                 }
-                $current->interrupt('Worker heartbeat expired; execution can be resumed from its last persisted checkpoint.');
+                $current->interrupt(
+                    'Worker heartbeat expired; execution can be resumed from its last persisted checkpoint.'
+                );
                 $this->repository->save($current);
                 ++$recovered;
             } finally {

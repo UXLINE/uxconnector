@@ -30,7 +30,8 @@ final class ProcessInboundWebhookService
         private readonly TargetFieldPolicy $targetFieldPolicy,
         private readonly TransactionManagerInterface $transaction,
         private readonly EventDispatcherInterface $events
-    ) {}
+    ) {
+    }
 
     /**
      * @param array<mixed> $payload
@@ -44,7 +45,10 @@ final class ProcessInboundWebhookService
     public function execute(string $webhookKey, array $payload): array
     {
         $job = $this->syncJobRepository->findByWebhookKey($webhookKey);
-        if ($job === null || $job->triggerType() !== InteractionTrigger::WEBHOOK || $job->direction() !== SyncDirection::INBOUND) {
+        if (
+            $job === null || $job->triggerType() !== InteractionTrigger::WEBHOOK
+            || $job->direction() !== SyncDirection::INBOUND
+        ) {
             throw new \RuntimeException('Unknown or inactive webhook interaction.');
         }
 
@@ -56,14 +60,21 @@ final class ProcessInboundWebhookService
         $reference = $job->authConfigReference();
         $connection = $this->authConfigRepository->findById(new AuthConfigId($reference->value()));
         if ($connection === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::referenceNotFound($reference);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException
+                ::referenceNotFound($reference);
         }
         if (!$connection->isUsable()) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::notUsable($reference);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::notUsable(
+                $reference
+            );
         }
 
         (new BuiltinTemplateTargetPolicy())->assertAllowed($job->templateId(), $job->targetItemtype());
-        $this->targetFieldPolicy->assertConfiguration($job->targetItemtype(), $job->matchField(), $job->fieldMappings());
+        $this->targetFieldPolicy->assertConfiguration(
+            $job->targetItemtype(),
+            $job->matchField(),
+            $job->fieldMappings()
+        );
         $execution = $this->save(SyncExecution::start($jobId));
 
         try {

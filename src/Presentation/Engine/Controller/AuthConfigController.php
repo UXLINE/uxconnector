@@ -59,7 +59,8 @@ final class AuthConfigController extends AbstractController
         private readonly OAuth2ClientCredentialsSecretComposer $oauth2SecretComposer,
         private readonly OAuth2PasswordSecretComposer $oauth2PasswordSecretComposer,
         private readonly GlpiRestV1SecretComposer $glpiRestV1SecretComposer
-    ) {}
+    ) {
+    }
 
     /**
      * Displays every configured AuthConfig.
@@ -108,7 +109,8 @@ final class AuthConfigController extends AbstractController
                 'endpoint' => trim((string) ($defaults['endpoint'] ?? '')),
                 'test_path' => trim((string) ($defaults['test_path'] ?? '/')) ?: '/',
                 'auth_method' => $selectedMethod,
-                'connector_id' => trim((string) ($defaults['connector'] ?? $defaults['connector_id'] ?? 'custom')) ?: 'custom',
+                'connector_id' => trim((string) ($defaults['connector'] ?? $defaults['connector_id'] ?? 'custom')) ?
+                    : 'custom',
             ],
         ]);
     }
@@ -190,7 +192,10 @@ final class AuthConfigController extends AbstractController
 
             if ($result->success) {
                 Session::addMessageAfterRedirect(sprintf(
-                    __('Connection test succeeded (HTTP %d, %d ms). You may now activate this configuration.', 'uxconnector'),
+                    __(
+                        'Connection test succeeded (HTTP %d, %d ms). You may now activate this configuration.',
+                        'uxconnector'
+                    ),
                     $result->statusCode,
                     (int) round($result->durationMs ?? 0),
                 ));
@@ -260,5 +265,4 @@ final class AuthConfigController extends AbstractController
 
         $this->redirect('/plugins/uxconnector/front/authconfig.php');
     }
-
 }

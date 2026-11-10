@@ -28,7 +28,8 @@ final readonly class SyncJobEditDTO
         public string $outboundJson,
         public string $status,
         public string $statusLabel
-    ) {}
+    ) {
+    }
 
     public static function fromEntity(SyncJob $syncJob): self
     {
@@ -113,8 +114,8 @@ final readonly class SyncJobEditDTO
             return json_encode(
                 $value,
                 JSON_PRETTY_PRINT
-            | JSON_UNESCAPED_SLASHES
-            | JSON_THROW_ON_ERROR,
+                | JSON_UNESCAPED_SLASHES
+                | JSON_THROW_ON_ERROR,
             );
         } catch (\JsonException $exception) {
             throw new \RuntimeException(

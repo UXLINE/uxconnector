@@ -48,9 +48,10 @@ use GlpiPlugin\Uxconnector\Application\Sync\Service\RunActiveSyncJobsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\RunQueuedExecutionsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\UpdateSyncJobService;
 use GlpiPlugin\Uxconnector\Domain\Sync\Policy\TargetFieldPolicy;
+use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncCheckpointRepositoryInterface;
+use GlpiPlugin\Uxconnector\Domain\Sync\Repository\ExecutionStopRequestRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\InteractionLookupRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\ObjectLinkRepositoryInterface;
-use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncExecutionRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncFailureRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\EngineServiceProvider;
@@ -154,7 +155,7 @@ final class SyncServiceProvider
         return new ObjectLinkRepository(new ObjectLinkPersistenceMapper());
     }
 
-    public static function syncCheckpointRepository(): \GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncCheckpointRepositoryInterface
+    public static function syncCheckpointRepository(): SyncCheckpointRepositoryInterface
     {
         return new SyncCheckpointRepository($GLOBALS['DB']);
     }
@@ -164,9 +165,9 @@ final class SyncServiceProvider
         return new SyncFailureRepository($GLOBALS['DB']);
     }
 
-    public static function syncExecutionRepository(): SyncExecutionRepositoryInterface
+    public static function syncExecutionRepository(): SyncExecutionRepository
     {
-        return new SyncExecutionRepository(new SyncExecutionPersistenceMapper());
+        return new SyncExecutionRepository(new SyncExecutionPersistenceMapper(), $GLOBALS['DB']);
     }
 
     public static function listSyncExecutionsService(): ListSyncExecutionsService
@@ -179,7 +180,7 @@ final class SyncServiceProvider
         return new ListSyncFailuresService(self::syncFailureRepository());
     }
 
-    public static function stopRequestRepository(): \GlpiPlugin\Uxconnector\Domain\Sync\Repository\ExecutionStopRequestRepositoryInterface
+    public static function stopRequestRepository(): ExecutionStopRequestRepositoryInterface
     {
         return new ExecutionStopRequestRepository($GLOBALS['DB']);
     }
@@ -201,7 +202,7 @@ final class SyncServiceProvider
 
     public static function retryFailedItemsService(): RetryFailedItemsService
     {
-        return new RetryFailedItemsService(self::syncFailureRepository());
+        return new RetryFailedItemsService(self::syncFailureRepository(), self::syncExecutionRepository());
     }
 
     public static function processQueuedFailureRetriesService(): ProcessQueuedFailureRetriesService
@@ -287,11 +288,13 @@ final class SyncServiceProvider
                     $zendeskPostProcessor,
                     new GlpiAssetReferencePostProcessor($GLOBALS['DB'], $objectLinks),
                 ],
-                [$zendeskTopicBatchProcessor, $indigoTelecomProcessor, $indigoNetworkProcessor, $indigoMicrosoftProcessor],
+                [$zendeskTopicBatchProcessor, $indigoTelecomProcessor, $indigoNetworkProcessor,
+                    $indigoMicrosoftProcessor],
                 self::syncFailureRepository(),
             ),
             self::syncCheckpointRepository(),
-            [new GlpiRestV1TelecomLocationResourcePathResolver($glpiRestLocationCatalog), new LegacyLocationProfilePathResolver($profileCatalog)],
+            [new GlpiRestV1TelecomLocationResourcePathResolver($glpiRestLocationCatalog),
+                new LegacyLocationProfilePathResolver($profileCatalog)],
             [$zendeskTopicBatchProcessor],
             self::stopRequestRepository(),
             $workLock,

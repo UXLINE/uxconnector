@@ -114,11 +114,14 @@ final class PrecomputedSemanticClassificationProvider implements SemanticClassif
         }
 
         $reasonCode = trim($row['reason_code']);
-        if ($reasonCode === ''
+        if (
+            $reasonCode === ''
              || strlen($reasonCode) > 64
              || preg_match('/^[a-z0-9][a-z0-9_]*$/D', $reasonCode) !== 1
         ) {
-            throw new \InvalidArgumentException('Semantic reason_code must be lower snake_case and at most 64 characters.');
+            throw new \InvalidArgumentException(
+                'Semantic reason_code must be lower snake_case and at most 64 characters.'
+            );
         }
 
         $thresholdApplied = $confidence < $this->confidenceThreshold;

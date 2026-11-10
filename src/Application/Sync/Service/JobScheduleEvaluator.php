@@ -12,8 +12,11 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncExecutionRepositoryInterfa
 
 final class JobScheduleEvaluator
 {
-    public static function isDue(SyncJob $job, SyncExecutionRepositoryInterface $executions, ?DateTimeImmutable $now = null): bool
-    {
+    public static function isDue(
+        SyncJob $job,
+        SyncExecutionRepositoryInterface $executions,
+        ?DateTimeImmutable $now = null
+    ): bool {
         $id = $job->id();
         if ($id === null) {
             return false;

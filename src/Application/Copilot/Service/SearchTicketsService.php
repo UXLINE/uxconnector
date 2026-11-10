@@ -8,7 +8,9 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Port\ItsmDataProviderInterface;
 
 final readonly class SearchTicketsService
 {
-    public function __construct(private ItsmDataProviderInterface $provider) {}
+    public function __construct(private ItsmDataProviderInterface $provider)
+    {
+    }
 
     /**
     * @param array<string, mixed> $criteria

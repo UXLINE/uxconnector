@@ -8,7 +8,9 @@ use GlpiPlugin\Uxconnector\Application\Copilot\Gateway\CopilotGatewayInterface;
 
 final class CopilotGatewayResponder
 {
-    public function __construct(private readonly CopilotGatewayInterface $gateway) {}
+    public function __construct(private readonly CopilotGatewayInterface $gateway)
+    {
+    }
 
     public function capabilities(): void
     {

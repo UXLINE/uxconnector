@@ -20,5 +20,6 @@ final readonly class DisableAuthConfigCommand
 {
     public function __construct(
         public AuthConfigId $authConfigId
-    ) {}
+    ) {
+    }
 }

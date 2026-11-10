@@ -45,18 +45,24 @@ try {
         if (!is_array($payload)) {
             throw new \InvalidArgumentException('JSON body must be an object.');
         }
-        echo json_encode(CopilotServiceProvider::searchTicketsService($client)->execute($payload), JSON_UNESCAPED_SLASHES);
+        echo json_encode(
+            CopilotServiceProvider::searchTicketsService($client)->execute($payload),
+            JSON_UNESCAPED_SLASHES
+        );
         return;
     }
 
     if ($method === 'GET' && preg_match('#^tickets/(\d+)/context$#D', $path, $m) === 1) {
-        echo json_encode(CopilotServiceProvider::getTicketContextService($client)->execute((int) $m[1]), JSON_UNESCAPED_SLASHES);
+        echo json_encode(
+            CopilotServiceProvider::getTicketContextService($client)->execute((int) $m[1]),
+            JSON_UNESCAPED_SLASHES
+        );
         return;
     }
 
     \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(404);
     echo json_encode(['error' => 'not_found']);
-} catch (\JsonException|\InvalidArgumentException $e) {
+} catch (\JsonException | \InvalidArgumentException $e) {
     \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(400);
     echo json_encode(['error' => 'invalid_request', 'message' => $e->getMessage()]);
 } catch (\Throwable $e) {

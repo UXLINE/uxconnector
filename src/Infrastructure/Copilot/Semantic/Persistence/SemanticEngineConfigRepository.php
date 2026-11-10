@@ -10,7 +10,9 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Semantic\ValueObject\SemanticEngineCon
 
 final class SemanticEngineConfigRepository implements SemanticEngineConfigRepositoryInterface
 {
-    public function __construct(private readonly SemanticEngineConfigPersistenceMapper $mapper) {}
+    public function __construct(private readonly SemanticEngineConfigPersistenceMapper $mapper)
+    {
+    }
 
     public function save(SemanticEngineConfig $config): SemanticEngineConfig
     {

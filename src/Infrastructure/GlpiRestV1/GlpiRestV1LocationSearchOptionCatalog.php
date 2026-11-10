@@ -20,7 +20,8 @@ final class GlpiRestV1LocationSearchOptionCatalog
         'source_id' => ['id'],
         'full_name' => ['nom complet', 'complete name'],
         'line_number' => ['plugins n de ligne numero de ligne', 'n de ligne numero de ligne', 'numero de ligne'],
-        'caller_name' => ['plugins n de ligne utilisateur', 'n de ligne utilisateur', 'plugins n de ligne nom de l appelant', 'n de ligne nom de l appelant'],
+        'caller_name' => ['plugins n de ligne utilisateur', 'n de ligne utilisateur',
+            'plugins n de ligne nom de l appelant', 'n de ligne nom de l appelant'],
         'status' => ['plugins n de ligne statut', 'n de ligne statut'],
         'operator' => ['plugins n de ligne operateur', 'n de ligne operateur'],
         'billing_account' => ['plugins n de ligne compte facturant', 'n de ligne compte facturant'],
@@ -35,14 +36,16 @@ final class GlpiRestV1LocationSearchOptionCatalog
         'business_creation_date' => ['plugins n de ligne date de creation', 'n de ligne date de creation'],
         'suspension_date' => ['plugins n de ligne date de suspension', 'n de ligne date de suspension'],
         'termination_date' => ['plugins n de ligne date de resiliation', 'n de ligne date de resiliation'],
-        'equipment' => ['plugins n de ligne equipements', 'n de ligne equipements', 'plugins n de ligne equipement', 'n de ligne equipement'],
+        'equipment' => ['plugins n de ligne equipements', 'n de ligne equipements', 'plugins n de ligne equipement',
+            'n de ligne equipement'],
         'equipment_serial' => ['plugins n de ligne n de serie', 'n de ligne n de serie', 'numero de serie'],
         'delivery_date' => ['plugins n de ligne date de remise', 'n de ligne date de remise'],
         'equipment_value' => ['plugins n de ligne tarif equipements', 'n de ligne tarif equipements'],
         'code_rds' => ['plugins n de ligne code rds', 'n de ligne code rds'],
         'comment' => ['plugins n de ligne commentaires', 'n de ligne commentaires'],
         'puk' => ['plugins n de ligne code puk', 'n de ligne code puk', 'code puk'],
-        'sim_number' => ['plugins n de ligne numero de sim', 'n de ligne numero de sim', 'plugins n de ligne n de sim', 'n de ligne n de sim', 'n de sim', 'numero de sim', 'iccid'],
+        'sim_number' => ['plugins n de ligne numero de sim', 'n de ligne numero de sim', 'plugins n de ligne n de sim',
+            'n de ligne n de sim', 'n de sim', 'numero de sim', 'iccid'],
         'renewal_date' => ['plugins n de ligne date de renouvellement', 'n de ligne date de renouvellement'],
         'longitude' => ['plugins inpark longitude', 'inpark longitude'],
         'id_base_parcs' => ['plugins inpark idbaseparcs', 'inpark idbaseparcs'],
@@ -136,7 +139,9 @@ final class GlpiRestV1LocationSearchOptionCatalog
         'site_code' => 'Code Site',
     ];
 
-    public function __construct(private readonly HttpEngineInterface $httpEngine) {}
+    public function __construct(private readonly HttpEngineInterface $httpEngine)
+    {
+    }
 
     /** @return array<string,int> */
     public function resolve(AuthConfig $authConfig): array
@@ -162,9 +167,15 @@ final class GlpiRestV1LocationSearchOptionCatalog
     /** @return array<string|int,mixed> */
     private function fetchOptions(AuthConfig $authConfig): array
     {
-        $response = $this->httpEngine->execute($authConfig, new HttpRequest(HttpMethod::GET, '/listSearchOptions/Location'));
+        $response = $this->httpEngine->execute($authConfig, new HttpRequest(
+            HttpMethod::GET,
+            '/listSearchOptions/Location'
+        ));
         if (!$response->isSuccessful()) {
-            throw new \RuntimeException(sprintf('GLPI source returned HTTP %d for listSearchOptions/Location.', $response->statusCode));
+            throw new \RuntimeException(sprintf(
+                'GLPI source returned HTTP %d for listSearchOptions/Location.',
+                $response->statusCode
+            ));
         }
         $decoded = json_decode($response->body, true, flags: JSON_THROW_ON_ERROR);
         if (!is_array($decoded)) {
@@ -186,7 +197,8 @@ final class GlpiRestV1LocationSearchOptionCatalog
         if ($diagnostic['ambiguous'] !== []) {
             $logical = array_key_first($diagnostic['ambiguous']);
             throw new \RuntimeException(sprintf(
-                'Ambiguous GLPI Location search option for %s (candidate IDs: %s). Resolve the source Fields configuration before migration.',
+                'Ambiguous GLPI Location search option for %s (candidate IDs: %s). Resolve the source '
+                    . 'Fields configuration before migration.',
                 $logical,
                 implode(', ', $diagnostic['ambiguous'][$logical]),
             ));
@@ -195,7 +207,10 @@ final class GlpiRestV1LocationSearchOptionCatalog
         $required = ['source_id', 'full_name', 'line_number'];
         $missing = array_values(array_filter($required, static fn(string $name): bool => !isset($resolved[$name])));
         if ($missing !== []) {
-            throw new \RuntimeException('Unable to resolve required GLPI Location search options: ' . implode(', ', $missing) . '.');
+            throw new \RuntimeException('Unable to resolve required GLPI Location search options: ' . implode(
+                ', ',
+                $missing
+            ) . '.');
         }
         return $resolved;
     }
@@ -225,7 +240,9 @@ final class GlpiRestV1LocationSearchOptionCatalog
             $group = self::normalizeMetadata($option['groupname'] ?? $option['group'] ?? '');
             $combined = trim($group . ' ' . $name);
             $metadata = implode(' ', array_map(
-                static fn(string $key): string => self::normalize(is_scalar($option[$key] ?? null) ? (string) $option[$key] : ''),
+                static fn(string $key): string => self::normalize(
+                    is_scalar($option[$key] ?? null) ? (string) $option[$key] : ''
+                ),
                 ['table', 'field', 'linkfield', 'name', 'groupname', 'group'],
             ));
             $metadataCompact = str_replace(' ', '', $metadata);
@@ -261,7 +278,12 @@ final class GlpiRestV1LocationSearchOptionCatalog
                 }
                 if (isset(self::SOURCE_XML_NODES[$logical])) {
                     $technical = str_replace(' ', '', self::normalize(self::SOURCE_XML_NODES[$logical]));
-                    if ($fieldCompact === $technical || ($technical !== '' && str_ends_with($fieldCompact, $technical))) {
+                    if (
+                        $fieldCompact === $technical || ($technical !== '' && str_ends_with(
+                            $fieldCompact,
+                            $technical
+                        ))
+                    ) {
                         $score = $blockMatch ? 115 : 100;
                     } elseif ($isFields && $technical !== '' && str_contains($metadataCompact, $technical)) {
                         $score = $blockMatch ? 112 : 95;
@@ -271,9 +293,13 @@ final class GlpiRestV1LocationSearchOptionCatalog
                     // Compare stable technical metadata, never numeric IDs.
                     // Do not accept a conflicting block prefix.
                     $expectedDropdownTable = self::expectedDropdownTable(self::SOURCE_XML_NODES[$logical]);
-                    if ($isFields && $expectedDropdownTable !== null
+                    if (
+                        $isFields && $expectedDropdownTable !== null
                         && str_replace(' ', '', $table) === $expectedDropdownTable
-                        && ($blockMatch || ($nameBlock === null && $name === self::normalize(self::SOURCE_LABELS[$logical])))) {
+                        && ($blockMatch || ($nameBlock === null && $name === self::normalize(
+                            self::SOURCE_LABELS[$logical]
+                        )))
+                    ) {
                         $score = max($score, $blockMatch ? 125 : 105);
                     }
                 }
@@ -289,8 +315,10 @@ final class GlpiRestV1LocationSearchOptionCatalog
                     }
                 }
                 foreach ($aliases as $alias) {
-                    if (($isFields || $blockMatch || $logical === 'full_name')
-                        && ($name === $alias || $combined === $alias || str_ends_with($combined, ' ' . $alias))) {
+                    if (
+                        ($isFields || $blockMatch || $logical === 'full_name')
+                        && ($name === $alias || $combined === $alias || str_ends_with($combined, ' ' . $alias))
+                    ) {
                         $score = max($score, $isFields ? 80 : ($blockMatch ? 90 : 45));
                         break;
                     }
@@ -323,7 +351,9 @@ final class GlpiRestV1LocationSearchOptionCatalog
                 $ambiguous[$logical] = $ids;
             }
         }
-        $missing = array_values(array_diff(array_keys(self::SOURCE_XML_NODES), array_keys($resolved), array_keys($ambiguous)));
+        $missing = array_values(array_diff(array_keys(self::SOURCE_XML_NODES), array_keys($resolved), array_keys(
+            $ambiguous
+        )));
         return compact('resolved', 'ambiguous', 'missing') + ['candidates' => $candidateOptions, 'total' => $total];
     }
 
@@ -429,7 +459,8 @@ final class GlpiRestV1LocationSearchOptionCatalog
         if ($missing !== []) {
             throw new \RuntimeException(
                 'Missing source GLPI 10 Location search options: ' . implode(', ', $missing)
-                . '. Check /listSearchOptions/Location, source Fields configuration and API permissions before running the INDIGO telecom job.',
+                . '. Check /listSearchOptions/Location, source Fields configuration and API permissions '
+                    . 'before running the INDIGO telecom job.',
             );
         }
     }
@@ -474,7 +505,10 @@ final class GlpiRestV1LocationSearchOptionCatalog
     private static function normalize(string $value): string
     {
         $value = trim(function_exists('mb_strtolower') ? mb_strtolower($value) : strtolower($value));
-        $value = strtr($value, ['°' => '', 'n°' => 'n', 'nº' => 'n', 'é' => 'e','è' => 'e','ê' => 'e','ë' => 'e','à' => 'a','â' => 'a','ä' => 'a','î' => 'i','ï' => 'i','ô' => 'o','ö' => 'o','ù' => 'u','û' => 'u','ü' => 'u','ç' => 'c','œ' => 'oe', 'É' => 'e', 'È' => 'e', 'Ê' => 'e', 'À' => 'a', 'Â' => 'a', 'Î' => 'i', 'Ô' => 'o', 'Ù' => 'u', 'Ç' => 'c']);
+        $value = strtr($value, ['°' => '', 'n°' => 'n', 'nº' => 'n', 'é' => 'e','è' => 'e','ê' => 'e','ë' => 'e',
+                'à' => 'a','â' => 'a','ä' => 'a','î' => 'i','ï' => 'i','ô' => 'o','ö' => 'o','ù' => 'u','û' => 'u',
+                'ü' => 'u','ç' => 'c','œ' => 'oe', 'É' => 'e', 'È' => 'e', 'Ê' => 'e', 'À' => 'a', 'Â' => 'a',
+                'Î' => 'i', 'Ô' => 'o', 'Ù' => 'u', 'Ç' => 'c']);
         $value = preg_replace('/[^a-z0-9]+/u', ' ', $value) ?? $value;
         return trim(preg_replace('/\s+/', ' ', $value) ?? $value);
     }

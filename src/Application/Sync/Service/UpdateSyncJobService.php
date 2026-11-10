@@ -21,7 +21,8 @@ final class UpdateSyncJobService
         private readonly AuthConfigRepositoryInterface $authConfigRepository,
         private readonly TargetFieldPolicy $targetFieldPolicy,
         private readonly TransactionManagerInterface $transaction
-    ) {}
+    ) {
+    }
 
     public function execute(UpdateSyncJobCommand $command): SyncJob
     {

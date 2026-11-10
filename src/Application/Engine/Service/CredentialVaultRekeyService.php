@@ -23,7 +23,8 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Security\CredentialVaultInterface;
  * Re-encrypts every stored AuthConfig secret from an old
  * CredentialVaultInterface to a new one.
  *
- * CORRECTIF SÉCURITÉ (revue de code externe) : UXConnector delegates credential encryption to GLPIKey. In normal runtime,
+ * CORRECTIF SÉCURITÉ (revue de code externe) : UXConnector delegates credential encryption to GLPIKey. In normal
+ * runtime,
  * GLPI's `security:change_key` command handles rotation because the plugin
  * declares its encrypted database field through `secured_fields`. This
  * service remains available only for explicit maintenance/migration cases.
@@ -43,10 +44,13 @@ final class CredentialVaultRekeyService
     public function __construct(
         private readonly AuthConfigRepositoryInterface $authConfigRepository,
         private readonly AuthConfigSecretStoreInterface $secretStore
-    ) {}
+    ) {
+    }
 
-    public function execute(CredentialVaultInterface $oldVault, CredentialVaultInterface $newVault): CredentialVaultRekeyResult
-    {
+    public function execute(
+        CredentialVaultInterface $oldVault,
+        CredentialVaultInterface $newVault
+    ): CredentialVaultRekeyResult {
         $rotated = 0;
         $skipped = 0;
         $failed = 0;

@@ -43,5 +43,6 @@ final readonly class CreateAuthConfigCommand
         public ?string $plaintextSecret = null,
         public ?TestPath $testPath = null,
         public string $connectorId = 'custom'
-    ) {}
+    ) {
+    }
 }

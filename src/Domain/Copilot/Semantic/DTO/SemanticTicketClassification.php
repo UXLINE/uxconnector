@@ -31,7 +31,8 @@ final readonly class SemanticTicketClassification
             throw new \InvalidArgumentException('Semantic classification confidence must be between 0 and 1.');
         }
 
-        if ($this->reasonCode === ''
+        if (
+            $this->reasonCode === ''
              || strlen($this->reasonCode) > 64
              || preg_match('/^[a-z0-9][a-z0-9_]*$/D', $this->reasonCode) !== 1
         ) {

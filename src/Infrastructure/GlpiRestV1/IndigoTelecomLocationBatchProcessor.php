@@ -36,7 +36,8 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         private readonly GlpiRestV1LocationSearchOptionCatalog $catalog,
         private readonly ObjectLinkRepositoryInterface $objectLinks,
         private readonly GlpiTargetFieldsWriter $fieldsWriter
-    ) {}
+    ) {
+    }
 
     public function supports(SyncJob $syncJob): bool
     {
@@ -100,12 +101,33 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
                 }
 
                 if ($lineNumber !== '') {
-                    [$action, $lineId, $recordWarnings] = $this->upsertLine($item, $map, $syncJob, $sourceId, $executionId, $page, $cursor, $failureRepository);
+                    [$action, $lineId, $recordWarnings] = $this->upsertLine(
+                        $item,
+                        $map,
+                        $syncJob,
+                        $sourceId,
+                        $executionId,
+                        $page,
+                        $cursor,
+                        $failureRepository
+                    );
                     $warnings += $recordWarnings;
-                    $this->rememberLink($syncJob, $sourceId, TargetItemtype::LINE, $lineId, 'glpi_rest_v1_location_telecom_line');
+                    $this->rememberLink(
+                        $syncJob,
+                        $sourceId,
+                        TargetItemtype::LINE,
+                        $lineId,
+                        'glpi_rest_v1_location_telecom_line'
+                    );
                 } else {
                     [$action, $locationId] = $this->upsertLocation($item, $map, $fullName);
-                    $this->rememberLink($syncJob, $sourceId, TargetItemtype::LOCATION, $locationId, 'glpi_rest_v1_location_telecom_site');
+                    $this->rememberLink(
+                        $syncJob,
+                        $sourceId,
+                        TargetItemtype::LOCATION,
+                        $locationId,
+                        'glpi_rest_v1_location_telecom_site'
+                    );
                 }
                 $processed++;
                 match ($action) {
@@ -194,7 +216,11 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         }
 
         $stateId = $this->resolveDropdown('glpi_states', '\\State', $this->value($row, $map, 'status'));
-        $operatorId = $this->resolveDropdown('glpi_lineoperators', '\\LineOperator', $this->value($row, $map, 'operator'));
+        $operatorId = $this->resolveDropdown('glpi_lineoperators', '\\LineOperator', $this->value(
+            $row,
+            $map,
+            'operator'
+        ));
         $data = $this->nonEmpty([
             'name' => $number,
             'caller_num' => $number,
@@ -263,14 +289,34 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
             $equipment = $this->upsertEquipment($row, $map, $locationId);
         } catch (\Throwable $e) {
             $recordWarnings++;
-            $this->recordEnrichmentWarning($syncJob, $sourceId, $id, 'equipment', $e, $executionId, $page, $cursor, $failureRepository);
+            $this->recordEnrichmentWarning(
+                $syncJob,
+                $sourceId,
+                $id,
+                'equipment',
+                $e,
+                $executionId,
+                $page,
+                $cursor,
+                $failureRepository
+            );
         }
         if ($equipment !== null) {
             try {
                 $this->linkEquipmentToLine($equipment, $id);
             } catch (\Throwable $e) {
                 $recordWarnings++;
-                $this->recordEnrichmentWarning($syncJob, $sourceId, $id, 'equipment_link', $e, $executionId, $page, $cursor, $failureRepository);
+                $this->recordEnrichmentWarning(
+                    $syncJob,
+                    $sourceId,
+                    $id,
+                    'equipment_link',
+                    $e,
+                    $executionId,
+                    $page,
+                    $cursor,
+                    $failureRepository
+                );
             }
         }
         $rawDeliveryDate = $this->value($row, $map, 'delivery_date');
@@ -288,14 +334,34 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
                 $this->upsertInfocom($equipment['itemtype'], $equipment['id'], $deliveryDate, $equipmentValue);
             } catch (\Throwable $e) {
                 $recordWarnings++;
-                $this->recordEnrichmentWarning($syncJob, $sourceId, $id, 'financial', $e, $executionId, $page, $cursor, $failureRepository);
+                $this->recordEnrichmentWarning(
+                    $syncJob,
+                    $sourceId,
+                    $id,
+                    'financial',
+                    $e,
+                    $executionId,
+                    $page,
+                    $cursor,
+                    $failureRepository
+                );
             }
         }
         try {
             $this->upsertSimcard($row, $map, $locationId, $id, $equipment);
         } catch (\Throwable $e) {
             $recordWarnings++;
-            $this->recordEnrichmentWarning($syncJob, $sourceId, $id, 'simcard', $e, $executionId, $page, $cursor, $failureRepository);
+            $this->recordEnrichmentWarning(
+                $syncJob,
+                $sourceId,
+                $id,
+                'simcard',
+                $e,
+                $executionId,
+                $page,
+                $cursor,
+                $failureRepository
+            );
         }
 
         return [$action, $id, $recordWarnings];
@@ -406,7 +472,8 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         $itemtype = $isNetwork ? 'NetworkEquipment' : 'Phone';
         $existing = $serial !== '' ? $this->firstRow($table, ['serial' => $serial]) : null;
         $existing ??= $this->firstRow($table, ['name' => $label, 'locations_id' => $locationId]);
-        $data = $this->nonEmpty(['name' => $label !== '' ? $label : $serial, 'serial' => $serial, 'locations_id' => $locationId]);
+        $data = $this->nonEmpty(['name' => $label !== '' ? $label : $serial, 'serial' => $serial,
+                'locations_id' => $locationId]);
         $obj = \GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\NativeItemFactory::create($class);
         if ($existing === null) {
             $equipmentId = (int) $obj->add($data + ['entities_id' => 0]);
@@ -480,7 +547,8 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         $existing = $this->firstRow('glpi_items_devicesimcards', ['serial' => $serial]);
         // A SIM may be moved between equipment, but we never silently steal a
         // card already attached to a different line: investigate that conflict.
-        if ($existing !== null && (int) ($existing['lines_id'] ?? 0) > 0
+        if (
+            $existing !== null && (int) ($existing['lines_id'] ?? 0) > 0
             && (int) $existing['lines_id'] !== $lineId
         ) {
             throw new TelecomEnrichmentException('SIM_ALREADY_ATTACHED_TO_OTHER_LINE');
@@ -494,7 +562,8 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         if ($puk !== '') {
             // GLPI protects PIN/PUK behind an additional right; never report a
             // successful import if that right is missing and GLPI drops it.
-            if (class_exists('Session') && defined('UPDATE')
+            if (
+                class_exists('Session') && defined('UPDATE')
                 && !\Session::haveRightsOr('devicesimcard_pinpuk', [UPDATE])
             ) {
                 throw new TelecomEnrichmentException('SIM_PUK_WRITE_RIGHT_MISSING');
@@ -534,7 +603,8 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
             return;
         }
         $existing = $this->firstRow('glpi_infocoms', ['itemtype' => $itemtype, 'items_id' => $itemId]);
-        $data = $this->nonEmpty(['itemtype' => $itemtype, 'items_id' => $itemId, 'delivery_date' => $deliveryDate, 'value' => $value]);
+        $data = $this->nonEmpty(['itemtype' => $itemtype, 'items_id' => $itemId, 'delivery_date' => $deliveryDate,
+                'value' => $value]);
         $obj = new \Infocom();
         if ($existing === null) {
             if (!$obj->add($data)) {
@@ -548,8 +618,13 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         }
     }
 
-    private function rememberLink(SyncJob $job, string $sourceId, TargetItemtype $type, int $itemId, string $externalType): void
-    {
+    private function rememberLink(
+        SyncJob $job,
+        string $sourceId,
+        TargetItemtype $type,
+        int $itemId,
+        string $externalType
+    ): void {
         $jobId = $job->id();
         if ($jobId === null) {
             return;
@@ -568,7 +643,14 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
                 $this->objectLinks->delete($existing->id());
             }
         }
-        $this->objectLinks->save(ObjectLink::create($jobId, $job->authConfigReference(), $externalId, $type, $itemId, $externalType));
+        $this->objectLinks->save(ObjectLink::create(
+            $jobId,
+            $job->authConfigReference(),
+            $externalId,
+            $type,
+            $itemId,
+            $externalType
+        ));
     }
 
     private function resolveDropdown(string $table, string $class, string $name): int
@@ -640,10 +722,16 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         }
         // Formats observed in GLPI 10, GLPI exports and REST fields.
         // DateTime may silently roll invalid dates forward; reject such input.
-        foreach (['!d/m/Y', '!d-m-Y', '!d.m.Y', '!Y-m-d', '!Y-m-d H:i:s', '!Y-m-d H:i:s.u', '!Y-m-d\TH:i:sP', '!Y-m-d\TH:i:s.uP'] as $format) {
+        foreach (
+            ['!d/m/Y', '!d-m-Y', '!d.m.Y', '!Y-m-d', '!Y-m-d H:i:s', '!Y-m-d H:i:s.u', '!Y-m-d\TH:i:sP',
+                '!Y-m-d\TH:i:s.uP'] as $format
+        ) {
             $date = \DateTimeImmutable::createFromFormat($format, $value);
             $errors = \DateTimeImmutable::getLastErrors();
-            if ($date instanceof \DateTimeImmutable && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))) {
+            if (
+                $date instanceof \DateTimeImmutable && ($errors === false || (
+                        $errors['warning_count'] === 0 && $errors['error_count'] === 0))
+            ) {
                 return $date->format('Y-m-d');
             }
         }

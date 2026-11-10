@@ -14,21 +14,24 @@ final readonly class SemanticEngineConnectionValidator
 
     public function __construct(
         private AuthConfigRepositoryInterface $authConfigs
-    ) {}
+    ) {
+    }
 
     public function requireCompatible(AuthConfigId $id): AuthConfig
     {
         $connection = $this->authConfigs->findById($id);
 
         if ($connection === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigurationException::unknownAuthConfig($id);
+            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigurationException
+                ::unknownAuthConfig($id);
         }
 
         if ($connection->connectorId() !== self::CONNECTOR_ID) {
-            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigurationException::incompatibleConnector(
-                $id,
-                $connection->connectorId(),
-            );
+            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigurationException
+                ::incompatibleConnector(
+                    $id,
+                    $connection->connectorId(),
+                );
         }
 
         return $connection;
@@ -39,10 +42,11 @@ final readonly class SemanticEngineConnectionValidator
         $connection = $this->requireCompatible($id);
 
         if (!$connection->isUsable()) {
-            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigurationException::inactiveAuthConfig(
-                $id,
-                $connection->status()->value,
-            );
+            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigurationException
+                ::inactiveAuthConfig(
+                    $id,
+                    $connection->status()->value,
+                );
         }
 
         return $connection;

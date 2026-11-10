@@ -18,7 +18,8 @@ final class PaginationConfigRequestParser
         }
 
         $options = [];
-        foreach ([
+        foreach (
+            [
             'cursor_response_path',
             'cursor_request_parameter',
             'last_page_response_path',
@@ -28,7 +29,8 @@ final class PaginationConfigRequestParser
             'page_size',
             'total_response_path',
             'next_link_response_path',
-        ] as $key) {
+            ] as $key
+        ) {
             $value = trim((string) ($request[$key] ?? ''));
             if ($value !== '') {
                 $options[$key] = $value;

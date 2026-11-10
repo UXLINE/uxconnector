@@ -17,7 +17,8 @@ final class SyncExecutionController extends AbstractController
         private readonly ListSyncFailuresService $listFailures,
         private readonly ResumeSyncExecutionService $resumeExecution,
         private readonly RetryFailedItemsService $retryFailedItems
-    ) {}
+    ) {
+    }
 
     public function showFailures(array $request): void
     {
@@ -25,7 +26,8 @@ final class SyncExecutionController extends AbstractController
         $this->render('sync/syncexecution/failures.html.twig', [
             'executionId' => $id->value(),
             'failures' => $this->listFailures->execute($id),
-            'can_update' => Session::haveRight('plugin_uxconnector_syncjob', UPDATE),
+            'can_update' => Session::haveRight('plugin_uxconnector_syncjob', UPDATE)
+                && $this->retryFailedItems->canRetry($id),
         ]);
     }
 
@@ -33,7 +35,10 @@ final class SyncExecutionController extends AbstractController
     {
         try {
             $execution = $this->resumeExecution->execute(new SyncExecutionId((int) ($request['id'] ?? 0)));
-            Session::addMessageAfterRedirect(sprintf(__('Execution #%d queued for resume.', 'uxconnector'), $execution->id()?->value() ?? 0));
+            Session::addMessageAfterRedirect(sprintf(
+                __('Execution #%d queued for resume.', 'uxconnector'),
+                $execution->id()?->value() ?? 0
+            ));
         } catch (\Throwable $e) {
             Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
         }
@@ -66,9 +71,13 @@ final class SyncExecutionController extends AbstractController
             throw new \RuntimeException('Unable to open CSV output.');
         }
         fwrite($out, "\xEF\xBB\xBF");
-        fputcsv($out, ['Execution ID','Source type','Source ID','Source label','Target type','Target ID','Action','Status','Error category','Error code','Error message','Technical context','Attempt','Page','Cursor','Timestamp','Retry status'], ';');
+        fputcsv($out, ['Execution ID','Source type','Source ID','Source label','Target type','Target ID','Action',
+                'Status','Error category','Error code','Error message','Technical context','Attempt','Page','Cursor',
+                'Timestamp','Retry status'], ';');
         foreach ($failures as $f) {
-            fputcsv($out, [$id->value(),$f->sourceType,$f->sourceId,$f->sourceLabel,$f->targetType,$f->targetId,$f->action,$f->status,$f->category->value,$f->errorCode,$f->errorMessage,$f->technicalContext,$f->attempt,$f->page,$f->cursor,$f->createdAt,$f->retryStatus], ';');
+            fputcsv($out, [$id->value(),$f->sourceType,$f->sourceId,$f->sourceLabel,$f->targetType,$f->targetId,
+                    $f->action,$f->status,$f->category->value,$f->errorCode,$f->errorMessage,$f->technicalContext,
+                    $f->attempt,$f->page,$f->cursor,$f->createdAt,$f->retryStatus], ';');
         }
         fclose($out);
         return;

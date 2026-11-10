@@ -88,11 +88,17 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             'resolution_rate_percent' => $this->coverage($resolved, $opened),
             'period_observation' => $this->periodObservation($criteria),
             'metric_definitions' => [
-                'active_backlog' => 'Tickets opened in the requested period that are currently neither solved nor closed. This is not a historical end-of-period backlog snapshot.',
-                'average_time_to_own' => 'Average GLPI take-into-account duration for tickets where that duration is evaluable.',
-                'average_time_to_resolve' => 'Average GLPI solve duration for currently solved/closed tickets where that duration is evaluable.',
-                'time_to_resolve_coverage_percent' => 'Share of currently solved/closed tickets in the period that have an evaluable resolution duration. This is a data-quality coverage rate, not the resolution rate.',
-                'resolution_rate_percent' => 'Share of tickets opened in the requested period that are currently solved or closed.',
+                'active_backlog' => 'Tickets opened in the requested period that are currently neither solved nor '
+                    . 'closed. This is not a historical end-of-period backlog snapshot.',
+                'average_time_to_own' => 'Average GLPI take-into-account duration for tickets where that duration '
+                    . 'is evaluable.',
+                'average_time_to_resolve' => 'Average GLPI solve duration for currently solved/closed tickets '
+                    . 'where that duration is evaluable.',
+                'time_to_resolve_coverage_percent' => 'Share of currently solved/closed tickets in the period '
+                    . 'that have an evaluable resolution duration. This is a data-quality coverage rate, not the '
+                    . 'resolution rate.',
+                'resolution_rate_percent' => 'Share of tickets opened in the requested period that are currently '
+                    . 'solved or closed.',
             ],
         ];
     }
@@ -160,7 +166,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             'series' => $seriesList,
             'metric_definitions' => [
                 'opened' => 'Tickets whose creation date falls inside the bucket.',
-                'resolved' => 'Tickets whose GLPI solve/close date falls inside the bucket, including tickets created before the requested period.',
+                'resolved' => 'Tickets whose GLPI solve/close date falls inside the bucket, including tickets '
+                    . 'created before the requested period.',
                 'incidents' => 'Incident tickets opened inside the bucket.',
                 'requests' => 'Request tickets opened inside the bucket.',
             ],
@@ -228,7 +235,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         return [
             'period' => $this->period($criteria),
             'categories' => array_slice($stats, 0, $limit),
-            'note' => 'A null average means no evaluable resolution-duration sample; it is different from a real 0-second resolution.',
+            'note' => 'A null average means no evaluable resolution-duration sample; it is different from a real '
+                . '0-second resolution.',
         ];
     }
 
@@ -249,7 +257,10 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             $id = (int) ($row['id'] ?? 0);
             $created = $this->timestamp($row['date'] ?? $row['date_creation'] ?? null);
             $assignedAt = $this->timestamp($row['takeintoaccountdate'] ?? null);
-            if ($assignedAt === null && $created !== null && isset($row['takeintoaccount_delay_stat']) && is_numeric($row['takeintoaccount_delay_stat'])) {
+            if (
+                $assignedAt === null && $created !== null
+                && isset($row['takeintoaccount_delay_stat']) && is_numeric($row['takeintoaccount_delay_stat'])
+            ) {
                 $delay = (int) $row['takeintoaccount_delay_stat'];
                 if ($delay >= 0) {
                     $assignedAt = $created + $delay;
@@ -279,7 +290,9 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             'tto' => $tto,
             'ttr' => $ttr,
             'breaches' => array_slice($breaches, 0, max(1, min(100, (int) ($criteria['limit'] ?? 25)))),
-            'note' => 'Compliance rate is calculated only on tickets with a parseable GLPI SLA deadline and a completed actual TTO/TTR. Open tickets with a deadline are reported separately as currently_breached/currently_within_deadline.',
+            'note' => 'Compliance rate is calculated only on tickets with a parseable GLPI SLA deadline and a '
+                . 'completed actual TTO/TTR. Open tickets with a deadline are reported separately as '
+                . 'currently_breached/currently_within_deadline.',
         ];
     }
 
@@ -385,14 +398,19 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         }
         unset($row);
 
-        usort($stats, static fn(array $a, array $b): int => ($b['active_backlog'] <=> $a['active_backlog']) ?: ($b['tickets'] <=> $a['tickets']));
+        usort(
+            $stats,
+            static fn(array $a, array $b): int =>
+                ($b['active_backlog'] <=> $a['active_backlog']) ?: ($b['tickets'] <=> $a['tickets'])
+        );
         return [
             'period' => $this->period($criteria),
             'unique_tickets_with_group' => $withGroup,
             'tickets_without_group' => $withoutGroup,
             'multi_group_tickets' => $multiGroup,
             'groups' => $stats,
-            'note' => 'Group rows are not additive when a ticket is assigned to multiple groups. Top-level unique/multi-group counters describe that overlap.',
+            'note' => 'Group rows are not additive when a ticket is assigned to multiple groups. Top-level '
+                . 'unique/multi-group counters describe that overlap.',
         ];
     }
 
@@ -481,11 +499,20 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             $avgTask = $row['tasks'] > 0 ? (int) round($row['task_work_seconds'] / $row['tasks']) : null;
             $row['average_task_duration_seconds'] = $avgTask;
             $row['average_task_duration_human'] = $this->humanDuration($avgTask);
-            unset($row['assigned_ticket_ids'], $row['intervened_ticket_ids'], $row['active_backlog_ticket_ids'], $row['resolved_or_closed_ticket_ids']);
+            unset(
+                $row['assigned_ticket_ids'],
+                $row['intervened_ticket_ids'],
+                $row['active_backlog_ticket_ids'],
+                $row['resolved_or_closed_ticket_ids']
+            );
         }
         unset($row);
 
-        usort($stats, static fn(array $a, array $b): int => ($b['active_backlog'] <=> $a['active_backlog']) ?: ($b['task_work_seconds'] <=> $a['task_work_seconds']));
+        usort(
+            $stats,
+            static fn(array $a, array $b): int =>
+                ($b['active_backlog'] <=> $a['active_backlog']) ?: ($b['task_work_seconds'] <=> $a['task_work_seconds'])
+        );
         return [
             'period' => $this->period($criteria),
             'unique_tickets_with_assignee' => count($uniqueAssignedTickets),
@@ -493,7 +520,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             'multi_assignee_tickets' => $multiAssigneeTickets,
             'excluded_user_ids' => array_values(array_map('intval', array_keys($excludedUserIds))),
             'technicians' => $stats,
-            'note' => 'assigned_tickets counts ticket assignment; intervened_tickets counts distinct tickets on which the technician performed a task. No user is excluded automatically.',
+            'note' => 'assigned_tickets counts ticket assignment; intervened_tickets counts distinct tickets on '
+                . 'which the technician performed a task. No user is excluded automatically.',
         ];
     }
 
@@ -508,7 +536,15 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         $b = is_array($criteria['period_b'] ?? null) ? $criteria['period_b'] : [];
         $summaryA = $this->ticketSummary($a);
         $summaryB = $this->ticketSummary($b);
-        $metrics = ['total', 'incidents', 'requests', 'resolved_or_closed', 'active_backlog', 'average_time_to_own_seconds', 'average_time_to_resolve_seconds'];
+        $metrics = [
+            'total',
+            'incidents',
+            'requests',
+            'resolved_or_closed',
+            'active_backlog',
+            'average_time_to_own_seconds',
+            'average_time_to_resolve_seconds'
+        ];
         $delta = [];
         foreach ($metrics as $metric) {
             $left = $summaryA[$metric] ?? null;
@@ -525,23 +561,35 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         }
 
         $warnings = [];
-        foreach ([
+        foreach (
+            [
             'time_to_own' => 'time_to_own_sample_size',
             'time_to_resolve' => 'time_to_resolve_sample_size',
-        ] as $label => $sampleField) {
+            ] as $label => $sampleField
+        ) {
             $sampleA = (int) ($summaryA[$sampleField] ?? 0);
             $sampleB = (int) ($summaryB[$sampleField] ?? 0);
             if ($sampleA === 0 || $sampleB === 0) {
-                $warnings[] = sprintf('%s comparison is not reliable because one period has no evaluable sample.', $label);
+                $warnings[] = sprintf(
+                    '%s comparison is not reliable because one period has no evaluable sample.',
+                    $label
+                );
             } elseif ($sampleA < 5 || $sampleB < 5) {
-                $warnings[] = sprintf('%s comparison is based on a small sample in at least one period (%d vs %d).', $label, $sampleA, $sampleB);
+                $warnings[] = sprintf(
+                    '%s comparison is based on a small sample in at least one period (%d vs %d).',
+                    $label,
+                    $sampleA,
+                    $sampleB
+                );
             }
         }
 
         $observationA = is_array($summaryA['period_observation'] ?? null) ? $summaryA['period_observation'] : [];
         $observationB = is_array($summaryB['period_observation'] ?? null) ? $summaryB['period_observation'] : [];
         if (($observationA['is_partial'] ?? false) || ($observationB['is_partial'] ?? false)) {
-            $warnings[] = 'At least one compared period is still in progress or extends beyond the current date. Raw totals are not directly comparable to a completed period; prefer normalized daily rates or compare equally elapsed windows.';
+            $warnings[] = 'At least one compared period is still in progress or extends beyond the current date. '
+                . 'Raw totals are not directly comparable to a completed period; prefer normalized daily rates or '
+                . 'compare equally elapsed windows.';
         }
 
         $dailyRates = [
@@ -555,7 +603,9 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             'delta_b_vs_a' => $delta,
             'warnings' => array_values(array_unique($warnings)),
             'normalized_daily_rates' => $dailyRates,
-            'note' => 'active_backlog compares the current status of tickets opened in each period; it is not a historical backlog snapshot at each period end. When a period is partial, use normalized_daily_rates or compare equally elapsed windows instead of raw monthly totals.',
+            'note' => 'active_backlog compares the current status of tickets opened in each period; it is not a '
+                . 'historical backlog snapshot at each period end. When a period is partial, use '
+                . 'normalized_daily_rates or compare equally elapsed windows instead of raw monthly totals.',
         ];
     }
 
@@ -587,7 +637,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             $result[$ticketId] = [];
         }
 
-        if (!$DB->tableExists('glpi_groups_tickets')
+        if (
+            !$DB->tableExists('glpi_groups_tickets')
              || !$DB->tableExists('glpi_groups')
         ) {
             return $result;
@@ -596,14 +647,16 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         $groupIdsByTicket = [];
         $wantedGroupIds = [];
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'SELECT' => ['tickets_id', 'groups_id'],
             'FROM' => 'glpi_groups_tickets',
             'WHERE' => [
                 'type' => 2,
                 'tickets_id' => $ticketIds,
             ],
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -611,7 +664,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             $ticketId = (int) ($row['tickets_id'] ?? 0);
             $groupId = (int) ($row['groups_id'] ?? 0);
 
-            if ($ticketId <= 0
+            if (
+                $ticketId <= 0
                  || $groupId <= 0
                  || !array_key_exists($ticketId, $result)
             ) {
@@ -628,13 +682,15 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
 
         $groupNames = [];
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'SELECT' => ['id', 'name'],
             'FROM' => 'glpi_groups',
             'WHERE' => [
                 'id' => array_map('intval', array_keys($wantedGroupIds)),
             ],
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -702,7 +758,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             return $result;
         }
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'SELECT' => [
                 'id',
                 'items_id',
@@ -724,7 +781,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                 'date_mod ASC',
                 'id ASC',
             ],
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -737,7 +795,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             $result['group_logs'][$ticketId][] = $row;
         }
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'SELECT' => [
                 'id',
                 'items_id',
@@ -756,7 +815,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                 'date_mod ASC',
                 'id ASC',
             ],
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -983,9 +1043,11 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         $groups = [];
         $exactMatchCount = 0;
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'FROM' => 'glpi_groups',
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -1000,7 +1062,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
              * Incidentologue targets technical assignment groups.
              * GLPI marks assignable groups with is_assign.
              */
-            if (array_key_exists('is_assign', $row)
+            if (
+                array_key_exists('is_assign', $row)
                 && (int) $row['is_assign'] !== 1
             ) {
                 continue;
@@ -1034,7 +1097,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
              )
             );
 
-            if ($needle !== ''
+            if (
+                $needle !== ''
                 && !$exactMatch
                 && !str_contains(
                     $normalizedName,
@@ -1208,7 +1272,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
 
             $initialGroup = $attribution['initial_assignment_group'] ?? null;
 
-            if (is_array($initialGroup)
+            if (
+                is_array($initialGroup)
                  && (int) ($initialGroup['id'] ?? 0) === $groupId
             ) {
                 $scopeTickets[] = $ticket;
@@ -1418,7 +1483,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                     $ticketEntityId =
                         (int) ($uxTicket['ticket_entity_id'] ?? 0);
 
-                    if ($supportSourceEntityId !== null
+                    if (
+                        $supportSourceEntityId !== null
                          && (int) $supportSourceEntityId !== $ticketEntityId
                     ) {
                         $uxInheritedSupportLevelTickets++;
@@ -1435,14 +1501,16 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                     $ticketEntityId =
                         (int) ($uxTicket['ticket_entity_id'] ?? 0);
 
-                    if ($targetSourceEntityId !== null
+                    if (
+                        $targetSourceEntityId !== null
                          && (int) $targetSourceEntityId !== $ticketEntityId
                     ) {
                         $uxInheritedTargetTickets++;
                     }
                 }
 
-                if (is_array($uxTicket['invalid_target_overrides'] ?? null)
+                if (
+                    is_array($uxTicket['invalid_target_overrides'] ?? null)
                       && $uxTicket['invalid_target_overrides'] !== []
                 ) {
                     $uxTicketsWithInvalidTargetOverride++;
@@ -1476,7 +1544,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
 
             $resolutionGroup = $attribution['resolution_group'] ?? null;
 
-            if (is_array($resolutionGroup)
+            if (
+                is_array($resolutionGroup)
                  && (int) ($resolutionGroup['id'] ?? 0) === $groupId
             ) {
                 $resolvedInternally++;
@@ -1598,9 +1667,9 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                                'tickets' => 0,
                            ];
 
-                        $uxCategoryEnrichments[$uxCategoryKey]
-                        ['support_level_sources'][$sourceKey]
-                        ['tickets']++;
+                           $uxCategoryEnrichments[$uxCategoryKey]
+                           ['support_level_sources'][$sourceKey]
+                           ['tickets']++;
                     }
                 }
 
@@ -1648,12 +1717,13 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                             'tickets' => 0,
                         ];
 
-                    $uxCategoryEnrichments[$uxCategoryKey]
-                    ['target_variants'][$variantKey]
-                    ['tickets']++;
+                        $uxCategoryEnrichments[$uxCategoryKey]
+                        ['target_variants'][$variantKey]
+                        ['tickets']++;
                 }
 
-                if (is_array($uxTicket['invalid_target_overrides'] ?? null)
+                if (
+                    is_array($uxTicket['invalid_target_overrides'] ?? null)
                      && $uxTicket['invalid_target_overrides'] !== []
                 ) {
                     $uxCategoryEnrichments[$uxCategoryKey]
@@ -1736,7 +1806,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                 $ticket['solvedate'] ?? null,
             );
 
-            if ($creationTimestamp !== null
+            if (
+                $creationTimestamp !== null
                  && $resolutionTimestamp !== null
                  && $resolutionTimestamp >= $creationTimestamp
             ) {
@@ -2208,30 +2279,42 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                 'ticketCount' =>
                     'Tickets whose resolved initial technical assignment group matches the analysed group.',
                 'resolutionRate' =>
-                    'Internal autonomy metric: tickets whose resolved resolution group equals the analysed initial group, divided by all tickets in that group scope. This is not SLA compliance.',
+                    'Internal autonomy metric: tickets whose resolved resolution group equals the analysed '
+                        . 'initial group, divided by all tickets in that group scope. This is not SLA compliance.',
                 'category' =>
                     'GLPI immediate parent ITIL category when available; otherwise the ticket category itself.',
                 'subCategory' =>
                     'GLPI leaf ITIL category when a parent exists; otherwise "(Non renseigné)".',
                 'averageResolutionHours' =>
-                    'Average raw calendar duration between ticket creation date and solvedate for tickets with both valid timestamps. This is not GLPI SLA TTR and not solve_delay_stat.',
+                    'Average raw calendar duration between ticket creation date and solvedate for tickets with '
+                        . 'both valid timestamps. This is not GLPI SLA TTR and not solve_delay_stat.',
                 'groupAttribution' =>
-                    'Historical technical-group logs are preferred. A unique current technical group is used explicitly as fallback when usable history is absent.',
+                    'Historical technical-group logs are preferred. A unique current technical group is used '
+                        . 'explicitly as fallback when usable history is absent.',
 
                 'visionIG' =>
-                    'When IGManager is available, parentIncidentCount is the number of distinct active valid IG/IP parents referenced by tickets in scope, and consolidatedTicketCount is the number of scoped tickets having an active valid IGManager parent relation.',
+                    'When IGManager is available, parentIncidentCount is the number of distinct active valid '
+                        . 'IG/IP parents referenced by tickets in scope, and consolidatedTicketCount is the '
+                        . 'number of scoped tickets having an active valid IGManager parent relation.',
 
                 'igmanagerQualifications' =>
-                    'IG/IP/IC qualifications are read only from active IGManager rows referencing an existing non-deleted GLPI ticket. Orphan active rows are excluded from metrics and reported in dataQuality.',
+                    'IG/IP/IC qualifications are read only from active IGManager rows referencing an existing '
+                        . 'non-deleted GLPI ticket. Orphan active rows are excluded from metrics and reported in '
+                        . 'dataQuality.',
 
                 'uxknowdashSupportLevel' =>
-                    'Support level is a UXKnowDash group/category reference value. The exact ticket entity is preferred, then the nearest ancestor entity. It is descriptive metadata, not a measured performance result.',
+                    'Support level is a UXKnowDash group/category reference value. The exact ticket entity is '
+                        . 'preferred, then the nearest ancestor entity. It is descriptive metadata, not a '
+                        . 'measured performance result.',
 
                 'uxknowdashTargets' =>
-                    'FCR and KB usage targets are valid only when stored as ratios between 0 and 1; KB quality is valid only between 0 and 5. Invalid overrides are never normalized silently: they are ignored, reported, and inheritance continues to the nearest valid ancestor target.',
+                    'FCR and KB usage targets are valid only when stored as ratios between 0 and 1; KB quality is '
+                        . 'valid only between 0 and 5. Invalid overrides are never normalized silently: they are '
+                        . 'ignored, reported, and inheritance continues to the nearest valid ancestor target.',
 
                 'uxknowdashTargetComparison' =>
-                    'UXKnowDash FCR targets are not compared with Incidentologue resolutionRate because internal resolution/autonomy and FCR are different metrics.',
+                    'UXKnowDash FCR targets are not compared with Incidentologue resolutionRate because internal '
+                        . 'resolution/autonomy and FCR are different metrics.',
             ],
         ];
     }
@@ -2330,7 +2413,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
 
             $initialGroup = $attribution['initial_assignment_group'] ?? null;
 
-            if (is_array($initialGroup)
+            if (
+                is_array($initialGroup)
                 && (int) ($initialGroup['id'] ?? 0) === $groupId
             ) {
                 $scopeTickets[] = $ticket;
@@ -2712,7 +2796,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                 ? ($attribution['resolution_group'] ?? null)
                 : null;
 
-            if (is_array($resolutionGroup)
+            if (
+                is_array($resolutionGroup)
                 && (int) ($resolutionGroup['id'] ?? 0) === $groupId
             ) {
                 $bucket['resolvedInternally']++;
@@ -2725,7 +2810,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                 $ticket['solvedate'] ?? null,
             );
 
-            if ($creationTimestamp !== null
+            if (
+                $creationTimestamp !== null
                  && $resolutionTimestamp !== null
                  && $resolutionTimestamp >= $creationTimestamp
             ) {
@@ -3035,15 +3121,19 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             ],
             'metricDefinitions' => [
                 'typology' =>
-                    'Qualitative category-to-typology classification validated by the user. Categories omitted from the supplied mapping are assigned to "Non classifiée" and reported in unmappedCategories. This is not a semantic classification of ticket descriptions.',
+                    'Qualitative category-to-typology classification validated by the user. Categories omitted '
+                        . 'from the supplied mapping are assigned to "Non classifiée" and reported in '
+                        . 'unmappedCategories. This is not a semantic classification of ticket descriptions.',
                 'ticketCount' =>
                     'Tickets whose resolved initial technical assignment group matches the analysed group.',
                 'resolutionRate' =>
                     'Internal autonomy metric within each typology. This is not SLA compliance and not UXKnowDash FCR.',
                 'averageResolutionHours' =>
-                    'Average raw calendar duration between ticket creation and solvedate for tickets with valid timestamps. This is not GLPI SLA TTR.',
+                    'Average raw calendar duration between ticket creation and solvedate for tickets with valid '
+                        . 'timestamps. This is not GLPI SLA TTR.',
                 'pareto' =>
-                    'Percentages are rounded to one decimal; cumulative percentage is based on rounded values; paretoFlag remains true while cumulative percentage is <= 80%.',
+                    'Percentages are rounded to one decimal; cumulative percentage is based on rounded values; '
+                        . 'paretoFlag remains true while cumulative percentage is <= 80%.',
             ],
         ];
     }
@@ -3150,7 +3240,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             'active_relations_total' => 0,
         ];
 
-        if (!$DB->tableExists($qualificationTable)
+        if (
+            !$DB->tableExists($qualificationTable)
             || !$DB->tableExists($relationTable)
             || !$DB->tableExists('glpi_tickets')
         ) {
@@ -3165,13 +3256,15 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
          */
         $existingTickets = [];
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'SELECT' => ['id'],
             'FROM' => 'glpi_tickets',
             'WHERE' => [
                 'is_deleted' => 0,
             ],
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -3182,13 +3275,15 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             }
         }
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'FROM' => $qualificationTable,
             'WHERE' => [
                 'is_active' => 1,
             ],
             'ORDER' => ['id ASC'],
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -3197,7 +3292,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
 
             $ticketId = (int) ($row['tickets_id'] ?? 0);
 
-            if ($ticketId <= 0
+            if (
+                $ticketId <= 0
                  || !isset($existingTickets[$ticketId])
             ) {
                 $result['orphan_active_qualifications']++;
@@ -3219,13 +3315,15 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             ];
         }
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'FROM' => $relationTable,
             'WHERE' => [
                 'is_active' => 1,
             ],
             'ORDER' => ['id ASC'],
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -3235,7 +3333,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             $parentId = (int) ($row['parent_tickets_id'] ?? 0);
             $childId = (int) ($row['child_tickets_id'] ?? 0);
 
-            if ($parentId <= 0
+            if (
+                $parentId <= 0
                  || $childId <= 0
                  || !isset($existingTickets[$parentId])
                  || !isset($existingTickets[$childId])
@@ -3306,7 +3405,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             'category_target_rows_total' => 0,
         ];
 
-        if (!$DB->tableExists('glpi_entities')
+        if (
+            !$DB->tableExists('glpi_entities')
             || !$DB->tableExists('glpi_itilcategories')
         ) {
             return $result;
@@ -3373,7 +3473,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         $entityParents = [];
         $entityNames = [];
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'SELECT' => [
                 'id',
                 'name',
@@ -3381,7 +3482,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
                 'entities_id',
             ],
             'FROM' => 'glpi_entities',
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -3424,7 +3526,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             $seen = [];
             $current = $entityId;
 
-            while ($current >= 0
+            while (
+                $current >= 0
                  && !isset($seen[$current])
             ) {
                 $chain[] = $current;
@@ -3452,12 +3555,14 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         $supportRows = [];
 
         if ($supportAvailable && $groupId > 0) {
-            foreach ($DB->request([
+            foreach (
+                $DB->request([
                 'FROM' => $groupCategoryTable,
                 'WHERE' => [
                     'groups_id' => $groupId,
                 ],
-            ]) as $row) {
+                ]) as $row
+            ) {
                 if (!is_array($row)) {
                     continue;
                 }
@@ -3490,9 +3595,11 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         $targetRows = [];
 
         if ($targetsAvailable) {
-            foreach ($DB->request([
+            foreach (
+                $DB->request([
                 'FROM' => $targetTable,
-            ]) as $row) {
+                ]) as $row
+            ) {
                 if (!is_array($row)) {
                     continue;
                 }
@@ -3569,7 +3676,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             $supportLevel = null;
             $supportSourceEntityId = null;
 
-            if ($supportAvailable
+            if (
+                $supportAvailable
                  && $groupId > 0
                  && $categoryId > 0
             ) {
@@ -3851,7 +3959,8 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
 
             $logId = (int) ($log['id'] ?? 0);
 
-            if ($boundaryId !== null
+            if (
+                $boundaryId !== null
                  && $logTimestamp === $solveTimestamp
                  && $logId > $boundaryId
             ) {
@@ -3927,12 +4036,14 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
     {
         global $DB;
         $rows = [];
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'FROM' => 'glpi_tickets',
             'WHERE' => ['is_deleted' => 0],
             'ORDER' => ['id DESC'],
             'LIMIT' => self::MAX_ROWS,
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (is_array($row)) {
                 $rows[] = $row;
             }
@@ -3955,15 +4066,23 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         if ($to !== '' && $created !== '' && strcmp($created, $to) > 0) {
             return false;
         }
-        if (isset($criteria['entity_id']) && (int) $criteria['entity_id'] > 0 && (int) ($row['entities_id'] ?? 0) !== (int) $criteria['entity_id']) {
+        if (
+            isset($criteria['entity_id']) && (int) $criteria['entity_id'] > 0
+            && (int) ($row['entities_id'] ?? 0) !== (int) $criteria['entity_id']
+        ) {
             return false;
         }
-        if (isset($criteria['category_id']) && (int) $criteria['category_id'] > 0 && (int) ($row['itilcategories_id'] ?? 0) !== (int) $criteria['category_id']) {
+        if (
+            isset($criteria['category_id']) && (int) $criteria['category_id'] > 0
+            && (int) ($row['itilcategories_id'] ?? 0) !== (int) $criteria['category_id']
+        ) {
             return false;
         }
         if (isset($criteria['type']) && trim((string) $criteria['type']) !== '') {
             $type = strtolower(trim((string) $criteria['type']));
-            $wanted = in_array($type, ['incident', '1'], true) ? 1 : (in_array($type, ['request', 'demande', '2'], true) ? 2 : 0);
+            $wanted = in_array($type, ['incident', '1'], true)
+                ? 1
+                : (in_array($type, ['request', 'demande', '2'], true) ? 2 : 0);
             if ($wanted > 0 && (int) ($row['type'] ?? 0) !== $wanted) {
                 return false;
             }
@@ -4265,8 +4384,15 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
      *
      * @return list<array<string,mixed>>
      */
-    private function evaluateSlaMetric(array &$metric, array $breaches, array $row, string $metricName, ?int $deadline, ?int $actual, int $now): array
-    {
+    private function evaluateSlaMetric(
+        array &$metric,
+        array $breaches,
+        array $row,
+        string $metricName,
+        ?int $deadline,
+        ?int $actual,
+        int $now
+    ): array {
         if ($deadline === null) {
             return $breaches;
         }
@@ -4359,7 +4485,12 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             return [];
         }
         $names = [];
-        foreach ($DB->request(['FROM' => 'glpi_groups_tickets', 'WHERE' => ['tickets_id' => $ticketId, 'type' => 2]]) as $row) {
+        foreach (
+            $DB->request([
+            'FROM' => 'glpi_groups_tickets',
+            'WHERE' => ['tickets_id' => $ticketId, 'type' => 2]
+            ]) as $row
+        ) {
             $groupId = (int) ($row['groups_id'] ?? 0);
             if ($groupId <= 0) {
                 continue;
@@ -4448,12 +4579,14 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
             ];
         }
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'SELECT' => ['name', 'completename', 'itilcategories_id'],
             'FROM' => 'glpi_itilcategories',
             'WHERE' => ['id' => $id],
             'LIMIT' => 1,
-        ]) as $row) {
+            ]) as $row
+        ) {
             $name = trim((string) ($row['name'] ?? ''));
             $path = trim((string) ($row['completename'] ?? ''));
             $parentId = (int) ($row['itilcategories_id'] ?? 0);
@@ -4486,7 +4619,14 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         if ($id <= 0 || !$DB->tableExists($table)) {
             return null;
         }
-        foreach ($DB->request(['SELECT' => ['name'], 'FROM' => $table, 'WHERE' => ['id' => $id], 'LIMIT' => 1]) as $row) {
+        foreach (
+            $DB->request([
+            'SELECT' => ['name'],
+            'FROM' => $table,
+            'WHERE' => ['id' => $id],
+            'LIMIT' => 1
+            ]) as $row
+        ) {
             $name = trim((string) ($row['name'] ?? ''));
             return $name !== '' ? $name : null;
         }
@@ -4499,8 +4639,18 @@ final class LocalGlpiAnalyticsProvider implements ItsmAnalyticsProviderInterface
         if ($id <= 0 || !$DB->tableExists('glpi_users')) {
             return 'User #' . $id;
         }
-        foreach ($DB->request(['SELECT' => ['name', 'firstname', 'realname'], 'FROM' => 'glpi_users', 'WHERE' => ['id' => $id], 'LIMIT' => 1]) as $row) {
-            $display = trim(implode(' ', array_filter([(string) ($row['firstname'] ?? ''), (string) ($row['realname'] ?? '')])));
+        foreach (
+            $DB->request([
+            'SELECT' => ['name', 'firstname', 'realname'],
+            'FROM' => 'glpi_users',
+            'WHERE' => ['id' => $id],
+            'LIMIT' => 1
+            ]) as $row
+        ) {
+            $display = trim(implode(' ', array_filter([
+                (string) ($row['firstname'] ?? ''),
+                (string) ($row['realname'] ?? '')
+            ])));
             return $display !== '' ? $display : (string) ($row['name'] ?? ('User #' . $id));
         }
         return 'User #' . $id;

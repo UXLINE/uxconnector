@@ -203,7 +203,8 @@ final class SemanticEngineConfig
         if ($this->model === '') {
             throw new \InvalidArgumentException('Semantic engine model must not be empty.');
         }
-        if ($this->inferencePath === ''
+        if (
+            $this->inferencePath === ''
              || $this->inferencePath[0] !== '/'
              || preg_match('/[\r\n\0]/', $this->inferencePath) === 1
         ) {
@@ -218,7 +219,8 @@ final class SemanticEngineConfig
         if ($this->temperature < 0.0 || $this->temperature > 2.0) {
             throw new \InvalidArgumentException('Semantic engine temperature must be between 0 and 2.');
         }
-        if ($this->classifierVersion === ''
+        if (
+            $this->classifierVersion === ''
              || strlen($this->classifierVersion) > 32
              || preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/D', $this->classifierVersion) !== 1
         ) {

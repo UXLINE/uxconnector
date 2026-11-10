@@ -61,7 +61,8 @@ final class InvalidSyncJobStateException extends \DomainException
     public static function assetIdentityRequiresMappedIdentityField(): self
     {
         return new self(
-            'MatchField "asset_identity" requires at least one mapped identity field: uuid, serial, otherserial or name.',
+            'MatchField "asset_identity" requires at least one mapped identity field: uuid, serial, '
+                . 'otherserial or name.',
         );
     }
 }

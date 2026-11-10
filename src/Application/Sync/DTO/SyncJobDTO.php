@@ -53,7 +53,8 @@ final readonly class SyncJobDTO
         public bool $isRunnable,
         public string $createdAt,
         public string $updatedAt
-    ) {}
+    ) {
+    }
 
     public static function fromEntity(SyncJob $syncJob): self
     {

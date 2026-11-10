@@ -8,7 +8,9 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Repository\CopilotClientRepositoryInte
 
 final readonly class CreateCopilotClientService
 {
-    public function __construct(private CopilotClientRepositoryInterface $repository) {}
+    public function __construct(private CopilotClientRepositoryInterface $repository)
+    {
+    }
 
     /**
      * @return array{id: int, key: string}

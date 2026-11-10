@@ -14,7 +14,8 @@ final class RequestStopSyncExecutionService
     public function __construct(
         private readonly SyncExecutionRepositoryInterface $executions,
         private readonly ExecutionStopRequestRepositoryInterface $stopRequests
-    ) {}
+    ) {
+    }
 
     public function execute(SyncExecutionId $id): void
     {

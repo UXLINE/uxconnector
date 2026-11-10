@@ -12,7 +12,8 @@ final class GetSyncJobForEditService
 {
     public function __construct(
         private readonly SyncJobRepositoryInterface $repository
-    ) {}
+    ) {
+    }
 
     public function execute(SyncJobId $id): SyncJobEditDTO
     {

@@ -15,7 +15,9 @@ final class LegacyLocationProfileCatalog
     /** @var array<string,array<string,int>> */
     private array $cache = [];
 
-    public function __construct(private readonly HttpEngineInterface $http) {}
+    public function __construct(private readonly HttpEngineInterface $http)
+    {
+    }
 
     /** @return array<string,int> */
     public function resolve(AuthConfig $auth, string $profile): array
@@ -28,7 +30,8 @@ final class LegacyLocationProfileCatalog
         // required to distinguish the location from its parent. No records are read.
         $response = $this->http->execute($auth, new HttpRequest(HttpMethod::GET, '/listSearchOptions/Location?raw=1'));
         if (!$response->isSuccessful()) {
-            throw new \RuntimeException('GLPI source search option discovery failed (HTTP ' . $response->statusCode . ').');
+            throw new \RuntimeException('GLPI source search option discovery failed (HTTP ' . $response->statusCode
+                . ').');
         }
         $options = json_decode($response->body, true, flags: JSON_THROW_ON_ERROR);
         if (!is_array($options)) {
@@ -60,7 +63,9 @@ final class LegacyLocationProfileCatalog
                 )));
                 $score = 0;
                 if ($logical === 'source_id') {
-                    $score = $table === 'glpilocations' && $field === 'id' && self::isOwnLocationOption($option) ? 120 : 0;
+                    $score = $table === 'glpilocations' && $field === 'id' && self::isOwnLocationOption(
+                        $option
+                    ) ? 120 : 0;
                 } elseif ($logical === 'full_name') {
                     $score = $table === 'glpilocations' && self::isOwnLocationOption($option)
                         && in_array($field, ['completename', 'name'], true)
@@ -86,25 +91,37 @@ final class LegacyLocationProfileCatalog
                 }
             }
             if ($scores === []) {
-                $missing[] = is_array($definition) ? $definition['label'] . ' [' . $definition['block'] . ']' : $logical;
+                $missing[] = is_array($definition) ? $definition['label'] . ' [' . $definition['block'] . ']'
+                    : $logical;
                 continue;
             }
             $best = max($scores);
             $bestIds = array_keys(array_filter($scores, static fn(int $score): bool => $score === $best));
             if (count($bestIds) !== 1) {
-                throw new \RuntimeException('Ambiguous source Location option for ' . $logical . ' (options ' . implode(', ', $bestIds) . '). These are API search field identifiers, not Location record IDs. No target writes performed.');
+                throw new \RuntimeException('Ambiguous source Location option for ' . $logical . ' (options '
+                    . implode(
+                        ', ',
+                        $bestIds
+                    )
+                    . '). These are API search field identifiers, not Location record IDs. No target writes '
+                    . 'performed.');
             }
             $resolved[$logical] = (int) $bestIds[0];
         }
         if ($missing !== []) {
-            throw new \RuntimeException('Missing source Location options for ' . $profile . ': ' . implode(', ', $missing) . '. No target writes performed.');
+            throw new \RuntimeException('Missing source Location options for ' . $profile . ': ' . implode(
+                ', ',
+                $missing
+            ) . '. No target writes performed.');
         }
         foreach (['source_updated_at' => 'date_mod', 'source_created_at' => 'date_creation'] as $logical => $field) {
             $ids = [];
             foreach ($options as $optionId => $option) {
-                if (is_numeric($optionId) && is_array($option)
+                if (
+                    is_numeric($optionId) && is_array($option)
                     && ($option['table'] ?? '') === 'glpi_locations'
-                    && ($option['field'] ?? '') === $field && self::isOwnLocationOption($option)) {
+                    && ($option['field'] ?? '') === $field && self::isOwnLocationOption($option)
+                ) {
                     $ids[] = (int) $optionId;
                 }
             }
@@ -114,10 +131,12 @@ final class LegacyLocationProfileCatalog
         }
         $parents = [];
         foreach ($options as $optionId => $option) {
-            if (is_numeric($optionId) && is_array($option)
+            if (
+                is_numeric($optionId) && is_array($option)
                 && ($option['table'] ?? '') === 'glpi_locations'
                 && ($option['field'] ?? '') === 'completename'
-                && ($option['linkfield'] ?? '') === 'locations_id') {
+                && ($option['linkfield'] ?? '') === 'locations_id'
+            ) {
                 $parents[] = (int) $optionId;
             }
         }
@@ -161,7 +180,8 @@ final class LegacyLocationProfileCatalog
     private static function norm(string $text): string
     {
         $text = function_exists('mb_strtolower') ? mb_strtolower(trim($text)) : strtolower(trim($text));
-        $text = strtr($text, ['é' => 'e', 'è' => 'e', 'ê' => 'e', 'à' => 'a', 'â' => 'a', 'î' => 'i', 'ï' => 'i', 'ô' => 'o', 'ù' => 'u', 'ç' => 'c', '°' => '']);
+        $text = strtr($text, ['é' => 'e', 'è' => 'e', 'ê' => 'e', 'à' => 'a', 'â' => 'a', 'î' => 'i', 'ï' => 'i',
+                'ô' => 'o', 'ù' => 'u', 'ç' => 'c', '°' => '']);
         return preg_replace('/[^a-z0-9]/', '', $text) ?? '';
     }
 }

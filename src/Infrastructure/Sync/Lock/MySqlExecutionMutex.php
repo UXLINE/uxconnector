@@ -13,20 +13,25 @@ final class MySqlExecutionMutex implements ExecutionMutexInterface
 {
     private const JOB_TABLE = 'glpi_plugin_uxconnector_syncjobs';
 
-    public function __construct(private readonly DBmysql $db) {}
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
     public function lock(SyncJobId $syncJobId): void
     {
         $id = $syncJobId->value();
-        $result = $this->db->doQuery(sprintf(
-            'SELECT `id` FROM `%s` WHERE `id` = %d FOR UPDATE',
-            self::JOB_TABLE,
-            $id,
-        ));
+        // InnoDB locks the matching primary-key record until the caller commits or rolls back.
+        // Reassigning the same value leaves the job data and modification date intact.
+        $this->db->update(self::JOB_TABLE, ['id' => $id], ['id' => $id]);
+        $job = $this->db->request([
+            'SELECT' => ['id'],
+            'FROM' => self::JOB_TABLE,
+            'WHERE' => ['id' => $id],
+        ]);
 
-        if ($result === false) {
+        if (count($job) !== 1) {
             throw new \RuntimeException(sprintf(
-                'Unable to acquire execution lock for interaction #%d.',
+                'Cannot lock interaction #%d because it no longer exists.',
                 $id,
             ));
         }

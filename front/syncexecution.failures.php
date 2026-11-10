@@ -17,7 +17,13 @@ if (isset($_POST['retry_failed'])) {
 } elseif (isset($_GET['export'])) {
     $controller->exportCsv($_GET);
 } else {
-    Html::header(__('Synchronization failures', 'uxconnector'), $_SERVER['PHP_SELF'], 'tools', 'PluginUxconnectorMenu', 'syncjob');
+    Html::header(
+        __('Synchronization failures', 'uxconnector'),
+        $_SERVER['PHP_SELF'],
+        'tools',
+        'PluginUxconnectorMenu',
+        'syncjob'
+    );
     $controller->showFailures($_GET);
     Html::footer();
 }

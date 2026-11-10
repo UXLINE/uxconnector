@@ -40,7 +40,8 @@ final class InstantiateJobTemplateService
         private readonly ActivateSyncJobService $activateSyncJob,
         private readonly AuthConfigRepositoryInterface $authConfigRepository,
         private readonly TemplateStringResolver $resolver
-    ) {}
+    ) {
+    }
 
     /**
      * @param array<string,mixed> $parameters
@@ -60,10 +61,17 @@ final class InstantiateJobTemplateService
 
         $template = $connector->findJob($jobTemplateId);
         if ($template === null) {
-            throw new \RuntimeException(sprintf('Unknown job template "%s" for connector "%s".', $jobTemplateId, $connectorId));
+            throw new \RuntimeException(sprintf(
+                'Unknown job template "%s" for connector "%s".',
+                $jobTemplateId,
+                $connectorId
+            ));
         }
         if (!$template->available || $template->retired) {
-            throw new \RuntimeException(sprintf('Job template "%s" is not available in this plugin version.', $jobTemplateId));
+            throw new \RuntimeException(sprintf(
+                'Job template "%s" is not available in this plugin version.',
+                $jobTemplateId
+            ));
         }
 
         $authConfig = $this->authConfigRepository->findById(new AuthConfigId($authConfigId));
@@ -87,10 +95,15 @@ final class InstantiateJobTemplateService
             ));
         }
         if ($activate && !$authConfig->isUsable()) {
-            throw new \RuntimeException('The selected authentication configuration must be tested and active before activating a catalogue job.');
+            throw new \RuntimeException(
+                'The selected authentication configuration must be tested and active before activating a '
+                . 'catalogue job.'
+            );
         }
         if ($template->direction === SyncDirection::OUTBOUND->value && $fixedEntityId === null) {
-            throw new \RuntimeException('A fixed GLPI entity/source scope is required for a standard outbound interaction.');
+            throw new \RuntimeException(
+                'A fixed GLPI entity/source scope is required for a standard outbound interaction.'
+            );
         }
 
         $resolvedParams = $this->resolver->resolveParameters($template->parameters, $parameters);
@@ -111,7 +124,8 @@ final class InstantiateJobTemplateService
                 (string) ($mapping['source'] ?? ''),
                 (string) ($mapping['target'] ?? ''),
                 (bool) ($mapping['required'] ?? false),
-                isset($mapping['transform']) && (string) $mapping['transform'] !== '' ? (string) $mapping['transform'] : null,
+                isset($mapping['transform']) && (string) $mapping['transform'] !== '' ? (string) $mapping['transform']
+                    : null,
             );
         }
 

@@ -8,7 +8,9 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Analytics\ItsmAnalyticsProviderInterfa
 
 final readonly class AnalyticsService
 {
-    public function __construct(private ItsmAnalyticsProviderInterface $provider) {}
+    public function __construct(private ItsmAnalyticsProviderInterface $provider)
+    {
+    }
 
     /**
     * @param array<string, mixed> $criteria

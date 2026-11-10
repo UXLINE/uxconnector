@@ -14,14 +14,16 @@ final readonly class ActivateSemanticEngineConfigService
     public function __construct(
         private SemanticEngineConfigRepositoryInterface $repository,
         private SemanticEngineConnectionValidator $connectionValidator
-    ) {}
+    ) {
+    }
 
     public function execute(ActivateSemanticEngineConfigCommand $command): SemanticEngineConfig
     {
         $config = $this->repository->findById($command->id);
 
         if ($config === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigNotFoundException::forId($command->id);
+            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigNotFoundException
+                ::forId($command->id);
         }
 
         if ($config->isUsable()) {
@@ -34,13 +36,15 @@ final readonly class ActivateSemanticEngineConfigService
 
         $active = $this->repository->findActive();
 
-        if ($active !== null
+        if (
+            $active !== null
              && $active->id() !== null
              && $active->id()->value() !== $command->id->value()
         ) {
-            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigurationException::anotherConfigAlreadyActive(
-                $active->id(),
-            );
+            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigurationException
+                ::anotherConfigAlreadyActive(
+                    $active->id(),
+                );
         }
 
         $config->activate();

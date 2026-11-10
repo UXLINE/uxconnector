@@ -25,5 +25,6 @@ final readonly class UpdateAuthConfigCommand
         public AuthMethod $authMethod,
         public TestPath $testPath,
         public ?string $plaintextSecret = null
-    ) {}
+    ) {
+    }
 }

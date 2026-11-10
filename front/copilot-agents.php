@@ -8,7 +8,13 @@ $controller = CopilotAgentControllerFactory::create();
 
 if (isset($_POST['create_agent'])) {
     Session::checkRight('plugin_uxconnector_authconfig', CREATE);
-    Html::header(__('AI Agents', 'uxconnector'), $_SERVER['PHP_SELF'], 'tools', 'PluginUxconnectorMenu', 'copilot_agents');
+    Html::header(
+        __('AI Agents', 'uxconnector'),
+        $_SERVER['PHP_SELF'],
+        'tools',
+        'PluginUxconnectorMenu',
+        'copilot_agents'
+    );
     $controller->create($_POST);
     Html::footer();
     return;

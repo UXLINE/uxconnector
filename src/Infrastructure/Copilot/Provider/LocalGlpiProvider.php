@@ -24,7 +24,12 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
         return [
             'provider' => 'local-glpi',
             'read_only' => true,
-            'tools' => ['searchTickets', 'getTicketContext', 'analyzeTicketVolume', 'analyzeTicketTrends', 'analyzeCategories', 'analyzeSlaPerformance', 'analyzeSlaBreaches', 'analyzeGroupPerformance', 'analyzeTechnicianWorkload', 'comparePeriods', 'analyzeIncidentologyGlobal', 'analyzeIncidentologyTypologies', 'analyzeSemanticTicketClassification', 'prepareSemanticTicketClassification', 'finalizeSemanticTicketClassification', 'listIncidentologyGroups'],
+            'tools' => ['searchTickets', 'getTicketContext', 'analyzeTicketVolume', 'analyzeTicketTrends',
+                'analyzeCategories', 'analyzeSlaPerformance', 'analyzeSlaBreaches', 'analyzeGroupPerformance',
+                'analyzeTechnicianWorkload', 'comparePeriods', 'analyzeIncidentologyGlobal',
+                'analyzeIncidentologyTypologies', 'analyzeSemanticTicketClassification',
+                'prepareSemanticTicketClassification', 'finalizeSemanticTicketClassification',
+                'listIncidentologyGroups'],
             'data_source' => 'GLPI local domain/database',
         ];
     }
@@ -118,20 +123,34 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
         $groups = $this->ticketGroups($ticketId);
         $assets = $this->ticketAssets($ticketId);
 
-        $tasks = $this->enrichRows($this->rowsIfTableExists('glpi_tickettasks', ['tickets_id' => $ticketId], ['id DESC']), 'task');
-        $followups = $this->enrichRows($this->rowsIfTableExists('glpi_itilfollowups', ['itemtype' => 'Ticket', 'items_id' => $ticketId], ['id DESC']), 'followup');
-        $solutions = $this->enrichRows($this->rowsIfTableExists('glpi_itilsolutions', ['itemtype' => 'Ticket', 'items_id' => $ticketId], ['id DESC']), 'solution');
-        $validations = $this->enrichRows($this->rowsIfTableExists('glpi_ticketvalidations', ['tickets_id' => $ticketId], ['id DESC']), 'validation');
+        $tasks = $this->enrichRows($this->rowsIfTableExists(
+            'glpi_tickettasks',
+            ['tickets_id' => $ticketId],
+            ['id DESC']
+        ), 'task');
+        $followups = $this->enrichRows($this->rowsIfTableExists('glpi_itilfollowups', ['itemtype' => 'Ticket',
+                    'items_id' => $ticketId], ['id DESC']), 'followup');
+        $solutions = $this->enrichRows($this->rowsIfTableExists('glpi_itilsolutions', ['itemtype' => 'Ticket',
+                    'items_id' => $ticketId], ['id DESC']), 'solution');
+        $validations = $this->enrichRows($this->rowsIfTableExists(
+            'glpi_ticketvalidations',
+            ['tickets_id' => $ticketId],
+            ['id DESC']
+        ), 'validation');
         $ticket = $this->normalizeTicketRow($row, true, $people, $groups, $assets)->toArray();
         $ticket['assigned_groups'] = array_values(array_map(
-            static fn(array $group): array => ['id' => (int) ($group['id'] ?? 0), 'name' => (string) ($group['name'] ?? '')],
+            static fn(array $group): array => ['id' => (int) ($group['id'] ?? 0), 'name' => (string) (
+                    $group['name'] ?? '')],
             array_filter($groups, static fn(array $group): bool => ($group['role'] ?? '') === 'assigned'),
         ));
         $ticket['time_to_own_seconds'] = $this->ownershipDurationSeconds($row);
         $ticket['time_to_own_human'] = $this->humanDuration($ticket['time_to_own_seconds']);
         $ticket['time_to_resolve_seconds'] = $this->resolutionDurationSeconds($row);
         $ticket['time_to_resolve_human'] = $this->humanDuration($ticket['time_to_resolve_seconds']);
-        $taskWork = array_sum(array_map(static fn(array $task): int => max(0, (int) ($task['actiontime'] ?? 0)), $tasks));
+        $taskWork = array_sum(array_map(
+            static fn(array $task): int => max(0, (int) ($task['actiontime'] ?? 0)),
+            $tasks
+        ));
         $ticket['task_work_seconds'] = $taskWork;
         $ticket['task_work_human'] = $this->humanDuration($taskWork);
         usort($solutions, static function (array $a, array $b): int {
@@ -162,8 +181,13 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
     * @param list<array<string, mixed>> $groups
     * @param list<array<string, mixed>> $assets
     */
-    private function normalizeTicketRow(array $row, bool $enrich, array $people = [], array $groups = [], array $assets = []): CanonicalTicket
-    {
+    private function normalizeTicketRow(
+        array $row,
+        bool $enrich,
+        array $people = [],
+        array $groups = [],
+        array $assets = []
+    ): CanonicalTicket {
         $id = (int) ($row['id'] ?? 0);
         $requester = null;
         $assignedUsers = [];
@@ -331,7 +355,8 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
     */
     private function sanitizeTimelineRow(array $row): array
     {
-        $allowed = ['id', 'date', 'date_creation', 'date_mod', 'content', 'users_id', 'users_id_tech', 'groups_id_tech', 'actiontime', 'state', 'status', 'solutiontypes_id', 'is_private'];
+        $allowed = ['id', 'date', 'date_creation', 'date_mod', 'content', 'users_id', 'users_id_tech',
+            'groups_id_tech', 'actiontime', 'state', 'status', 'solutiontypes_id', 'is_private'];
         $out = [];
         foreach ($allowed as $key) {
             if (array_key_exists($key, $row)) {
@@ -356,7 +381,10 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
                 $row['actor'] = null;
             }
             $groupId = (int) ($row['groups_id_tech'] ?? 0);
-            $row['technical_group'] = $groupId > 0 ? ['id' => $groupId, 'name' => $this->lookupName('glpi_groups', $groupId) ?? ('Group #' . $groupId)] : null;
+            $row['technical_group'] = $groupId > 0 ? ['id' => $groupId, 'name' => $this->lookupName(
+                'glpi_groups',
+                $groupId
+            ) ?? ('Group #' . $groupId)] : null;
             if ($kind === 'task') {
                 $seconds = max(0, (int) ($row['actiontime'] ?? 0));
                 $row['work_duration_seconds'] = $seconds;
@@ -378,7 +406,10 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
     private function canonicalTimeline(array $followups, array $tasks, array $solutions, array $validations): array
     {
         $events = [];
-        foreach (['followup' => $followups, 'task' => $tasks, 'solution' => $solutions, 'validation' => $validations] as $type => $rows) {
+        foreach (
+            ['followup' => $followups, 'task' => $tasks, 'solution' => $solutions,
+                'validation' => $validations] as $type => $rows
+        ) {
             foreach ($rows as $row) {
                 $event = [
                     'type' => $type,
@@ -400,7 +431,10 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
                 $events[] = $event;
             }
         }
-        usort($events, static fn(array $a, array $b): int => strcmp((string) $a['occurred_at'], (string) $b['occurred_at']));
+        usort($events, static fn(array $a, array $b): int => strcmp(
+            (string) $a['occurred_at'],
+            (string) $b['occurred_at']
+        ));
         return $events;
     }
 
@@ -485,7 +519,10 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
         if ($id <= 0 || !$DB->tableExists($table)) {
             return null;
         }
-        foreach ($DB->request(['SELECT' => ['name'], 'FROM' => $table, 'WHERE' => ['id' => $id], 'LIMIT' => 1]) as $row) {
+        foreach (
+            $DB->request(['SELECT' => ['name'], 'FROM' => $table, 'WHERE' => ['id' => $id],
+                    'LIMIT' => 1]) as $row
+        ) {
             $name = trim((string) ($row['name'] ?? ''));
             return $name !== '' ? $name : null;
         }
@@ -498,8 +535,12 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
         if ($id <= 0 || !$DB->tableExists('glpi_users')) {
             return 'User #' . $id;
         }
-        foreach ($DB->request(['SELECT' => ['name', 'firstname', 'realname'], 'FROM' => 'glpi_users', 'WHERE' => ['id' => $id], 'LIMIT' => 1]) as $row) {
-            $display = trim(implode(' ', array_filter([(string) ($row['firstname'] ?? ''), (string) ($row['realname'] ?? '')])));
+        foreach (
+            $DB->request(['SELECT' => ['name', 'firstname', 'realname'], 'FROM' => 'glpi_users', 'WHERE' => [
+                        'id' => $id], 'LIMIT' => 1]) as $row
+        ) {
+            $display = trim(implode(' ', array_filter([(string) ($row['firstname'] ?? ''), (string) (
+                            $row['realname'] ?? '')])));
             return $display !== '' ? $display : (string) ($row['name'] ?? ('User #' . $id));
         }
         return 'User #' . $id;
@@ -521,7 +562,8 @@ final class LocalGlpiProvider implements ItsmDataProviderInterface
     private function ticketStatusLabel(int $status): ?string
     {
         return match ($status) {
-            1 => 'New', 2 => 'Processing (assigned)', 3 => 'Processing (planned)', 4 => 'Pending', 5 => 'Solved', 6 => 'Closed',
+            1 => 'New', 2 => 'Processing (assigned)', 3 => 'Processing (planned)', 4 => 'Pending', 5 => 'Solved',
+                6 => 'Closed',
             default => $status > 0 ? (string) $status : null,
         };
     }

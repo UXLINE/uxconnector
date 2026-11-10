@@ -84,9 +84,15 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
         private readonly ?SyncWorkLockInterface $workLock = null
     ) {
         $this->collectionExtractor = $collectionExtractor ?? new CollectionExtractor($jsonPathReader);
-        $this->paginationStrategyResolver = $paginationStrategyResolver ?? new PaginationStrategyResolver($jsonPathReader);
+        $this->paginationStrategyResolver = $paginationStrategyResolver ?? new PaginationStrategyResolver(
+            $jsonPathReader
+        );
         $this->pageReferenceNormalizer = $pageReferenceNormalizer ?? new PageReferenceNormalizer();
-        $this->inboundRecordProcessor = $inboundRecordProcessor ?? new InboundRecordProcessor($itemWriter, $transformer, $jsonPathReader);
+        $this->inboundRecordProcessor = $inboundRecordProcessor ?? new InboundRecordProcessor(
+            $itemWriter,
+            $transformer,
+            $jsonPathReader
+        );
     }
 
     public function execute(ExecuteSyncJobCommand $command): SyncExecution
@@ -96,11 +102,15 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
         $syncJob = $this->syncJobRepository->findById($command->syncJobId);
 
         if ($syncJob === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($command->syncJobId);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId(
+                $command->syncJobId
+            );
         }
 
         if (!$syncJob->isRunnable()) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotRunnableException::forStatus($syncJob->status());
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotRunnableException::forStatus(
+                $syncJob->status()
+            );
         }
 
         $syncJobId = $syncJob->id();
@@ -114,7 +124,9 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
         if ($command->existingExecutionId !== null) {
             $execution = $this->executionRepository->findById($command->existingExecutionId);
             if ($execution === null || $execution->syncJobId()->value() !== $syncJobId->value()) {
-                throw new \RuntimeException('Queued synchronization execution not found or does not belong to this job.');
+                throw new \RuntimeException(
+                    'Queued synchronization execution not found or does not belong to this job.'
+                );
             }
             if ($execution->status() !== SyncExecutionStatus::PENDING) {
                 throw new SyncExecutionBusyException('Queued execution has already been claimed or finished.');
@@ -127,9 +139,12 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
 
         $authConfig = null;
         try {
-            if ($syncJob->direction() !== \GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncDirection::INBOUND
-                 || !$syncJob->isScheduledInteraction()) {
-                throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncDirectionNotSupportedException::forDirection($syncJob->direction());
+            if (
+                $syncJob->direction() !== \GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncDirection::INBOUND
+                 || !$syncJob->isScheduledInteraction()
+            ) {
+                throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncDirectionNotSupportedException
+                    ::forDirection($syncJob->direction());
             }
 
             (new BuiltinTemplateTargetPolicy())->assertAllowed($syncJob->templateId(), $syncJob->targetItemtype());
@@ -172,10 +187,12 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
                 );
                 $execution = $this->executionRepository->save($execution);
                 [$itemsProcessed, $itemsFailed, $itemsCreated, $itemsUpdated, $itemsSkipped, $itemsWarnings] = [
-                    $batch->processed, $batch->failed, $batch->created, $batch->updated, $batch->skipped, $batch->warnings,
+                    $batch->processed, $batch->failed, $batch->created, $batch->updated, $batch->skipped,
+                        $batch->warnings,
                 ];
             } else {
-                [$itemsProcessed, $itemsFailed, $itemsCreated, $itemsUpdated, $itemsSkipped, $itemsWarnings] = $this->processPages($authConfig, $syncJob, $execution);
+                [$itemsProcessed, $itemsFailed, $itemsCreated, $itemsUpdated, $itemsSkipped,
+                    $itemsWarnings] = $this->processPages($authConfig, $syncJob, $execution);
             }
 
             $this->assertNotStopped($execution);
@@ -208,8 +225,15 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
         } catch (\RuntimeException $exception) {
             // Some HTTP adapters expose exhausted transport retries as RuntimeException,
             // not HttpEngineException. Preserve the checkpoint for an explicit resume.
-            if (preg_match('/(?:transport failure after retry budget|unknown stream error|HTTP\/2.*stream)/i', $exception->getMessage()) === 1) {
-                $execution->interrupt('Transient HTTP transport interruption; resume from the last confirmed checkpoint.');
+            if (
+                preg_match(
+                    '/(?:transport failure after retry budget|unknown stream error|HTTP\/2.*stream)/i',
+                    $exception->getMessage()
+                ) === 1
+            ) {
+                $execution->interrupt(
+                    'Transient HTTP transport interruption; resume from the last confirmed checkpoint.'
+                );
                 return $this->saveFinishedExecution($execution);
             }
             return $this->finishAsFailed($execution, $exception->getMessage());
@@ -232,10 +256,13 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
         $authConfig = $this->authConfigRepository->findById(new AuthConfigId($reference->value()));
 
         if ($authConfig === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::referenceNotFound($reference);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException
+                ::referenceNotFound($reference);
         }
         if (!$authConfig->isUsable()) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::notUsable($reference);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::notUsable(
+                $reference
+            );
         }
 
         return $authConfig;
@@ -278,7 +305,8 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
         $pagination = $this->paginationStrategyResolver->resolve($paginationConfig);
 
         $syncJobId = $syncJob->id();
-        if ($syncJobId !== null
+        if (
+            $syncJobId !== null
             && $this->checkpointRepository !== null
             && $paginationConfig->option('persist_cursor') === true
         ) {
@@ -324,7 +352,11 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
 
             $response = $this->httpEngine->execute($authConfig, new HttpRequest(HttpMethod::GET, $path));
             if (!$response->isSuccessful()) {
-                $freshPath = \GlpiPlugin\Uxconnector\Domain\Sync\Policy\RejectedCursorPolicy::restartPath($syncJob, $path, $response->statusCode);
+                $freshPath = \GlpiPlugin\Uxconnector\Domain\Sync\Policy\RejectedCursorPolicy::restartPath(
+                    $syncJob,
+                    $path,
+                    $response->statusCode
+                );
                 if ($freshPath !== null && !$cursorRestarted) {
                     $cursorRestarted = true;
                     $path = $freshPath;
@@ -335,9 +367,14 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
                     // is bounded to one; another 422 fails with a safe diagnostic.
                     continue;
                 }
-                $message = sprintf('External system returned HTTP %d for resource "%s".', $response->statusCode, parse_url($path, PHP_URL_PATH) ?: '/');
+                $message = sprintf(
+                    'External system returned HTTP %d for resource "%s".',
+                    $response->statusCode,
+                    parse_url($path, PHP_URL_PATH) ?: '/'
+                );
                 if ($freshPath !== null) {
-                    $message .= ' Cursor rejected again after one export restart. Check export duration and query before starting a new run.';
+                    $message .= ' Cursor rejected again after one export restart. Check export duration and query '
+                        . 'before starting a new run.';
                 }
                 if ($response->statusCode === 408 || $response->statusCode === 429 || $response->statusCode >= 500) {
                     throw new TransientInfrastructureException($message);
@@ -392,7 +429,8 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
                 $checkpointBlocked = true;
             }
 
-            if (!$checkpointBlocked
+            if (
+                !$checkpointBlocked
                 && $candidateCursor !== null
                 && $syncJobId !== null
                 && $this->checkpointRepository !== null
@@ -413,12 +451,19 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
             }
             // Search Export can supply a next link even when the export is exhausted.
             $searchExportFinished = $syncJob->templateId() === 'zendesk.tickets.nonclosed.inbound'
-                && in_array(parse_url($path, PHP_URL_PATH), ['/api/v2/search/export.json', '/api/v2/search/export'], true)
+                && in_array(
+                    parse_url($path, PHP_URL_PATH),
+                    ['/api/v2/search/export.json', '/api/v2/search/export'],
+                    true
+                )
                 && in_array($this->jsonPathReader->read($decoded, 'meta.has_more'), [false, 'false'], true);
             $nextReference = $searchExportFinished
                 ? null
                 : $pagination->nextPageReference($path, $decoded, count($pageItems));
-            $nextPath = $nextReference === null ? null : $this->pageReferenceNormalizer->normalize($authConfig, $nextReference);
+            $nextPath = $nextReference === null ? null : $this->pageReferenceNormalizer->normalize(
+                $authConfig,
+                $nextReference
+            );
             if (!$checkpointBlocked) {
                 $execution->setResumePath($nextPath);
             }
@@ -577,23 +622,21 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
 
     private function saveFinishedExecution(SyncExecution $execution): SyncExecution
     {
-        $events = $execution->releaseEvents();
-
         $this->transaction->begin();
 
         try {
-            $execution = $this->executionRepository->save($execution);
+            $saved = $this->executionRepository->save($execution);
             $this->transaction->commit();
         } catch (\Throwable $exception) {
             $this->safeRollback();
             throw $exception;
         }
 
-        foreach ($events as $event) {
+        foreach ($execution->releaseEvents() as $event) {
             $this->events->dispatch($event);
         }
 
-        return $execution;
+        return $saved;
     }
 
     /** Never let a lost DB connection mask the original synchronization error. */
@@ -605,5 +648,4 @@ final class ExecuteSyncJobService implements SyncJobExecutorInterface
             // The worker recovery pass will reconcile stale RUNNING rows once DB is back.
         }
     }
-
 }

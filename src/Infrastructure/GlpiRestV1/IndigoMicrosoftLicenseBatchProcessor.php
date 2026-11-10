@@ -25,9 +25,16 @@ final class IndigoMicrosoftLicenseBatchProcessor extends AbstractLegacyLocationB
         if ($product === '') {
             return ['skip', 0, TargetItemtype::SOFTWARE_LICENSE, self::EXTERNAL_TYPE];
         }
-        $legacy = $this->objectLinks->findByExternalId($job->authConfigReference(), 'glpi_rest_v1_indigo_microsoft_pool', new ExternalId($sourceId));
+        $legacy = $this->objectLinks->findByExternalId(
+            $job->authConfigReference(),
+            'glpi_rest_v1_indigo_microsoft_pool',
+            new ExternalId($sourceId)
+        );
         $oldAssignment = $this->db->tableExists(LicenseAssignmentItem::getTable())
-            ? $this->firstUnique(LicenseAssignmentItem::getTable(), ['source_authconfig_id' => $job->authConfigReference()->value(), 'source_location_id' => $sourceId])
+            ? $this->firstUnique(
+                LicenseAssignmentItem::getTable(),
+                ['source_authconfig_id' => $job->authConfigReference()->value(), 'source_location_id' => $sourceId]
+            )
             : null;
         if ($legacy !== null || $oldAssignment !== null) {
             // Changing an existing purchased pool into individual native rows
@@ -78,7 +85,9 @@ final class IndigoMicrosoftLicenseBatchProcessor extends AbstractLegacyLocationB
         }
 
         $this->stage = 'license_resolution';
-        $link = $this->objectLinks->findByExternalId($job->authConfigReference(), self::EXTERNAL_TYPE, new ExternalId($sourceId));
+        $link = $this->objectLinks->findByExternalId($job->authConfigReference(), self::EXTERNAL_TYPE, new ExternalId(
+            $sourceId
+        ));
         $existing = null;
         if ($link !== null) {
             if ($link->itemtype() !== TargetItemtype::SOFTWARE_LICENSE) {

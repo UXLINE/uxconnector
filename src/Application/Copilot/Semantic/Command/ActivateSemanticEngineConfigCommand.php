@@ -8,5 +8,7 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Semantic\ValueObject\SemanticEngineCon
 
 final readonly class ActivateSemanticEngineConfigCommand
 {
-    public function __construct(public SemanticEngineConfigId $id) {}
+    public function __construct(public SemanticEngineConfigId $id)
+    {
+    }
 }

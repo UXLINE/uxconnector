@@ -1,3 +1,9 @@
+## 2.18.38 candidate
+
+- Render the source Fields diagnostic and Microsoft licence assignments with Twig.
+- Use the GLPI database API for execution stop requests and two legacy data migrations.
+- Track remaining native SQL for schema creation and locking in the release notes.
+
 ## 2.18.37 candidate - 2026-11-06
 
 - Add EasyVista Service Manager with five inbound pilots and one disabled outbound definition.

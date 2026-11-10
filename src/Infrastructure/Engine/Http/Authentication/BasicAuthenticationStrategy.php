@@ -26,7 +26,8 @@ final class BasicAuthenticationStrategy implements AuthenticationStrategy
 {
     public function __construct(
         private readonly string $usernameAndPassword
-    ) {}
+    ) {
+    }
 
     public function authenticate(HttpRequest $request): HttpRequest
     {

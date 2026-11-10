@@ -247,7 +247,8 @@ final readonly class OpenAiCompatibleSemanticProvider implements SemanticClassif
             }
 
             $reasonCode = trim($row['reason_code']);
-            if ($reasonCode === ''
+            if (
+                $reasonCode === ''
                  || strlen($reasonCode) > 64
                  || preg_match('/^[a-z0-9][a-z0-9_]*$/D', $reasonCode) !== 1
             ) {
@@ -296,17 +297,23 @@ final readonly class OpenAiCompatibleSemanticProvider implements SemanticClassif
             'Return exactly one classification for every supplied ticket_id and no additional ticket.',
             'Allowed class values: ' . implode(', ', SemanticTicketClass::values()) . '.',
             'Use title and description as the primary semantic evidence.',
-            'declared_type and itil_category are contextual metadata only and must not be treated as the semantic result.',
+            'declared_type and itil_category are contextual metadata only and must not be treated as the '
+                . 'semantic result.',
             'technical_incident: a technical malfunction, outage, degradation or failure.',
             'user_assistance: the user primarily needs guidance, help, explanation or procedural assistance.',
-            'access_request: request to create, grant, modify, unlock or remove access, account, permission or entitlement.',
-            'usage_error: the reported issue is primarily caused by incorrect usage, manipulation or configuration by the user rather than a technical failure.',
+            'access_request: request to create, grant, modify, unlock or remove access, account, '
+                . 'permission or entitlement.',
+            'usage_error: the reported issue is primarily caused by incorrect usage, manipulation or '
+                . 'configuration by the user rather than a technical failure.',
             'other: semantically meaningful but none of the previous classes fit.',
             'uncertain: evidence is insufficient or genuinely ambiguous.',
             'confidence must be a JSON number from 0 to 1.',
             'reason_code must be a concise lower_snake_case machine code, not free prose.',
-            'Do not add explanations, markdown or fields outside ticket_id, class, confidence and reason_code inside each classification.',
-            'Expected shape: {"classifications":[{"ticket_id":123,"class":"technical_incident","confidence":0.95,"reason_code":"service_unavailable"}]}',
+            'Do not add explanations, markdown or fields outside ticket_id, class, confidence and '
+                . 'reason_code inside each classification.',
+            'Expected shape: '
+                . '{"classifications":[{"ticket_id":123,"class":"technical_incident",'
+                . '"confidence":0.95,"reason_code":"service_unavailable"}]}',
         ]);
     }
 

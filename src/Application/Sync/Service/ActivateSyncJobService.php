@@ -39,7 +39,8 @@ final class ActivateSyncJobService
     public function __construct(
         private readonly SyncJobRepositoryInterface $repository,
         private readonly ?AuthConfigRepositoryInterface $authConfigRepository = null
-    ) {}
+    ) {
+    }
 
     /**
      * @throws SyncJobNotFoundException if the command's SyncJobId does not
@@ -53,17 +54,21 @@ final class ActivateSyncJobService
         $syncJob = $this->repository->findById($command->syncJobId);
 
         if ($syncJob === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($command->syncJobId);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId(
+                $command->syncJobId
+            );
         }
 
         if ($this->authConfigRepository !== null) {
             $reference = $syncJob->authConfigReference();
             $authConfig = $this->authConfigRepository->findById(new AuthConfigId($reference->value()));
             if ($authConfig === null) {
-                throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::referenceNotFound($reference);
+                throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException
+                    ::referenceNotFound($reference);
             }
             if (!$authConfig->isUsable()) {
-                throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException::notUsable($reference);
+                throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobAuthConfigUnavailableException
+                    ::notUsable($reference);
             }
         }
 

@@ -20,5 +20,6 @@ final readonly class PauseSyncJobCommand
 {
     public function __construct(
         public SyncJobId $syncJobId
-    ) {}
+    ) {
+    }
 }

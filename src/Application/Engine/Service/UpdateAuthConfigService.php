@@ -27,7 +27,8 @@ final class UpdateAuthConfigService
         private readonly CredentialVaultInterface $vault,
         private readonly DestinationPolicyInterface $destinationPolicy,
         private readonly TransactionManagerInterface $transaction
-    ) {}
+    ) {
+    }
 
     public function execute(UpdateAuthConfigCommand $command): AuthConfig
     {
@@ -37,11 +38,16 @@ final class UpdateAuthConfigService
         }
 
         if (!$command->authMethod->isImplemented()) {
-            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod($command->authMethod);
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod(
+                $command->authMethod
+            );
         }
 
         if ($command->authMethod->requiresVaultedCredentials() && !$command->endpoint->isSecure()) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InsecureCredentialTransportException::forEndpoint($command->authMethod, $command->endpoint);
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InsecureCredentialTransportException::forEndpoint(
+                $command->authMethod,
+                $command->endpoint
+            );
         }
 
         $this->destinationPolicy->assertAllowed($command->endpoint);
@@ -56,10 +62,14 @@ final class UpdateAuthConfigService
             if ($authMethodChanged && !$hasNewSecret) {
                 // Re-using an opaque secret after changing its semantic format
                 // (Bearer -> Basic, API key -> OAuth2, ...) is unsafe.
-                throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod($command->authMethod);
+                throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod(
+                    $command->authMethod
+                );
             }
             if (!$hasNewSecret && $existingProtectedSecret === null) {
-                throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod($command->authMethod);
+                throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod(
+                    $command->authMethod
+                );
             }
         }
 

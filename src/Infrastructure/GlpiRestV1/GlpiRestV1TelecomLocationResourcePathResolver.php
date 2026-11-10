@@ -12,7 +12,9 @@ final class GlpiRestV1TelecomLocationResourcePathResolver implements InboundReso
 {
     public const TEMPLATE_ID = 'glpi_rest_v1.indigo.telecom.locations.normalize';
 
-    public function __construct(private readonly GlpiRestV1LocationSearchOptionCatalog $catalog) {}
+    public function __construct(private readonly GlpiRestV1LocationSearchOptionCatalog $catalog)
+    {
+    }
 
     public function supports(SyncJob $syncJob): bool
     {

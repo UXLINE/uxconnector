@@ -81,9 +81,12 @@ final class SyncJobPersistenceMapper
             new CollectionPath((string) ($row['collection_path'] ?? '$')),
             $this->decodePaginationConfig($row['pagination_config'] ?? null),
             isset($row['template_id']) && (string) $row['template_id'] !== '' ? (string) $row['template_id'] : null,
-            isset($row['template_version']) && (string) $row['template_version'] !== '' ? (string) $row['template_version'] : null,
+            isset($row['template_version']) && (string) $row['template_version'] !== ''
+                ? (string) $row['template_version'] : null,
             InteractionTrigger::tryFrom((string) ($row['trigger_type'] ?? 'polling')) ?? InteractionTrigger::POLLING,
-            (($row['external_object_type'] ?? '') === 'record' || trim((string) ($row['external_object_type'] ?? '')) === '')
+            (($row['external_object_type'] ?? '') === 'record' || trim(
+                (string) ($row['external_object_type'] ?? '')
+            ) === '')
                 ? $targetItemtype->value
                 : (string) $row['external_object_type'],
             $this->decodeOutboundConfig($row['outbound_config'] ?? null),
@@ -293,7 +296,8 @@ final class SyncJobPersistenceMapper
         }
 
         if (($payload['type'] ?? null) === 'mapped') {
-            $unknownPolicy = UnknownEntityPolicy::tryFrom((string) ($payload['unknown_policy'] ?? '')) ?? UnknownEntityPolicy::FAIL;
+            $unknownPolicy = UnknownEntityPolicy::tryFrom((string) ($payload['unknown_policy'] ?? ''))
+                ?? UnknownEntityPolicy::FAIL;
 
             return EntityAssignmentStrategy::mapped(
                 (string) $payload['source_field'],
@@ -314,7 +318,9 @@ final class SyncJobPersistenceMapper
      */
     private function assertHasRequiredFields(array $row): void
     {
-        foreach (['id', 'name', 'auth_config_reference', 'direction', 'resource_path', 'target_itemtype', 'match_field', 'external_id_field', 'field_mappings', 'status', 'date_creation', 'date_mod'] as $field
+        foreach (
+            ['id', 'name', 'auth_config_reference', 'direction', 'resource_path', 'target_itemtype', 'match_field',
+                'external_id_field', 'field_mappings', 'status', 'date_creation', 'date_mod'] as $field
         ) {
             if (!array_key_exists($field, $row)) {
                 throw new \RuntimeException(sprintf(

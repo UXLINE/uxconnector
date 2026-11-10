@@ -78,11 +78,7 @@ return static function (Migration $migration): void {
         // could leave an AuthConfig in TESTING. Force those legacy results
         // back to DRAFT so they cannot be activated without a strict 2xx
         // re-test after the upgrade.
-        $DB->doQuery(
-            "UPDATE `$authConfigTable` SET `status` = 'draft' WHERE `status` = 'testing'",
-        ) || throw new \RuntimeException(
-            'Failed to reset legacy AuthConfig testing statuses: ' . $DB->error(),
-        );
+        $DB->update($authConfigTable, ['status' => 'draft'], ['status' => 'testing']);
     }
 
     // RULE-VALUEOBJECT-003/CredentialVault design note : this table is
@@ -309,7 +305,9 @@ return static function (Migration $migration): void {
                 `item_id` int unsigned NOT NULL,
                 `last_seen_at` timestamp NULL DEFAULT NULL,
                 PRIMARY KEY (`id`),
-                UNIQUE KEY `uniq_scope_external` (`auth_config_reference`, `itemtype`, `plugin_uxconnector_syncjobs_id`, `external_id`),
+                UNIQUE KEY `uniq_scope_external` (
+                    `auth_config_reference`, `itemtype`, `plugin_uxconnector_syncjobs_id`, `external_id`
+                ),
                 KEY `plugin_uxconnector_syncjobs_id` (`plugin_uxconnector_syncjobs_id`),
                 KEY `connection_external_lookup` (`auth_config_reference`, `external_object_type`, `external_id`),
                 KEY `connection_item_lookup` (`auth_config_reference`, `itemtype`, `item_id`),
@@ -322,7 +320,8 @@ return static function (Migration $migration): void {
         );
     }
 
-    // 2.9.0 - Copilot Gateway API clients. Secrets are never persisted: only a SHA-256 hash of the generated API key is stored.
+    // 2.9.0 - Copilot Gateway API clients. Secrets are never persisted: only a SHA-256 hash of the generated API
+    // key is stored.
     $copilotClientTable = 'glpi_plugin_uxconnector_copilotclients';
     if (!$DB->tableExists($copilotClientTable)) {
         $migration->displayMessage("Installing $copilotClientTable");
@@ -582,23 +581,29 @@ return static function (Migration $migration): void {
     // stored as the tenant root URL. Migrate only the six bundled templates
     // and only when they still carry the legacy `/Assets/...` form.
     if ($DB->tableExists($syncJobTable)) {
-        $query = <<<SQL
-            UPDATE `$syncJobTable`
-            SET `resource_path` = CONCAT('/api.php', `resource_path`),
-                `template_version` = '2.17.1'
-            WHERE `template_id` IN (
-                'glpi-hl.assets.computers.inbound',
-                'glpi-hl.assets.monitors.inbound',
-                'glpi-hl.assets.phones.inbound',
-                'glpi-hl.assets.peripherals.inbound',
-                'glpi-hl.assets.printers.inbound',
-                'glpi-hl.assets.network-equipment.inbound'
-            )
-              AND `resource_path` LIKE '/Assets/%';
-            SQL;
-        $DB->doQuery($query) || throw new \RuntimeException(
-            'Failed to migrate GLPI High-Level asset resource paths: ' . $DB->error(),
-        );
+        $legacyJobs = $DB->request([
+            'SELECT' => ['id', 'resource_path', 'template_id'],
+            'FROM' => $syncJobTable,
+            'WHERE' => [
+                'template_id' => [
+                    'glpi-hl.assets.computers.inbound',
+                    'glpi-hl.assets.monitors.inbound',
+                    'glpi-hl.assets.phones.inbound',
+                    'glpi-hl.assets.peripherals.inbound',
+                    'glpi-hl.assets.printers.inbound',
+                    'glpi-hl.assets.network-equipment.inbound',
+                ],
+                'resource_path' => ['LIKE', '/Assets/%'],
+            ],
+        ]);
+        foreach ($legacyJobs as $job) {
+            $DB->update(
+                $syncJobTable,
+                ['resource_path' => '/api.php' . $job['resource_path'], 'template_version' => '2.17.1'],
+                ['id' => (int) $job['id'], 'resource_path' => $job['resource_path'],
+                    'template_id' => $job['template_id']],
+            );
+        }
     }
 
     // 2.18.20 - individualized Microsoft licence assignments. This table is

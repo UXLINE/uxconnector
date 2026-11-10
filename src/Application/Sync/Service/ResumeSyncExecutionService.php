@@ -18,7 +18,8 @@ final class ResumeSyncExecutionService
         private readonly TransactionManagerInterface $transaction,
         private readonly ExecutionMutexInterface $mutex,
         private readonly ?ExecutionStopRequestRepositoryInterface $stopRequests = null
-    ) {}
+    ) {
+    }
     public function execute(SyncExecutionId $id): SyncExecution
     {
         $execution = $this->repository->findById($id);

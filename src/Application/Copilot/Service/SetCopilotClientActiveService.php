@@ -8,7 +8,9 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Repository\CopilotClientRepositoryInte
 
 final readonly class SetCopilotClientActiveService
 {
-    public function __construct(private CopilotClientRepositoryInterface $repository) {}
+    public function __construct(private CopilotClientRepositoryInterface $repository)
+    {
+    }
     public function execute(int $id, bool $active): void
     {
         $this->repository->setActive($id, $active);

@@ -30,7 +30,8 @@ final class PauseSyncJobService
 {
     public function __construct(
         private readonly SyncJobRepositoryInterface $repository
-    ) {}
+    ) {
+    }
 
     /**
      * @throws SyncJobNotFoundException if the command's SyncJobId does not
@@ -41,7 +42,9 @@ final class PauseSyncJobService
         $syncJob = $this->repository->findById($command->syncJobId);
 
         if ($syncJob === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($command->syncJobId);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId(
+                $command->syncJobId
+            );
         }
 
         $syncJob->pause();

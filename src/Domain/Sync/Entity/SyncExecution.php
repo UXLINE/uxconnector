@@ -19,6 +19,7 @@ final class SyncExecution
     private array $events = [];
     private ?SyncExecutionId $id = null;
     private SyncExecutionStatus $status;
+    private ?SyncExecutionStatus $persistedStatus = null;
     private DateTimeImmutable $startedAt;
     private ?DateTimeImmutable $finishedAt = null;
     private int $itemsProcessed = 0;
@@ -38,6 +39,7 @@ final class SyncExecution
     private bool $resumeAvailable = false;
     private string $triggerSource = 'scheduled';
     private bool $stopRequested = false;
+    private bool $cancellationRequested = false;
     private ?string $resumePath = null;
 
     private function __construct(private readonly SyncJobId $syncJobId)
@@ -83,11 +85,13 @@ final class SyncExecution
         bool $resumeAvailable = false,
         string $triggerSource = 'scheduled',
         bool $stopRequested = false,
-        ?string $resumePath = null
+        ?string $resumePath = null,
+        bool $cancellationRequested = false
     ): self {
         $execution = new self($syncJobId);
         $execution->id = $id;
         $execution->status = $status;
+        $execution->persistedStatus = $status;
         $execution->startedAt = $startedAt;
         $execution->finishedAt = $finishedAt;
         $execution->itemsProcessed = $itemsProcessed;
@@ -107,6 +111,7 @@ final class SyncExecution
         $execution->resumeAvailable = $resumeAvailable;
         $execution->triggerSource = $triggerSource;
         $execution->stopRequested = $stopRequested;
+        $execution->cancellationRequested = $cancellationRequested;
         $execution->resumePath = $resumePath;
         return $execution;
     }
@@ -202,7 +207,10 @@ final class SyncExecution
         int $itemsWarnings
     ): void {
         $this->guardNotAlreadyFinished();
-        foreach ([$itemsProcessed, $itemsFailed, $itemsCreated, $itemsUpdated, $itemsSkipped, $itemsWarnings] as $count) {
+        foreach (
+            [$itemsProcessed, $itemsFailed, $itemsCreated, $itemsUpdated, $itemsSkipped,
+                $itemsWarnings] as $count
+        ) {
             if ($count < 0) {
                 throw new \InvalidArgumentException('Execution counters cannot be negative.');
             }
@@ -244,6 +252,30 @@ final class SyncExecution
         $this->finishedAt = new DateTimeImmutable();
         $this->resumeAvailable = true;
         $this->recordFinishedEvent();
+    }
+
+    public function cancel(): void
+    {
+        $this->status = SyncExecutionStatus::CANCELLED;
+        $this->finishedAt = new DateTimeImmutable();
+        $this->resumeAvailable = false;
+        $this->cancellationRequested = false;
+        $this->stopRequested = false;
+        $this->resumePath = null;
+        $this->errorMessage = null;
+        // An accepted request can win the race with a just-completed execution.
+        $this->events = [];
+        $this->recordFinishedEvent();
+    }
+
+    public function persistedStatus(): ?SyncExecutionStatus
+    {
+        return $this->persistedStatus;
+    }
+
+    public function cancellationRequested(): bool
+    {
+        return $this->cancellationRequested;
     }
 
     public function id(): ?SyncExecutionId

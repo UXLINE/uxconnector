@@ -8,7 +8,9 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Semantic\Port\SemanticTicketSourceInte
 
 final readonly class PrepareSemanticTicketClassificationService
 {
-    public function __construct(private SemanticTicketSourceInterface $source) {}
+    public function __construct(private SemanticTicketSourceInterface $source)
+    {
+    }
 
     /**
      * @param array<string, mixed> $criteria

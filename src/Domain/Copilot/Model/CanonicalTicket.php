@@ -33,7 +33,8 @@ final readonly class CanonicalTicket
         public ?string $timeToOwn,
         public ?string $timeToResolve,
         public array $raw = []
-    ) {}
+    ) {
+    }
 
     /** @return array<string,mixed> */
     public function toArray(bool $includeRaw = false): array

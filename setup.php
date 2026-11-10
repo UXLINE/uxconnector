@@ -21,7 +21,7 @@ use GlpiPlugin\Uxconnector\Setup;
  * include setup.php to discover/check the plugin before registering the
  * plugin's PSR-4 autoloader.
  */
-define('PLUGIN_UXCONNECTOR_VERSION', '2.18.37');
+define('PLUGIN_UXCONNECTOR_VERSION', '2.18.38');
 define('PLUGIN_UXCONNECTOR_MIN_GLPI_VERSION', '11.0.0');
 define('PLUGIN_UXCONNECTOR_MAX_GLPI_VERSION', '12.0.0');
 define('PLUGIN_UXCONNECTOR_MIN_PHP_VERSION', '8.2');
@@ -62,7 +62,15 @@ function plugin_init_uxconnector(): void
 /** Register stateless machine-to-machine paths after GLPI bootstraps the plugin. */
 function plugin_uxconnector_boot(): void
 {
-    SessionManager::registerPluginStatelessPath('uxconnector', '#^/front/(webhook|copilot|copilot-openapi|copilot-search|copilot-context|copilot-capabilities|copilot-ticket-summary|copilot-ticket-trends|copilot-categories|copilot-sla|copilot-sla-breaches|copilot-groups|copilot-technicians|copilot-compare|copilot-incidentology-global|copilot-incidentology-groups|copilot-incidentology-typologies|copilot-semantic-classification|copilot-semantic-prepare|copilot-semantic-finalize)\.php$#');
+    SessionManager::registerPluginStatelessPath(
+        'uxconnector',
+        '#^/front/(webhook|copilot|copilot-openapi|copilot-search|copilot-context|'
+            . 'copilot-capabilities|copilot-ticket-summary|copilot-ticket-trends|copilot-categories|'
+            . 'copilot-sla|copilot-sla-breaches|copilot-groups|copilot-technicians|copilot-compare|'
+            . 'copilot-incidentology-global|copilot-incidentology-groups|'
+            . 'copilot-incidentology-typologies|copilot-semantic-classification|'
+            . 'copilot-semantic-prepare|copilot-semantic-finalize)\.php$#'
+    );
 }
 
 /**

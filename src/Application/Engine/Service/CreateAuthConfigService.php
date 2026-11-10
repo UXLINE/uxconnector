@@ -56,7 +56,8 @@ final class CreateAuthConfigService
         private readonly DestinationPolicyInterface $destinationPolicy,
         private readonly TransactionManagerInterface $transaction,
         private readonly EventDispatcherInterface $events
-    ) {}
+    ) {
+    }
 
     /**
      * @throws AuthMethodNotSupportedException if the chosen AuthMethod is not
@@ -74,7 +75,9 @@ final class CreateAuthConfigService
     public function execute(CreateAuthConfigCommand $command): AuthConfig
     {
         if (!$command->authMethod->isImplemented()) {
-            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod($command->authMethod);
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod(
+                $command->authMethod
+            );
         }
 
         if ($command->authMethod->requiresVaultedCredentials() && !$command->endpoint->isSecure()) {
@@ -87,7 +90,9 @@ final class CreateAuthConfigService
         $this->destinationPolicy->assertAllowed($command->endpoint);
 
         if ($command->authMethod->requiresVaultedCredentials() && $command->plaintextSecret === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod($command->authMethod);
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod(
+                $command->authMethod
+            );
         }
 
         $this->transaction->begin();

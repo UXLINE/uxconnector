@@ -6,7 +6,7 @@ use GlpiPlugin\Uxconnector\Bootstrap\CopilotGatewayResponderFactory;
 
 try {
     CopilotGatewayResponderFactory::create()->searchTickets();
-} catch (\JsonException|\InvalidArgumentException $e) {
+} catch (\JsonException | \InvalidArgumentException $e) {
     \GlpiPlugin\Uxconnector\Presentation\Copilot\CopilotHttpStatus::send(400);
     header('Content-Type: application/json');
     echo json_encode(['error' => 'invalid_request','message' => $e->getMessage()]);

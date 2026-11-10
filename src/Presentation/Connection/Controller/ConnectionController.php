@@ -69,7 +69,8 @@ final class ConnectionController extends AbstractController
         private readonly OAuth2ClientCredentialsSecretComposer $oauth2SecretComposer,
         private readonly OAuth2PasswordSecretComposer $oauth2PasswordSecretComposer,
         private readonly GlpiRestV1SecretComposer $glpiRestV1SecretComposer
-    ) {}
+    ) {
+    }
 
     public function index(): void
     {
@@ -152,7 +153,9 @@ final class ConnectionController extends AbstractController
             $this->redirect('/plugins/uxconnector/front/connection.php?id=' . (int) $id);
         } catch (\Throwable $e) {
             Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
-            $this->redirect('/plugins/uxconnector/front/connection.form.php?connector=' . urlencode((string) ($request['connector_id'] ?? 'custom')));
+            $this->redirect('/plugins/uxconnector/front/connection.form.php?connector=' . urlencode(
+                (string) ($request['connector_id'] ?? 'custom')
+            ));
         }
     }
 
@@ -218,7 +221,8 @@ final class ConnectionController extends AbstractController
             ));
 
             Session::addMessageAfterRedirect(
-                __('Connection updated. Re-test it before activation if transport, credential or test settings changed.', 'uxconnector'),
+                __('Connection updated. Re-test it before activation if transport, credential or test '
+                    . 'settings changed.', 'uxconnector'),
             );
             $this->redirect('/plugins/uxconnector/front/connection.php?id=' . $id);
         } catch (\Throwable $e) {
@@ -279,9 +283,13 @@ final class ConnectionController extends AbstractController
         $id = (int) ($request['id'] ?? 0);
         try {
             $result = $this->testConnection->execute(new TestAuthConfigCommand(new AuthConfigId($id)));
-            Session::addMessageAfterRedirect($result->success
+            Session::addMessageAfterRedirect(
+                $result->success
                 ? sprintf(__('Connection test succeeded (HTTP %d).', 'uxconnector'), $result->statusCode)
-                : sprintf(__('Connection test failed: %s', 'uxconnector'), $result->errorMessage), false, $result->success ? INFO : ERROR);
+                : sprintf(__('Connection test failed: %s', 'uxconnector'), $result->errorMessage),
+                false,
+                $result->success ? INFO : ERROR
+            );
         } catch (\Throwable $e) {
             Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
         }
@@ -319,7 +327,13 @@ final class ConnectionController extends AbstractController
         $id = (int) ($request['id'] ?? 0);
         try {
             $this->assignConnector->execute(new AuthConfigId($id), (string) ($request['connector_id'] ?? 'custom'));
-            Session::addMessageAfterRedirect(__('Connector type associated. Its recommended test resource has been applied; test the connection again before activation.', 'uxconnector'));
+            Session::addMessageAfterRedirect(
+                __(
+                    'Connector type associated. Its recommended test resource has been applied; test the '
+                    . 'connection again before activation.',
+                    'uxconnector'
+                )
+            );
         } catch (\Throwable $e) {
             Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
         }
@@ -379,7 +393,10 @@ final class ConnectionController extends AbstractController
             }
 
             if ($action === 'bulk_activate_jobs' && $connection->status !== 'active') {
-                throw new \RuntimeException(__('Activate the connection before activating its interactions.', 'uxconnector'));
+                throw new \RuntimeException(__(
+                    'Activate the connection before activating its interactions.',
+                    'uxconnector'
+                ));
             }
 
             $updated = 0;
@@ -434,7 +451,8 @@ final class ConnectionController extends AbstractController
             if ($action === 'run_job') {
                 $message = __('Execution queued. It will run in background.', 'uxconnector');
             } elseif ($action === 'full_replay_job') {
-                $message = __('Checkpoint reset and full replay queued. Object links are preserved to keep replay idempotent.', 'uxconnector');
+                $message = __('Checkpoint reset and full replay queued. Object links are preserved to keep replay '
+                    . 'idempotent.', 'uxconnector');
             }
             Session::addMessageAfterRedirect($message);
         } catch (\Throwable $e) {
@@ -454,7 +472,10 @@ final class ConnectionController extends AbstractController
             } else {
                 $this->disableConnection->execute(new DisableAuthConfigCommand($authId));
             }
-            Session::addMessageAfterRedirect($action === 'activate' ? __('Connection activated.', 'uxconnector') : __('Connection disabled.', 'uxconnector'));
+            Session::addMessageAfterRedirect($action === 'activate' ? __('Connection activated.', 'uxconnector') : __(
+                'Connection disabled.',
+                'uxconnector'
+            ));
         } catch (\Throwable $e) {
             Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
         }
@@ -484,5 +505,4 @@ final class ConnectionController extends AbstractController
         $secret = trim((string) ($request['secret'] ?? ''));
         return $secret === '' ? null : $secret;
     }
-
 }

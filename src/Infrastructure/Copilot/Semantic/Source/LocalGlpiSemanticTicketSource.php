@@ -51,12 +51,14 @@ final class LocalGlpiSemanticTicketSource implements SemanticTicketSourceInterfa
         $textTruncatedTickets = 0;
         $scanned = 0;
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'FROM' => 'glpi_tickets',
             'WHERE' => ['is_deleted' => 0],
             'ORDER' => ['id DESC'],
             'LIMIT' => self::MAX_SCAN_ROWS,
-        ]) as $row) {
+            ]) as $row
+        ) {
             if (!is_array($row)) {
                 continue;
             }
@@ -134,14 +136,16 @@ final class LocalGlpiSemanticTicketSource implements SemanticTicketSourceInterfa
             return false;
         }
 
-        if (isset($criteria['entity_id'])
+        if (
+            isset($criteria['entity_id'])
              && (int) $criteria['entity_id'] > 0
              && (int) ($row['entities_id'] ?? 0) !== (int) $criteria['entity_id']
         ) {
             return false;
         }
 
-        if (isset($criteria['category_id'])
+        if (
+            isset($criteria['category_id'])
              && (int) $criteria['category_id'] > 0
              && (int) ($row['itilcategories_id'] ?? 0) !== (int) $criteria['category_id']
         ) {
@@ -212,12 +216,14 @@ final class LocalGlpiSemanticTicketSource implements SemanticTicketSourceInterfa
             return $cache[$id] = 'Category #' . $id;
         }
 
-        foreach ($DB->request([
+        foreach (
+            $DB->request([
             'SELECT' => ['name', 'completename'],
             'FROM' => 'glpi_itilcategories',
             'WHERE' => ['id' => $id],
             'LIMIT' => 1,
-        ]) as $row) {
+            ]) as $row
+        ) {
             $path = trim((string) ($row['completename'] ?? ''));
             $name = trim((string) ($row['name'] ?? ''));
 

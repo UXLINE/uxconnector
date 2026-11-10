@@ -25,7 +25,10 @@ final readonly class CollectionPath
             throw new \InvalidArgumentException('CollectionPath must not be empty; use "$" for the response root.');
         }
         if (mb_strlen($trimmed) > self::MAX_LENGTH) {
-            throw new \InvalidArgumentException(sprintf('CollectionPath must not exceed %d characters.', self::MAX_LENGTH));
+            throw new \InvalidArgumentException(sprintf(
+                'CollectionPath must not exceed %d characters.',
+                self::MAX_LENGTH
+            ));
         }
         $this->value = $trimmed;
     }

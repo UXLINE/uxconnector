@@ -13,14 +13,16 @@ final readonly class UpdateSemanticEngineConfigService
     public function __construct(
         private SemanticEngineConfigRepositoryInterface $repository,
         private SemanticEngineConnectionValidator $connectionValidator
-    ) {}
+    ) {
+    }
 
     public function execute(UpdateSemanticEngineConfigCommand $command): SemanticEngineConfig
     {
         $config = $this->repository->findById($command->id);
 
         if ($config === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigNotFoundException::forId($command->id);
+            throw \GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Exception\SemanticEngineConfigNotFoundException
+                ::forId($command->id);
         }
 
         $this->connectionValidator->requireCompatible($command->authConfigId);

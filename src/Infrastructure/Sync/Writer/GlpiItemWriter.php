@@ -80,7 +80,8 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
     public function __construct(
         private readonly DBmysql $db,
         private readonly ObjectLinkRepositoryInterface $objectLinkRepository
-    ) {}
+    ) {
+    }
 
     public function write(ReconciliationContext $context, array $mappedFields): bool
     {
@@ -133,8 +134,10 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
             if (!$value instanceof LinkedTargetReference) {
                 continue;
             }
-            if ($context->itemtype !== TargetItemtype::SIM_CARD
-                || !in_array($field, ['lines_id', 'items_id', 'locations_id', 'users_id'], true)) {
+            if (
+                $context->itemtype !== TargetItemtype::SIM_CARD
+                || !in_array($field, ['lines_id', 'items_id', 'locations_id', 'users_id'], true)
+            ) {
                 throw new \RuntimeException('ObjectLink transformation is not permitted for this target field.');
             }
             $linked = $this->objectLinkRepository->findByExternalId(
@@ -143,7 +146,9 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
                 new ExternalId($value->externalId),
             );
             if ($linked === null) {
-                throw new \RuntimeException('Referenced GLPI item has not yet been imported. Run the parent interaction first.');
+                throw new \RuntimeException(
+                    'Referenced GLPI item has not yet been imported. Run the parent interaction first.'
+                );
             }
             $expected = match ($field) {
                 'lines_id' => [TargetItemtype::LINE],
@@ -154,8 +159,10 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
             if (!in_array($linked->itemtype(), $expected, true)) {
                 throw new \RuntimeException('ObjectLink points to an incompatible GLPI itemtype.');
             }
-            if ($field === 'items_id' && isset($data['itemtype'])
-                && $data['itemtype'] !== ltrim($linked->itemtype()->glpiClassName(), '\\')) {
+            if (
+                $field === 'items_id' && isset($data['itemtype'])
+                && $data['itemtype'] !== ltrim($linked->itemtype()->glpiClassName(), '\\')
+            ) {
                 throw new \RuntimeException('Equipment type conflicts with ObjectLink target.');
             }
             $data[$field] = $linked->itemId();
@@ -167,19 +174,25 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
         }
         if ($context->itemtype === TargetItemtype::SIM_CARD) {
             if ($context->entitiesId === null) {
-                throw new \RuntimeException('SIM imports require an explicit target entity to prevent cross-entity associations.');
+                throw new \RuntimeException(
+                    'SIM imports require an explicit target entity to prevent cross-entity associations.'
+                );
             }
             if (!$this->validateSimCardReferences($data, $context->entitiesId)) {
                 throw new \RuntimeException('SIM references are invalid or do not belong to the selected entity.');
             }
         }
-        foreach (['id', 'entities_id', 'is_deleted', 'is_template', 'template_name', 'date_mod', 'date_creation'] as $reservedField) {
+        foreach (
+            ['id', 'entities_id', 'is_deleted', 'is_template', 'template_name', 'date_mod',
+                'date_creation'] as $reservedField
+        ) {
             unset($data[$reservedField]);
         }
 
         // Safe bootstrap defaults for reference data created into an empty GLPI.
         // They can still be overridden later by the target configuration.
-        if ($context->itemtype === \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::ENTITY
+        if (
+            $context->itemtype === \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::ENTITY
             && $context->entitiesId === null
         ) {
             $data['entities_id'] = 0;
@@ -238,7 +251,11 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
 
             $data['id'] = $existingLink->itemId();
             $this->lastAction = 'update';
-            $success = $this->updateExisting($item, $data, $context->replaceLinkedTicketStatus && $context->itemtype === TargetItemtype::TICKET);
+            $success = $this->updateExisting(
+                $item,
+                $data,
+                $context->replaceLinkedTicketStatus && $context->itemtype === TargetItemtype::TICKET
+            );
 
             if ($success) {
                 $existingLink->touch();
@@ -256,8 +273,14 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
     }
 
     /** @param array<string, mixed> $data @param array<string, mixed> $fieldsValues */
-    private function writeAndEnrich(\CommonDBTM $item, ReconciliationContext $context, array $data, ?GlpiTargetFieldsWriter $fieldsWriter, array $fieldsValues, ?string $email = null): bool
-    {
+    private function writeAndEnrich(
+        \CommonDBTM $item,
+        ReconciliationContext $context,
+        array $data,
+        ?GlpiTargetFieldsWriter $fieldsWriter,
+        array $fieldsValues,
+        ?string $email = null
+    ): bool {
         $success = $this->reconcileForTheFirstTime($item, $context, $data);
         if ($success) {
             $this->writeFieldsValues($context, $fieldsWriter, $fieldsValues);
@@ -277,9 +300,11 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
         if ($replaceTicketStatus) {
             $status = $data['status'] ?? null;
             unset($delta['status']);
-            if ((is_int($status) || is_string($status))
+            if (
+                (is_int($status) || is_string($status))
                 && in_array((string) $status, ['1', '2', '3', '4', '5', '6'], true)
-                && (int) ($item->fields['status'] ?? 0) !== (int) $status) {
+                && (int) ($item->fields['status'] ?? 0) !== (int) $status
+            ) {
                 $delta['status'] = (int) $status;
             }
         }
@@ -303,15 +328,20 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
         if ($link === null || $link->itemtype() !== TargetItemtype::USER) {
             throw new \RuntimeException('Target user ObjectLink is unavailable after GLPI item write.');
         }
-        if ((new GlpiUserEmailWriter($this->db))->write($link->itemId(), $email)
-            && $this->lastAction === 'skip') {
+        if (
+            (new GlpiUserEmailWriter($this->db))->write($link->itemId(), $email)
+            && $this->lastAction === 'skip'
+        ) {
             $this->lastAction = 'update';
         }
     }
 
     /** @param array<string, mixed> $values */
-    private function writeFieldsValues(ReconciliationContext $context, ?GlpiTargetFieldsWriter $writer, array $values): void
-    {
+    private function writeFieldsValues(
+        ReconciliationContext $context,
+        ?GlpiTargetFieldsWriter $writer,
+        array $values
+    ): void {
         if ($writer === null || $values === []) {
             return;
         }
@@ -323,8 +353,10 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
         if ($link === null || $link->itemtype() !== $context->itemtype) {
             throw new \RuntimeException('Target ObjectLink is unavailable after GLPI item write.');
         }
-        if ($writer->write(ltrim($context->itemtype->glpiClassName(), '\\'), $link->itemId(), $values)
-            && $this->lastAction === 'skip') {
+        if (
+            $writer->write(ltrim($context->itemtype->glpiClassName(), '\\'), $link->itemId(), $values)
+            && $this->lastAction === 'skip'
+        ) {
             $this->lastAction = 'update';
         }
     }
@@ -337,7 +369,11 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
      */
     private function validateSimCardReferences(array $data, ?int $entitiesId): bool
     {
-        foreach (['devicesimcards_id' => 'glpi_devicesimcards', 'lines_id' => 'glpi_lines', 'locations_id' => 'glpi_locations', 'users_id' => 'glpi_users', 'states_id' => 'glpi_states'] as $field => $table) {
+        foreach (
+            ['devicesimcards_id' => 'glpi_devicesimcards', 'lines_id' => 'glpi_lines',
+                'locations_id' => 'glpi_locations', 'users_id' => 'glpi_users',
+                'states_id' => 'glpi_states'] as $field => $table
+        ) {
             if (!array_key_exists($field, $data)) {
                 continue;
             }
@@ -365,7 +401,12 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
                 'Computer' => 'glpi_computers',
                 default => null,
             };
-            if ($table === null || filter_var($data['items_id'], FILTER_VALIDATE_INT) === false || (int) $data['items_id'] <= 0) {
+            if (
+                $table === null || filter_var(
+                    $data['items_id'],
+                    FILTER_VALIDATE_INT
+                ) === false || (int) $data['items_id'] <= 0
+            ) {
                 return false;
             }
             return $this->referenceExists($table, (int) $data['items_id'], $entitiesId);
@@ -488,7 +529,8 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
 
         $matchFields = match ($context->itemtype) {
             \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::COMPUTER,
-            \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::NETWORK_EQUIPMENT => ['uuid', 'serial', 'otherserial', 'name'],
+            \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::NETWORK_EQUIPMENT => ['uuid', 'serial',
+                'otherserial', 'name'],
             \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::MONITOR,
             \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::PERIPHERAL,
             \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::PHONE,

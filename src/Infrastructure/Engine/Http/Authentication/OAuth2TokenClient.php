@@ -62,7 +62,8 @@ final class OAuth2TokenClient
 
     public function __construct(
         private readonly DestinationPolicyInterface $destinationPolicy
-    ) {}
+    ) {
+    }
 
     /**
      * @throws HttpEngineException if the token endpoint is an
@@ -139,7 +140,9 @@ final class OAuth2TokenClient
     {
         $tokenEndpoint = new Endpoint($tokenUrl);
         if (!$tokenEndpoint->isSecure()) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::insecureCredentialTransport($tokenEndpoint->value());
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::insecureCredentialTransport(
+                $tokenEndpoint->value()
+            );
         }
         $this->destinationPolicy->assertAllowed($tokenEndpoint);
 
@@ -176,11 +179,15 @@ final class OAuth2TokenClient
         $headerLines = $meta['wrapper_data'] ?? [];
         $statusCode = $this->parseStatusCode($headerLines);
         if ($statusCode >= 300) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure(sprintf('OAuth2 token endpoint returned HTTP %d.', $statusCode));
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure(
+                sprintf('OAuth2 token endpoint returned HTTP %d.', $statusCode)
+            );
         }
         $decoded = json_decode($responseBody, true);
         if (!is_array($decoded) || !isset($decoded['access_token']) || !is_string($decoded['access_token'])) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure('OAuth2 token endpoint response did not contain a usable "access_token".');
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure(
+                'OAuth2 token endpoint response did not contain a usable "access_token".'
+            );
         }
         return $decoded;
     }

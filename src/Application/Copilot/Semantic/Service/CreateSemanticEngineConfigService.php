@@ -13,7 +13,8 @@ final readonly class CreateSemanticEngineConfigService
     public function __construct(
         private SemanticEngineConfigRepositoryInterface $repository,
         private SemanticEngineConnectionValidator $connectionValidator
-    ) {}
+    ) {
+    }
 
     public function execute(CreateSemanticEngineConfigCommand $command): SemanticEngineConfig
     {

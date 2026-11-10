@@ -13,7 +13,9 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ObjectLinkId;
 
 final class ObjectLinkRepository implements ObjectLinkRepositoryInterface
 {
-    public function __construct(private readonly ObjectLinkPersistenceMapper $mapper) {}
+    public function __construct(private readonly ObjectLinkPersistenceMapper $mapper)
+    {
+    }
 
     public function save(ObjectLink $objectLink): ObjectLink
     {

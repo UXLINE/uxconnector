@@ -8,7 +8,9 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ReadModel\LicenseAssignmentReaderInterfac
 
 final class ListLicenseAssignments
 {
-    public function __construct(private readonly LicenseAssignmentReaderInterface $reader) {}
+    public function __construct(private readonly LicenseAssignmentReaderInterface $reader)
+    {
+    }
 
     /** @return list<array<string,mixed>> */
     public function execute(): array

@@ -68,16 +68,29 @@ final readonly class GlpiHlApiProvider implements ItsmDataProviderInterface
             if ($ticket->id <= 0) {
                 continue;
             }
-            if ($query !== '' && !str_contains(mb_strtolower($ticket->title . ' ' . $ticket->description . ' ' . ($ticket->category ?? '')), $query)) {
+            if (
+                $query !== '' && !str_contains(mb_strtolower($ticket->title . ' ' . $ticket->description . ' ' . (
+                            $ticket->category ?? '')), $query)
+            ) {
                 continue;
             }
             if ($status !== [] && !in_array(mb_strtolower((string) $ticket->status), $status, true)) {
                 continue;
             }
-            if ($dateFrom !== '' && $ticket->createdAt !== null && strcmp(substr($ticket->createdAt, 0, 10), $dateFrom) < 0) {
+            if (
+                $dateFrom !== '' && $ticket->createdAt !== null && strcmp(
+                    substr($ticket->createdAt, 0, 10),
+                    $dateFrom
+                ) < 0
+            ) {
                 continue;
             }
-            if ($dateTo !== '' && $ticket->createdAt !== null && strcmp(substr($ticket->createdAt, 0, 10), $dateTo) > 0) {
+            if (
+                $dateTo !== '' && $ticket->createdAt !== null && strcmp(
+                    substr($ticket->createdAt, 0, 10),
+                    $dateTo
+                ) > 0
+            ) {
                 continue;
             }
             $result[] = $ticket;
@@ -112,7 +125,11 @@ final readonly class GlpiHlApiProvider implements ItsmDataProviderInterface
     /** @return array<string,mixed>|list<mixed> */
     private function getJson(string $path): array
     {
-        $response = $this->http->execute($this->connection, new HttpRequest(HttpMethod::GET, $path, ['Accept' => 'application/json']));
+        $response = $this->http->execute($this->connection, new HttpRequest(
+            HttpMethod::GET,
+            $path,
+            ['Accept' => 'application/json']
+        ));
         if ($response->statusCode < 200 || $response->statusCode >= 300) {
             throw new \RuntimeException(sprintf('GLPI HL API returned HTTP %d for %s.', $response->statusCode, $path));
         }
@@ -181,6 +198,8 @@ final readonly class GlpiHlApiProvider implements ItsmDataProviderInterface
         if (!is_array($value)) {
             return [];
         }
-        return array_values(array_filter(array_map(static fn($v) => is_scalar($v) ? mb_strtolower(trim((string) $v)) : '', $value)));
+        return array_values(array_filter(array_map(static fn($v) => is_scalar($v) ? mb_strtolower(
+            trim((string) $v)
+        ) : '', $value)));
     }
 }

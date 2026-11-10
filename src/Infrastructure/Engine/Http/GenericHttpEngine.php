@@ -37,7 +37,8 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
         private readonly DestinationPolicyInterface $destinationPolicy,
         private readonly RetryPolicy $retryPolicy = new RetryPolicy(),
         private readonly ErrorClassification $errorClassification = new ErrorClassification()
-    ) {}
+    ) {
+    }
 
     public function execute(AuthConfig $authConfig, HttpRequest $request): HttpResponse
     {
@@ -71,7 +72,8 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
                 continue;
             }
 
-            if ($strategy instanceof RenewableSessionAuthenticationStrategy
+            if (
+                $strategy instanceof RenewableSessionAuthenticationStrategy
                 && !$authRenewed
                 && $strategy->responseRequiresRenewal($response)
             ) {
@@ -80,7 +82,11 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
                 continue;
             }
 
-            if (!$this->errorClassification->isRetryableStatus($response->statusCode) || $attempt >= $this->retryPolicy->maxAttempts) {
+            if (
+                !$this->errorClassification->isRetryableStatus(
+                    $response->statusCode
+                ) || $attempt >= $this->retryPolicy->maxAttempts
+            ) {
                 return $response;
             }
 

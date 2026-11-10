@@ -34,7 +34,8 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
         private readonly LegacyLocationProfileCatalog $catalog,
         protected readonly ObjectLinkRepositoryInterface $objectLinks,
         protected readonly GlpiTargetFieldsWriter $fieldsWriter
-    ) {}
+    ) {
+    }
 
     abstract protected function profile(): string;
 
@@ -91,7 +92,10 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
                 if ($sourceId === '') {
                     throw new \RuntimeException('SOURCE_LOCATION_ID_MISSING');
                 }
-                [$action, $targetId, $type, $externalType] = \GlpiPlugin\Uxconnector\Infrastructure\Sync\Runtime\SyncRuntimeGuard::run(fn(): array => $this->processRecord($job, $row, $map, $sourceId));
+                [$action, $targetId, $type,
+                    $externalType] = \GlpiPlugin\Uxconnector\Infrastructure\Sync\Runtime\SyncRuntimeGuard::run(
+                        fn(): array => $this->processRecord($job, $row, $map, $sourceId)
+                    );
                 if ($targetId > 0) {
                     $this->rememberLink($job, $sourceId, $type, $targetId, $externalType);
                 }
@@ -105,8 +109,10 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
                 }
             } catch (\Throwable $error) {
                 $failed++;
-                $reason = preg_match('/^[A-Z0-9_]{3,70}$/D', $error->getMessage()) ? $error->getMessage() : 'PROFILE_RECORD_REJECTED';
-                error_log('[UXConnector][GLPI profile ' . $this->profile() . '] stage=' . $this->stage . ' reason=' . $reason . ' exception=' . $error::class);
+                $reason = preg_match('/^[A-Z0-9_]{3,70}$/D', $error->getMessage()) ? $error->getMessage()
+                    : 'PROFILE_RECORD_REJECTED';
+                error_log('[UXConnector][GLPI profile ' . $this->profile() . '] stage=' . $this->stage . ' reason='
+                    . $reason . ' exception=' . $error::class);
                 if ($failureRepository !== null && $executionId !== null && $job->id() !== null) {
                     $failureRepository->add(new SyncFailure(
                         $executionId,
@@ -120,8 +126,10 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
                         'error',
                         SyncErrorCategory::POST_PROCESSING,
                         $reason,
-                        'GLPI migration stopped at stage ' . $this->stage . '. Verify Fields availability, source data and target permissions.',
-                        json_encode(['stage' => $this->stage, 'target_id' => $this->targetId, 'exception' => $error::class], JSON_THROW_ON_ERROR),
+                        'GLPI migration stopped at stage ' . $this->stage
+                            . '. Verify Fields availability, source data and target permissions.',
+                        json_encode(['stage' => $this->stage, 'target_id' => $this->targetId,
+                                'exception' => $error::class], JSON_THROW_ON_ERROR),
                         null,
                         1,
                         $page,
@@ -133,7 +141,9 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
         return new BatchProcessResult($processed, $failed, $created, $updated, $skipped, 0);
     }
 
-    protected function assertAdditionalPrerequisites(): void {}
+    protected function assertAdditionalPrerequisites(): void
+    {
+    }
 
     /** @param array<string|int,mixed> $row @param array<string,int> $map */
     protected function value(array $row, array $map, string $logical): string
@@ -149,15 +159,21 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
         // Search APIs must return display labels for Fields dropdowns. A raw
         // integer is an instance-local dropdown option ID, not a GLPI target
         // status, licence price or métier code; fail rather than corrupt it.
-        if (is_int($raw) && in_array($logical, [
+        if (
+            is_int($raw) && in_array($logical, [
             'status', 'entity_code', 'amount_ht', 'monthly_amount',
-        ], true)) {
+            ], true)
+        ) {
             throw new \RuntimeException('SOURCE_DROPDOWN_ID_NOT_RESOLVED');
         }
         if ($logical === 'status' && is_string($raw) && ctype_digit(trim($raw))) {
             throw new \RuntimeException('SOURCE_STATUS_DROPDOWN_ID_NOT_RESOLVED');
         }
-        return is_scalar($raw) ? trim(html_entity_decode(strip_tags((string) $raw), ENT_QUOTES | ENT_HTML5, 'UTF-8')) : '';
+        return is_scalar($raw) ? trim(html_entity_decode(
+            strip_tags((string) $raw),
+            ENT_QUOTES | ENT_HTML5,
+            'UTF-8'
+        )) : '';
     }
 
     /** @param array<string,mixed> $where @return array<string,mixed>|null */
@@ -238,8 +254,13 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
         return str_replace(',', '.', $value);
     }
 
-    protected function rememberLink(SyncJob $job, string $sourceId, TargetItemtype $type, int $itemId, string $externalType): void
-    {
+    protected function rememberLink(
+        SyncJob $job,
+        string $sourceId,
+        TargetItemtype $type,
+        int $itemId,
+        string $externalType
+    ): void {
         if ($job->id() === null) {
             return;
         }

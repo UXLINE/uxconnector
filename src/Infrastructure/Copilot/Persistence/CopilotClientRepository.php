@@ -58,7 +58,13 @@ final class CopilotClientRepository implements CopilotClientRepositoryInterface
     public function setActive(int $id, bool $active): void
     {
         global $DB;
-        if ($id <= 0 || !$DB->update(self::TABLE, ['is_active' => $active ? 1 : 0, 'date_mod' => date('Y-m-d H:i:s')], ['id' => $id])) {
+        if (
+            $id <= 0 || !$DB->update(
+                self::TABLE,
+                ['is_active' => $active ? 1 : 0, 'date_mod' => date('Y-m-d H:i:s')],
+                ['id' => $id]
+            )
+        ) {
             throw new \RuntimeException('Unable to update Copilot agent.');
         }
     }

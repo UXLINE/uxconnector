@@ -1,0 +1,42 @@
+{% autoescape 'html' %}
+    {% set columns = {
+        'product': 'Produit',
+        'beneficiary': 'Bénéficiaire',
+        'registration_number': 'Matricule',
+        'job_function': 'Fonction',
+        'assignment_status': 'Statut',
+        'activation_source': 'Activation',
+        'deactivation_source': 'Désactivation',
+        'annual_price_source': 'Prix annuel source',
+        'monthly_price_source': 'Prix mensuel source',
+        'softwarelicenses_id': 'Pool GLPI',
+        'source_authconfig_id': 'Connexion source',
+        'source_location_id': 'Lieu source',
+        'code_da': 'Code DA'
+    } %}
+
+    <div class="card p-3">
+        <h3>Affectations Microsoft importées</h3>
+        <p>Les quantités acquises ne proviennent pas des anciens lieux et ne sont jamais déduites de ces affectations.</p>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        {% for label in columns %}
+                            <th>{{ label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            {% for column in columns|keys %}
+                                <td>{{ row[column] ?? '' }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endautoescape %}

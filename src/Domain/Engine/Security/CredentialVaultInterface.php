@@ -25,7 +25,8 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException;
  * with which algorithm a secret is encrypted. It only knows it can
  * ask the vault to protect() a plaintext secret and reveal() it back
  * when the GenericHttpEngine needs to authenticate an outgoing
- * request. The concrete implementation (GLPIKey / libsodium via GLPI's glpicrypt.key) lives in Infrastructure\Engine\Security.
+ * request. The concrete implementation (GLPIKey / libsodium via GLPI's glpicrypt.key) lives in
+ * Infrastructure\Engine\Security.
  */
 interface CredentialVaultInterface
 {

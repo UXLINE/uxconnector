@@ -38,8 +38,10 @@ final class CronRegistry
     {
         self::registerSyncJob();
         $scheduler = new CronTask();
-        if ($scheduler->getFromDBbyName(SyncJobCronTask::class, self::SYNC_JOB_TASK_NAME)
-            && (int) ($scheduler->fields['frequency'] ?? 0) !== 60) {
+        if (
+            $scheduler->getFromDBbyName(SyncJobCronTask::class, self::SYNC_JOB_TASK_NAME)
+            && (int) ($scheduler->fields['frequency'] ?? 0) !== 60
+        ) {
             if (!$scheduler->update(['id' => $scheduler->getID(), 'frequency' => 60])) {
                 throw new \RuntimeException('Unable to update UXConnector scheduler frequency.');
             }
@@ -94,5 +96,4 @@ final class CronRegistry
             ],
         );
     }
-
 }

@@ -9,7 +9,9 @@ use GlpiPlugin\Uxconnector\Domain\Copilot\Semantic\Port\SemanticTicketSourceInte
 
 final readonly class PreparedSemanticTicketSource implements SemanticTicketSourceInterface
 {
-    public function __construct(private SemanticTicketSourceResult $result) {}
+    public function __construct(private SemanticTicketSourceResult $result)
+    {
+    }
 
     public function fetch(array $criteria): SemanticTicketSourceResult
     {

@@ -17,5 +17,6 @@ final readonly class CreateSemanticEngineConfigCommand
         public float $confidenceThreshold = 0.7,
         public float $temperature = 0.0,
         public string $classifierVersion = '1.0.0'
-    ) {}
+    ) {
+    }
 }

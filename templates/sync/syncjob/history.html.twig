@@ -59,7 +59,10 @@
                         {% if execution.itemsFailed > 0 or execution.itemsWarnings > 0 %}
                             <a class="btn btn-sm btn-outline-secondary" href="syncexecution.failures.php?id={{ execution.id }}">{{ __('Failed items', 'uxconnector') }}</a>
                         {% endif %}
-                        {% if can_update and execution.status == 'running' %}
+                        {% if execution.cancellationRequested %}
+                            <span class="badge bg-yellow">{{ __('Cancellation requested', 'uxconnector') }}</span>
+                        {% endif %}
+                        {% if can_update and execution.status == 'running' and not execution.cancellationRequested %}
                             {% if execution.stopRequested %}
                                 <span class="badge bg-yellow">{{ __('Stop requested', 'uxconnector') }}</span>
                             {% else %}
@@ -71,7 +74,15 @@
                                 </form>
                             {% endif %}
                         {% endif %}
-                        {% if execution.resumeAvailable %}
+                        {% if can_update and not execution.cancellationRequested and execution.status in ['pending', 'running', 'interrupted'] %}
+                            <form method="post" action="syncexecution.cancel.php" style="display:inline-block" onsubmit="return confirm('{{ __('Cancel this execution permanently? Changes already applied will be kept.', 'uxconnector')|e('js') }}')">
+                                <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="id" value="{{ execution.id }}">
+                                <input type="hidden" name="job_id" value="{{ syncJobId }}">
+                                <button class="btn btn-sm btn-danger" type="submit">{{ __('Cancel execution', 'uxconnector') }}</button>
+                            </form>
+                        {% endif %}
+                        {% if can_update and execution.resumeAvailable and execution.status == 'interrupted' %}
                             <form method="post" action="syncexecution.resume.php" style="display:inline-block">
                                 <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
                                 <input type="hidden" name="id" value="{{ execution.id }}">

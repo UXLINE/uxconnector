@@ -20,7 +20,8 @@ final class CopilotAgentController extends AbstractController
         private readonly SetCopilotClientActiveService $setClientActive,
         private readonly DeleteCopilotClientService $deleteClient,
         private readonly ListAuthConfigsService $listConnections,
-    ) {}
+    ) {
+    }
 
     public function index(?string $generatedKey = null): void
     {
@@ -29,7 +30,11 @@ final class CopilotAgentController extends AbstractController
             if ($connection->status !== 'active') {
                 continue;
             }
-            $connections[(int) $connection->id] = sprintf('#%d - %s', (int) $connection->id, (string) $connection->name);
+            $connections[(int) $connection->id] = sprintf(
+                '#%d - %s',
+                (int) $connection->id,
+                (string) $connection->name
+            );
         }
 
         $this->render('copilot/agents.html.twig', [
@@ -69,7 +74,10 @@ final class CopilotAgentController extends AbstractController
     {
         try {
             $this->setClientActive->execute((int) ($request['id'] ?? 0), $active);
-            Session::addMessageAfterRedirect($active ? __('Copilot agent enabled.', 'uxconnector') : __('Copilot agent disabled.', 'uxconnector'));
+            Session::addMessageAfterRedirect($active ? __('Copilot agent enabled.', 'uxconnector') : __(
+                'Copilot agent disabled.',
+                'uxconnector'
+            ));
         } catch (\Throwable $e) {
             Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
         }

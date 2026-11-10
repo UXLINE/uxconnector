@@ -25,5 +25,6 @@ final readonly class TestAuthConfigResult
         public ?int $statusCode,
         public ?float $durationMs,
         public ?string $errorMessage
-    ) {}
+    ) {
+    }
 }

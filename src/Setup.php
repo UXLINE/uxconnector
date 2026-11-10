@@ -27,7 +27,7 @@ final class Setup
     /**
      * Plugin version exposed by this lifecycle class.
      */
-    public const VERSION = '2.18.37';
+    public const VERSION = '2.18.38';
 
     /**
      * Minimum GLPI version supported by this plugin.

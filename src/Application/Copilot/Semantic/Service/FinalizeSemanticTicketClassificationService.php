@@ -10,7 +10,9 @@ use GlpiPlugin\Uxconnector\Application\Copilot\Semantic\Adapter\PreparedSemantic
 
 final readonly class FinalizeSemanticTicketClassificationService
 {
-    public function __construct(private SemanticTicketSourceInterface $source) {}
+    public function __construct(private SemanticTicketSourceInterface $source)
+    {
+    }
 
     /**
      * @param array<string, mixed> $payload
@@ -27,7 +29,8 @@ final readonly class FinalizeSemanticTicketClassificationService
         }
 
         $fingerprint = strtolower(trim((string) ($payload['scope_fingerprint'] ?? '')));
-        if (strlen($fingerprint) !== 64
+        if (
+            strlen($fingerprint) !== 64
              || preg_match('/^[a-f0-9]{64}$/D', $fingerprint) !== 1
         ) {
             throw new \InvalidArgumentException('scope_fingerprint must be the SHA-256 returned by prepare.');

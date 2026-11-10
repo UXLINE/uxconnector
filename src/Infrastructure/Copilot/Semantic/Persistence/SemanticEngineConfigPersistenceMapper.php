@@ -14,11 +14,13 @@ final class SemanticEngineConfigPersistenceMapper
     /** @param array<string, mixed> $row */
     public function toDomain(array $row): SemanticEngineConfig
     {
-        foreach ([
+        foreach (
+            [
             'id', 'name', 'auth_config_reference', 'model', 'inference_path',
             'batch_size', 'confidence_threshold', 'temperature',
             'classifier_version', 'status', 'date_creation', 'date_mod',
-        ] as $field) {
+            ] as $field
+        ) {
             if (!array_key_exists($field, $row)) {
                 throw new \RuntimeException(sprintf(
                     'Cannot hydrate SemanticEngineConfig: missing "%s" field.',

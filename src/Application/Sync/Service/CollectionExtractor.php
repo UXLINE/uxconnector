@@ -9,7 +9,9 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\CollectionPath;
 /** Extracts a list of records from a decoded JSON response using configuration only. */
 final class CollectionExtractor
 {
-    public function __construct(private readonly JsonPathValueReader $reader) {}
+    public function __construct(private readonly JsonPathValueReader $reader)
+    {
+    }
 
     /**
     * @param array<mixed> $decoded

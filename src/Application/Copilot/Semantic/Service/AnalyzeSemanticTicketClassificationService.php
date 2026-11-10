@@ -48,7 +48,8 @@ final readonly class AnalyzeSemanticTicketClassificationService
         foreach ($sourceResult->tickets as $ticket) {
             $inputsById[$ticket->ticketId] = $ticket;
 
-            if (trim($ticket->title) === ''
+            if (
+                trim($ticket->title) === ''
                  && trim($ticket->description) === ''
             ) {
                 $localResults[$ticket->ticketId] = new SemanticTicketClassification(
@@ -326,12 +327,22 @@ final readonly class AnalyzeSemanticTicketClassificationService
             'ticketClassifications' => $ticketClassifications,
             'ticketClassificationsReturned' => count($ticketClassifications),
             'metricDefinitions' => [
-                'declared_type' => 'GLPI ticket type stored in glpi_tickets.type. It is not changed by semantic classification.',
-                'itil_category' => 'Registered GLPI ITIL category path supplied as contextual metadata. It is not the semantic result.',
-                'semantic_classification' => 'UXConnector engine classification calculated from ticket title/content through the configured semantic provider.',
-                'uncertain' => 'Effective class used when the provider itself returns uncertain, when text evidence is absent, or when provider confidence is below the configured threshold.',
-                'likely_user_assistance_percent_of_declared_incidents' => 'Engine-calculated share of selected GLPI-declared Incident tickets whose effective semantic class is user_assistance. It is not inferred by Copilot.',
-                'scope_complete' => 'True only when neither max_tickets selection nor the synchronous source scan safety cap truncated the matching scope.',
+                'declared_type' =>
+                    'GLPI ticket type stored in glpi_tickets.type. It is not changed by semantic classification.',
+                'itil_category' => 'Registered GLPI ITIL category path supplied as contextual metadata. It is not the '
+                    . 'semantic result.',
+                'semantic_classification' =>
+                    'UXConnector engine classification calculated from ticket title/content through the '
+                    . 'configured semantic provider.',
+                'uncertain' =>
+                    'Effective class used when the provider itself returns uncertain, when text evidence is '
+                    . 'absent, or when provider confidence is below the configured threshold.',
+                'likely_user_assistance_percent_of_declared_incidents' =>
+                    'Engine-calculated share of selected GLPI-declared Incident tickets whose effective '
+                    . 'semantic class is user_assistance. It is not inferred by Copilot.',
+                'scope_complete' =>
+                    'True only when neither max_tickets selection nor the synchronous source scan safety cap '
+                    . 'truncated the matching scope.',
             ],
             'dataSources' => [
                 'glpi' => true,

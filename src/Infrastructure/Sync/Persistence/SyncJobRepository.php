@@ -26,7 +26,8 @@ final class SyncJobRepository implements SyncJobRepositoryInterface, Interaction
 {
     public function __construct(
         private readonly SyncJobPersistenceMapper $mapper
-    ) {}
+    ) {
+    }
 
     public function save(SyncJob $syncJob): SyncJob
     {

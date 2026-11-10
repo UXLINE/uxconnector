@@ -8,5 +8,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
 final readonly class DeleteSyncJobCommand
 {
-    public function __construct(public SyncJobId $syncJobId) {}
+    public function __construct(public SyncJobId $syncJobId)
+    {
+    }
 }

@@ -33,7 +33,10 @@ final readonly class JobTemplate
         public array $outbound = [],
         public bool $retired = false
     ) {
-        foreach ([$id, $version, $name, $direction, $resourcePath, $collectionPath, $targetItemtype, $matchField, $externalIdField] as $value) {
+        foreach (
+            [$id, $version, $name, $direction, $resourcePath, $collectionPath, $targetItemtype, $matchField,
+                $externalIdField] as $value
+        ) {
             if (trim($value) === '') {
                 throw new \InvalidArgumentException('JobTemplate mandatory values must not be empty.');
             }
@@ -42,13 +45,17 @@ final readonly class JobTemplate
             throw new \InvalidArgumentException(sprintf('JobTemplate "%s" must declare pagination.type.', $id));
         }
         if ($fieldMappings === [] && $direction !== 'outbound') {
-            throw new \InvalidArgumentException(sprintf('Inbound JobTemplate "%s" must declare at least one field mapping.', $id));
+            throw new \InvalidArgumentException(
+                sprintf('Inbound JobTemplate "%s" must declare at least one field mapping.', $id)
+            );
         }
         if (!in_array($this->triggerType, ['polling', 'webhook', 'glpi_event'], true)) {
             throw new \InvalidArgumentException(sprintf('JobTemplate "%s" declares an invalid trigger type.', $id));
         }
         if ($direction === 'outbound' && $this->outbound === []) {
-            throw new \InvalidArgumentException(sprintf('Outbound JobTemplate "%s" must declare an outbound configuration.', $id));
+            throw new \InvalidArgumentException(
+                sprintf('Outbound JobTemplate "%s" must declare an outbound configuration.', $id)
+            );
         }
     }
 }

@@ -54,7 +54,10 @@ final class JiraAdfToTextTransform implements FieldTransformInterface
 
         $text = implode('', $parts);
         $type = (string) ($node['type'] ?? '');
-        if (in_array($type, ['paragraph', 'heading', 'listItem', 'blockquote', 'codeBlock', 'bulletList', 'orderedList'], true)) {
+        if (
+            in_array($type, ['paragraph', 'heading', 'listItem', 'blockquote', 'codeBlock', 'bulletList',
+                    'orderedList'], true)
+        ) {
             return $text . "\n";
         }
 

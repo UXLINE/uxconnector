@@ -58,7 +58,10 @@ final readonly class JobSchedule
         if (in_array($latest->status(), [SyncExecutionStatus::PENDING, SyncExecutionStatus::RUNNING], true)) {
             return false;
         }
-        if (!$this->retryAfterFailure && in_array($latest->status(), [SyncExecutionStatus::FAILED, SyncExecutionStatus::INTERRUPTED], true)) {
+        if (
+            !$this->retryAfterFailure && in_array($latest->status(), [SyncExecutionStatus::FAILED,
+                    SyncExecutionStatus::INTERRUPTED], true)
+        ) {
             return false;
         }
         $last = $latest->finishedAt() ?? $latest->startedAt();

@@ -50,7 +50,11 @@ final class OutboundRuntimeValueResolver
     /** @param array<string,mixed> $fields */
     public function resolvePath(string $path, array $fields, int $itemId, ?string $externalId): string
     {
-        return (string) preg_replace_callback('/\{\{([^}]+)}}/', function (array $matches) use ($fields, $itemId, $externalId): string {
+        return (string) preg_replace_callback('/\{\{([^}]+)}}/', function (array $matches) use (
+            $fields,
+            $itemId,
+            $externalId
+): string {
             $token = trim($matches[1]);
             if ($token === 'item_id') {
                 return rawurlencode((string) $itemId);

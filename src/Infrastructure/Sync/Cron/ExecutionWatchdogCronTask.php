@@ -20,7 +20,10 @@ final class ExecutionWatchdogCronTask
     public static function cronInfo(string $name): array
     {
         return [
-            'description' => \__('Detects abandoned UXConnector executions and makes them safely resumable.', 'uxconnector'),
+            'description' => \__(
+                'Detects abandoned UXConnector executions and makes them safely resumable.',
+                'uxconnector'
+            ),
         ];
     }
 

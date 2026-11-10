@@ -35,7 +35,8 @@ final class ListSyncExecutionsService
 {
     public function __construct(
         private readonly SyncExecutionRepositoryInterface $repository
-    ) {}
+    ) {
+    }
 
     /**
      * @return list<SyncExecutionDTO>

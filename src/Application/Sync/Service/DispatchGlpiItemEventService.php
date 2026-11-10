@@ -38,7 +38,8 @@ final class DispatchGlpiItemEventService
         private readonly SyncExecutionRepositoryInterface $executionRepository,
         private readonly TransactionManagerInterface $transaction,
         private readonly EventDispatcherInterface $events
-    ) {}
+    ) {
+    }
 
     /**
     * @param array<string, mixed> $fields
@@ -68,7 +69,9 @@ final class DispatchGlpiItemEventService
                     throw new \RuntimeException('Outbound interaction is not persisted.');
                 }
 
-                $connection = $this->authConfigRepository->findById(new AuthConfigId($job->authConfigReference()->value()));
+                $connection = $this->authConfigRepository->findById(new AuthConfigId(
+                    $job->authConfigReference()->value()
+                ));
                 if ($connection !== null && !$connection->isUsable()) {
                     // Disabling a Connection suspends its interactions without
                     // converting them into failures or changing their own state.
@@ -117,7 +120,13 @@ final class DispatchGlpiItemEventService
                     $headers['Content-Type'] = 'application/json';
                 }
 
-                $response = $this->httpEngine->execute($connection, new HttpRequest($method, $path, $headers, [], $body));
+                $response = $this->httpEngine->execute($connection, new HttpRequest(
+                    $method,
+                    $path,
+                    $headers,
+                    [],
+                    $body
+                ));
                 if (!$response->isSuccessful()) {
                     throw new \RuntimeException(sprintf('External system returned HTTP %d.', $response->statusCode));
                 }
@@ -181,7 +190,6 @@ final class DispatchGlpiItemEventService
 
     private function saveFinishedExecution(SyncExecution $execution): void
     {
-        $events = $execution->releaseEvents();
         $this->transaction->begin();
         try {
             $this->executionRepository->save($execution);
@@ -191,14 +199,16 @@ final class DispatchGlpiItemEventService
             throw $exception;
         }
 
-        foreach ($events as $event) {
+        foreach ($execution->releaseEvents() as $event) {
             $this->events->dispatch($event);
         }
     }
 
     /** @param array<string,mixed> $fields */
-    private function isInEntityScope(?\GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\EntityAssignmentStrategy $strategy, array $fields): bool
-    {
+    private function isInEntityScope(
+        ?\GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\EntityAssignmentStrategy $strategy,
+        array $fields
+    ): bool {
         if ($strategy === null) {
             return true;
         }

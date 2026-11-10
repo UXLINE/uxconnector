@@ -20,7 +20,8 @@ final class ConnectorCatalogController extends AbstractController
     public function __construct(
         private readonly ListConnectorTemplatesService $listTemplates,
         private readonly GetConnectorTemplateService $getTemplate
-    ) {}
+    ) {
+    }
 
     public function index(): void
     {
