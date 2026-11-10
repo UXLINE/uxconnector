@@ -12,10 +12,20 @@ final class CopilotGatewayResponder
     {
     }
 
+    /**
+     * Returns capabilities for an authenticated agent using the OpenAPI GET contract.
+     *
+     * @return void
+     */
     public function capabilities(): void
     {
         $client = $this->authenticate();
         if ($client === null) {
+            return;
+        }
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+            header('Allow: GET');
+            $this->json(405, ['error' => 'method_not_allowed']);
             return;
         }
         $this->json(200, $this->gateway->capabilities($client));

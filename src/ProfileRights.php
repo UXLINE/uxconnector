@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector;
 
-use Html;
+use Glpi\Application\View\TemplateRenderer;
 use Profile;
 use Session;
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\Persistence\AuthConfigItem;
@@ -31,6 +31,12 @@ use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\SyncJobItem;
  */
 class ProfileRights extends Profile
 {
+    /**
+     * Returns the translated label of the profile tab.
+     *
+     * @param int $nb Number of items requested by GLPI.
+     * @return string Translated tab label.
+     */
     public static function getTypeName($nb = 0): string
     {
         return __('UXConnector', 'uxconnector');
@@ -57,9 +63,12 @@ class ProfileRights extends Profile
     }
 
     /**
-     * @param mixed $item
-     * @param int $tabnum
-     * @param int $withtemplate
+     * Displays the rights tab for a saved profile.
+     *
+     * @param mixed $item GLPI item hosting the tab.
+     * @param int $tabnum Tab selected by GLPI.
+     * @param int $withtemplate Template context supplied by GLPI.
+     * @return bool True after handling the tab.
      */
     public static function displayTabContentForItem($item, $tabnum = 1, $withtemplate = 0)
     {
@@ -96,10 +105,14 @@ class ProfileRights extends Profile
     }
 
     /**
-     * Renders a GLPI-native editable rights matrix for one profile.
+     * Renders the native rights matrix in a Twig form for one GLPI profile.
+     *
+     * @param int $profilesId ID of the profile whose rights are displayed.
+     * @return void
      */
     public static function showForProfile(int $profilesId): void
     {
+        Session::checkRight('profile', READ);
         $profile = new Profile();
         if (!$profile->getFromDB($profilesId)) {
             return;
@@ -107,32 +120,23 @@ class ProfileRights extends Profile
 
         $canEdit = Session::haveRight('profile', UPDATE);
 
-        echo "<div class='firstbloc'>";
-        echo "<form name='form' method='post' action='" . htmlescape(Profile::getFormURL()) . "'>";
-        echo Html::hidden('id', ['value' => $profilesId]);
-
-        $profile->displayRightsChoiceMatrix(
-            self::getRightDefinitions(),
-            [
-                'title'   => self::getTypeName(),
-                'canedit' => $canEdit,
-            ],
-        );
-
-        if ($canEdit) {
-            echo "<div class='center mt-3'>";
-            echo Html::submit(
-                _x('button', 'Save'),
-                [
-                    'name'  => 'update',
-                    'class' => 'btn btn-primary',
-                    'icon'  => 'ti ti-device-floppy',
-                ],
+        // GLPI emits its own Twig component and controls the submitted right names.
+        ob_start();
+        try {
+            $profile->displayRightsChoiceMatrix(
+                self::getRightDefinitions(),
+                ['title' => self::getTypeName(), 'canedit' => $canEdit],
             );
-            echo '</div>';
+            $matrix = (string) ob_get_contents();
+        } finally {
+            ob_end_clean();
         }
 
-        Html::closeForm();
-        echo '</div>';
+        TemplateRenderer::getInstance()->display('@uxconnector/profile/rights.html.twig', [
+            'profile_id' => $profilesId,
+            'form_url' => Profile::getFormURL(),
+            'can_edit' => $canEdit,
+            'rights_matrix' => $matrix,
+        ]);
     }
 }

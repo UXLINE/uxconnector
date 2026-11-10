@@ -8,3 +8,11 @@
 - Arrêter les workers avant de remplacer le code. Les anciens workers et les workers utilisant les noms de verrous natifs de GLPI doivent être exécutés séparément.
 - La plage déclarée reste `>=11.0.0 <12.0.0`. Le descripteur contient l'URL cible de la future archive GitHub.
 - Le kit QA est fourni séparément. Exécuter la recette sur GLPI 11 avant publication, en particulier l'installation neuve, la mise à niveau, les droits des deux écrans et la reprise des workers.
+
+## Candidate RC2
+
+- L’onglet des droits de profil utilise un formulaire Twig et la matrice native de GLPI. La consultation exige le droit de lecture du profil. La modification reste soumise au droit de mise à jour et au jeton CSRF de GLPI.
+- Le formulaire de connexion contrôle le droit correspondant à l’action reçue. La reprise d’une exécution exige une requête POST, comme l’arrêt et l’annulation.
+- Les routes de données Copilot exigent une clé d’agent. Le document OpenAPI reste accessible en GET pour la découverte. Le webhook conserve son authentification dédiée.
+- L’export des échecs neutralise les préfixes pouvant déclencher l’interprétation d’une cellule comme formule.
+- Les méthodes du composant de mise à jour de l’adresse e-mail et les méthodes modifiées sont documentées.

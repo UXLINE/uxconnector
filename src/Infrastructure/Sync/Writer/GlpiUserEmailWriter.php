@@ -10,10 +10,22 @@ use GlpiPlugin\Uxconnector\Infrastructure\Sync\Runtime\SyncRuntimeGuard;
 /** Email mapping fills missing email records; existing addresses and LDAP ownership are retained. */
 final class GlpiUserEmailWriter
 {
+    /**
+     * Creates the writer using the GLPI database connection.
+     *
+     * @param DBmysql $db Connection used for the transaction and row lock.
+     */
     public function __construct(private readonly DBmysql $db)
     {
     }
 
+    /**
+     * Validates an incoming address after trimming it.
+     *
+     * @param mixed $value Raw value supplied by a source mapping.
+     * @return string|null A validated address, or null for an absent or blank source value.
+     * @throws \InvalidArgumentException If a nonblank source value is invalid.
+     */
     public function normalize(mixed $value): ?string
     {
         // Missing/blank source values never delete a working notification email.
@@ -27,6 +39,14 @@ final class GlpiUserEmailWriter
         return trim($value);
     }
 
+    /**
+     * Fills a missing GLPI user email within a transaction that locks the user row.
+     *
+     * @param int $userId ID of the existing GLPI user.
+     * @param string $email Address already validated by normalize().
+     * @return bool True if an email was saved, false if an existing address was preserved.
+     * @throws \Throwable If the transaction or native write fails.
+     */
     public function write(int $userId, string $email): bool
     {
         $this->db->beginTransaction();
@@ -50,6 +70,14 @@ final class GlpiUserEmailWriter
         }
     }
 
+    /**
+     * Applies the email update while write() holds the user row lock.
+     *
+     * @param int $userId ID of the locked GLPI user.
+     * @param string $email Validated email to set as the default.
+     * @return bool True if an email was saved, false if an existing address was preserved.
+     * @throws \RuntimeException If the email records are ambiguous or GLPI rejects the write.
+     */
     private function writeLocked(int $userId, string $email): bool
     {
         $rows = [];

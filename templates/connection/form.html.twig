@@ -21,7 +21,7 @@
             {% if mode == 'create' %}
                 <div class="mb-3">
                     <label class="form-label">{{ __('Connection type', 'uxconnector') }}</label>
-                    <select name="connector_id" class="form-select" onchange="if(this.value !== '{{ defaults.connector_id }}'){ window.location='connection.form.php?connector='+encodeURIComponent(this.value); }">
+                    <select name="connector_id" class="form-select" onchange="window.location='connection.form.php?connector='+encodeURIComponent(this.value);">
                         <option value="custom" {% if defaults.connector_id == 'custom' %}selected{% endif %}>{{ __('Custom REST', 'uxconnector') }}</option>
                         {% for connector in connectors %}<option value="{{ connector.id }}" {% if defaults.connector_id == connector.id %}selected{% endif %}>{{ connector.name }}</option>{% endfor %}
                     </select>
