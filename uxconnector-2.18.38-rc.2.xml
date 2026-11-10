@@ -21,7 +21,7 @@
         <version>
             <num>2.18.38</num>
             <compatibility>&gt;=11.0.0 &lt;12.0.0</compatibility>
-            <download>https://github.com/UXLINE/uxconnector/releases/download/v2.18.38-rc.2/uxconnector-2.18.38-rc.2.tar.gz</download>
+            <download_url>https://github.com/UXLINE/uxconnector/releases/download/v2.18.38-rc.2/uxconnector-2.18.38-rc.2.tar.gz</download_url>
         </version>
     </versions>
     <langs>
