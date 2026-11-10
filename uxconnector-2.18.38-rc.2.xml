@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <name>UXConnector</name>
+    <key>uxconnector</key>
+    <state>dev</state>
+    <description>
+        <short>
+            <fr>Moteur de connecteurs générique et configurable pour GLPI.</fr>
+            <en>Generic, configurable connector engine for GLPI.</en>
+        </short>
+        <long>
+            <fr>UXConnector synchronise les objets GLPI avec des services externes par API HTTP et webhooks. Le catalogue comprend notamment Zendesk, Jira Cloud, Jira Service Management, Matrix42 et EasyVista Service Manager.</fr>
+            <en>UXConnector synchronizes GLPI objects with external services through HTTP APIs and webhooks. The catalog includes Zendesk, Jira Cloud, Jira Service Management, Matrix42 and EasyVista Service Manager.</en>
+        </long>
+    </description>
+    <homepage>https://www.helpline.fr</homepage>
+    <authors>
+        <author>HELPLINE</author>
+    </authors>
+    <versions>
+        <version>
+            <num>2.18.38</num>
+            <compatibility>&gt;=11.0.0 &lt;12.0.0</compatibility>
+            <download>https://github.com/UXLINE/uxconnector/releases/download/v2.18.38-rc.2/uxconnector-2.18.38-rc.2.tar.gz</download>
+        </version>
+    </versions>
+    <langs>
+        <lang>fr_FR</lang>
+        <lang>en_GB</lang>
+    </langs>
+    <license>GPL-3.0-or-later</license>
+    <tags>
+        <en><tag>integration</tag><tag>synchronization</tag></en>
+        <fr><tag>integration</tag><tag>synchronisation</tag></fr>
+    </tags>
+</root>
