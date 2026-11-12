@@ -31,5 +31,6 @@ final readonly class SyncFailure
         public string $retryStatus = 'not_retried',
         public ?string $createdAt = null,
         public ?int $id = null
-    ) {}
+    ) {
+    }
 }

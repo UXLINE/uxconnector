@@ -50,8 +50,17 @@ final class FieldValueTransformer
     {
         foreach ($extensions as $extension) {
             $name = trim($extension->name());
-            if ($name === '' || isset($this->extensions[$name]) || in_array($name, self::SUPPORTED, true) || str_starts_with($name, 'map:')) {
-                throw new \InvalidArgumentException(sprintf('Invalid or duplicate field transform extension "%s".', $name));
+            if (
+                $name === '' || isset($this->extensions[$name]) || in_array(
+                    $name,
+                    self::SUPPORTED,
+                    true
+                ) || str_starts_with($name, 'map:')
+            ) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Invalid or duplicate field transform extension "%s".',
+                    $name
+                ));
             }
             $this->extensions[$name] = $extension;
         }
@@ -214,5 +223,4 @@ final class FieldValueTransformer
 
         return $value;
     }
-
 }

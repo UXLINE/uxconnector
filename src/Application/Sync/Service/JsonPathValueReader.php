@@ -97,7 +97,8 @@ final class JsonPathValueReader
                 $inside = substr($path, $offset + 1, $end - $offset - 1);
                 if (preg_match('/^\d+$/D', $inside) === 1) {
                     $tokens[] = (int) $inside;
-                } elseif (strlen($inside) >= 2
+                } elseif (
+                    strlen($inside) >= 2
                      && (($inside[0] === "'" && $inside[strlen($inside) - 1] === "'")
                          || ($inside[0] === '"' && $inside[strlen($inside) - 1] === '"'))
                 ) {

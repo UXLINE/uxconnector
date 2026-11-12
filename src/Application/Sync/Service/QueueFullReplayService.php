@@ -27,8 +27,10 @@ final class QueueFullReplayService
         private readonly SyncExecutionRepositoryInterface $executions,
         private readonly SyncCheckpointRepositoryInterface $checkpoints,
         private readonly TransactionManagerInterface $transaction,
-        private readonly ExecutionMutexInterface $mutex
-    ) {}
+        private readonly ExecutionMutexInterface $mutex,
+        private readonly ?JobEntityAccess $entityAccess = null
+    ) {
+    }
 
     public function execute(SyncJobId $id): SyncExecution
     {
@@ -45,8 +47,11 @@ final class QueueFullReplayService
             // The same short row mutex as Run now serializes reset + open-run
             // check + enqueue. It is released on commit before any import runs.
             $this->mutex->lock($id);
+            $this->entityAccess?->assertJobId($id);
             if ($this->executions->hasOpenExecution($id)) {
-                throw new \RuntimeException('Cannot replay from the beginning while an execution is pending or running.');
+                throw new \RuntimeException(
+                    'Cannot replay from the beginning while an execution is pending or running.'
+                );
             }
 
             $this->checkpoints->delete($id);

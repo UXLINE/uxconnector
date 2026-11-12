@@ -14,6 +14,8 @@ use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
 /** GLPI 9/10 REST v1 session authentication. Session-Token is memory-only. */
 final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenticationStrategy
 {
+    private const MAX_RESPONSE_BYTES = 1024 * 1024;
+
     /** @var array<string,string> */
     private static array $sessions = [];
     private readonly array $config;
@@ -21,14 +23,16 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
 
     public function __construct(
         private readonly Endpoint $endpoint,
-        string $secret,
+        #[\SensitiveParameter] string $secret,
         private readonly DestinationPolicyInterface $destinationPolicy,
         private readonly RetryPolicy $retryPolicy = new RetryPolicy(),
         private readonly ErrorClassification $errorClassification = new ErrorClassification()
     ) {
         $config = json_decode($secret, true);
-        if (!is_array($config) || !is_string($config['app_token'] ?? null) || !is_string($config['user_token'] ?? null)
-            || trim($config['app_token']) === '' || trim($config['user_token']) === '') {
+        if (
+            !is_array($config) || !is_string($config['app_token'] ?? null) || !is_string($config['user_token'] ?? null)
+            || trim($config['app_token']) === '' || trim($config['user_token']) === ''
+        ) {
             throw new \RuntimeException('Malformed GLPI REST v1 credential configuration.');
         }
         $this->config = $config;
@@ -108,17 +112,19 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
         }
         $maxAttempts = min($this->retryPolicy->maxAttempts, max(1, ((int) ($this->config['retry_count'] ?? 4)) + 1));
         $lastError = 'unknown transport error';
+        $timeout = max(1, min(120, (int) ($this->config['timeout'] ?? 60)));
 
         for ($attempt = 1; $attempt <= $maxAttempts; ++$attempt) {
             $context = stream_context_create([
                 'http' => [
                     'method' => 'GET', 'header' => implode("\r\n", $headerLines),
-                    'timeout' => max(1, min(120, (int) ($this->config['timeout'] ?? 60))),
+                    'timeout' => $timeout,
                     'ignore_errors' => true, 'follow_location' => 0, 'max_redirects' => 0,
                     'protocol_version' => 1.1,
                 ],
                 'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
             ]);
+            $deadline = hrtime(true) + $timeout * 1_000_000_000;
             $stream = @fopen($url, 'rb', false, $context);
             if ($stream === false) {
                 $lastError = (string) (error_get_last()['message'] ?? 'unknown stream error');
@@ -129,13 +135,10 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
                 break;
             }
             try {
-                $body = stream_get_contents($stream);
+                $body = $this->readSessionResponse($stream, $deadline);
                 $meta = stream_get_meta_data($stream);
             } finally {
                 fclose($stream);
-            }
-            if ($body === false) {
-                $body = '';
             }
             $status = 0;
             $responseHeaders = [];
@@ -161,7 +164,34 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
             }
         }
 
-        throw new \RuntimeException('GLPI REST v1 transport failure after retry budget: ' . $this->safeTransportMessage($lastError));
+        throw new \RuntimeException(
+            'GLPI REST v1 transport failure after retry budget: ' . $this->safeTransportMessage($lastError)
+        );
+    }
+
+    /** @param resource $stream */
+    private function readSessionResponse($stream, float $deadline): string
+    {
+        $body = '';
+        while (!feof($stream)) {
+            $remaining = (int) (($deadline - hrtime(true)) / 1000);
+            if ($remaining <= 0) {
+                throw new \RuntimeException('GLPI REST v1 session response exceeded the time limit.');
+            }
+            stream_set_timeout($stream, intdiv($remaining, 1_000_000), $remaining % 1_000_000);
+            $chunk = fread($stream, min(8192, self::MAX_RESPONSE_BYTES + 1 - strlen($body)));
+            if (hrtime(true) >= $deadline || (stream_get_meta_data($stream)['timed_out'] ?? false)) {
+                throw new \RuntimeException('GLPI REST v1 session response exceeded the time limit.');
+            }
+            if ($chunk === false || ($chunk === '' && !feof($stream))) {
+                throw new \RuntimeException('GLPI REST v1 session response could not be read.');
+            }
+            $body .= $chunk;
+            if (strlen($body) > self::MAX_RESPONSE_BYTES) {
+                throw new \RuntimeException('GLPI REST v1 session response exceeded the 1 MiB safety limit.');
+            }
+        }
+        return $body;
     }
 
     private function sleepBackoff(int $attempt): void
@@ -172,6 +202,10 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
 
     private function safeTransportMessage(string $message): string
     {
-        return preg_replace('/(token|authorization|password|secret)[^\s]*/i', '[redacted]', $message) ?: 'transport error';
+        return preg_replace(
+            '/(token|authorization|password|secret)[^\s]*/i',
+            '[redacted]',
+            $message
+        ) ?: 'transport error';
     }
 }

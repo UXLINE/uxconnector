@@ -10,7 +10,9 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncJob;
 
 final class LegacyLocationProfilePathResolver implements InboundResourcePathResolverInterface
 {
-    public function __construct(private readonly LegacyLocationProfileCatalog $catalog) {}
+    public function __construct(private readonly LegacyLocationProfileCatalog $catalog)
+    {
+    }
 
     public function supports(SyncJob $job): bool
     {

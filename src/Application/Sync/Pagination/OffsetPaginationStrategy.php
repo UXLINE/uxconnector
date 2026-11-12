@@ -13,7 +13,8 @@ final class OffsetPaginationStrategy implements PaginationStrategyInterface
         private readonly PaginationConfig $config,
         private readonly JsonPathValueReader $reader,
         private readonly QueryParameterUpdater $queryUpdater
-    ) {}
+    ) {
+    }
 
     public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string
     {
@@ -23,7 +24,11 @@ final class OffsetPaginationStrategy implements PaginationStrategyInterface
         }
 
         $offset = $this->readNumeric($response, (string) $this->config->option('offset_response_path'), 'offset');
-        $pageSize = max(1, $this->readNumeric($response, (string) $this->config->option('page_size_response_path'), 'page size'));
+        $pageSize = max(1, $this->readNumeric(
+            $response,
+            (string) $this->config->option('page_size_response_path'),
+            'page size'
+        ));
         $total = max(0, $this->readNumeric($response, (string) $this->config->option('total_response_path'), 'total'));
         $advance = $pageItemCount > 0 ? $pageItemCount : $pageSize;
         $next = $offset + $advance;
@@ -44,7 +49,11 @@ final class OffsetPaginationStrategy implements PaginationStrategyInterface
     {
         $value = $this->reader->read($response, $path);
         if (!is_numeric($value)) {
-            throw new \RuntimeException(sprintf('Offset pagination %s at "%s" is missing or non-numeric.', $label, $path));
+            throw new \RuntimeException(sprintf(
+                'Offset pagination %s at "%s" is missing or non-numeric.',
+                $label,
+                $path
+            ));
         }
         return (int) $value;
     }

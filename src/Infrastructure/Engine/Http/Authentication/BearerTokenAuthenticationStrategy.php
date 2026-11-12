@@ -25,7 +25,8 @@ final class BearerTokenAuthenticationStrategy implements AuthenticationStrategy
 {
     public function __construct(
         private readonly string $token
-    ) {}
+    ) {
+    }
 
     public function authenticate(HttpRequest $request): HttpRequest
     {

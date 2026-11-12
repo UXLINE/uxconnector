@@ -31,6 +31,21 @@ final class SyncJobItem extends CommonDBTM
     // for why this cannot be derived automatically.
     public static $rightname = 'plugin_uxconnector_syncjob';
 
+    /** Keep credentials out of GLPI API representations. */
+    public static $undisclosedFields = [
+        'webhook_key', 'webhook_key_hash', 'webhook_token_secret', 'webhook_signing_secret',
+    ];
+
+    /** Job mutations must use the plugin services that check both current and requested entity scopes. */
+    public function can($ID, int $right, ?array &$input = null): bool
+    {
+        if (in_array($right, [CREATE, UPDATE, DELETE, PURGE], true)) {
+            return false;
+        }
+
+        return parent::can($ID, $right, $input);
+    }
+
     public static function getTable($classname = null): string
     {
         return 'glpi_plugin_uxconnector_syncjobs';

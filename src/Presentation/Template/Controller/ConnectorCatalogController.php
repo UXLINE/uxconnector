@@ -20,7 +20,8 @@ final class ConnectorCatalogController extends AbstractController
     public function __construct(
         private readonly ListConnectorTemplatesService $listTemplates,
         private readonly GetConnectorTemplateService $getTemplate
-    ) {}
+    ) {
+    }
 
     public function index(): void
     {
@@ -36,7 +37,7 @@ final class ConnectorCatalogController extends AbstractController
                 'connector' => $this->getTemplate->execute($connectorId),
             ]);
         } catch (\Throwable $exception) {
-            \Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            \Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
             $this->redirect('/plugins/uxconnector/front/catalog.php');
         }
     }

@@ -36,6 +36,16 @@ final class SyncExecutionItem extends CommonDBTM
     // with PluginUxconnectorProfile::getRightDefinitions().
     public static $rightname = 'plugin_uxconnector_syncjob';
 
+    /** Execution states are changed through the plugin, including requests to queue a job. */
+    public function can($ID, int $right, ?array &$input = null): bool
+    {
+        if (in_array($right, [CREATE, UPDATE, DELETE, PURGE], true)) {
+            return false;
+        }
+
+        return parent::can($ID, $right, $input);
+    }
+
     public static function getTable($classname = null): string
     {
         return 'glpi_plugin_uxconnector_syncexecutions';

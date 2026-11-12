@@ -10,8 +10,22 @@ use GlpiPlugin\Uxconnector\Infrastructure\Sync\Runtime\SyncRuntimeGuard;
 /** Email mapping fills missing email records; existing addresses and LDAP ownership are retained. */
 final class GlpiUserEmailWriter
 {
-    public function __construct(private readonly DBmysql $db) {}
+    /**
+     * Creates the writer using the GLPI database connection.
+     *
+     * @param DBmysql $db Connection used for the transaction and row lock.
+     */
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
+    /**
+     * Validates an incoming address after trimming it.
+     *
+     * @param mixed $value Raw value supplied by a source mapping.
+     * @return string|null A validated address, or null for an absent or blank source value.
+     * @throws \InvalidArgumentException If a nonblank source value is invalid.
+     */
     public function normalize(mixed $value): ?string
     {
         // Missing/blank source values never delete a working notification email.
@@ -25,16 +39,27 @@ final class GlpiUserEmailWriter
         return trim($value);
     }
 
+    /**
+     * Fills a missing GLPI user email within a transaction that locks the user row.
+     *
+     * @param int $userId ID of the existing GLPI user.
+     * @param string $email Address already validated by normalize().
+     * @return bool True if an email was saved, false if an existing address was preserved.
+     * @throws \Throwable If the transaction or native write fails.
+     */
     public function write(int $userId, string $email): bool
     {
         $this->db->beginTransaction();
         try {
-            // Serialize email/default changes on this user, including writers
-            // from different connections. No HTTP call occurs in this section.
-            $result = $this->db->doQuery(sprintf('SELECT `id` FROM `glpi_users` WHERE `id` = %d FOR UPDATE', $userId));
-            $row = $result === false ? false : $this->db->fetchAssoc($result);
-            if (!is_array($row)) {
-                throw new \RuntimeException('Target user is unavailable for email update.');
+            $statement = $this->db->prepare('SELECT `id` FROM `glpi_users` WHERE `id` = ? FOR UPDATE');
+            try {
+                $this->db->executeStatement($statement, [$userId], ['i']);
+                $statement->bind_result($lockedUserId);
+                if ($statement->fetch() !== true) {
+                    throw new \RuntimeException('Target user is unavailable for email update.');
+                }
+            } finally {
+                $statement->close();
             }
             $changed = $this->writeLocked($userId, $email);
             $this->db->commit();
@@ -48,15 +73,25 @@ final class GlpiUserEmailWriter
         }
     }
 
+    /**
+     * Applies the email update while write() holds the user row lock.
+     *
+     * @param int $userId ID of the locked GLPI user.
+     * @param string $email Validated email to set as the default.
+     * @return bool True if an email was saved, false if an existing address was preserved.
+     * @throws \RuntimeException If the email records are ambiguous or GLPI rejects the write.
+     */
     private function writeLocked(int $userId, string $email): bool
     {
         $rows = [];
-        foreach ($this->db->request([
+        foreach (
+            $this->db->request([
             'SELECT' => ['id', 'email', 'is_default'],
             'FROM' => 'glpi_useremails',
             'WHERE' => ['users_id' => $userId],
             'ORDER' => ['id ASC'],
-        ]) as $row) {
+            ]) as $row
+        ) {
             $rows[] = $row;
         }
         $defaults = array_values(array_filter($rows, static fn(array $row): bool => (int) $row['is_default'] === 1));

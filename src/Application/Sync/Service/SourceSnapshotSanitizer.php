@@ -7,7 +7,8 @@ namespace GlpiPlugin\Uxconnector\Application\Sync\Service;
 /** Redacts common credential-bearing keys before a failed source record is persisted. */
 final class SourceSnapshotSanitizer
 {
-    private const SECRET_FRAGMENTS = ['authorization','token','password','passwd','secret','api_key','apikey','cookie','session','puk','pin','iccid'];
+    private const SECRET_FRAGMENTS = ['authorization','token','password','passwd','secret','api_key','apikey','cookie',
+        'session','puk','pin','iccid'];
 
     public function encode(array $record): ?string
     {

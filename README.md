@@ -1,6 +1,6 @@
 # UXConnector pour GLPI
 
-**Version publiée [2.18.37](https://github.com/UXLINE/uxconnector/releases/tag/v2.18.37)** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
+**Version de recette 2.18.38 RC11** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
 
 UXConnector connecte GLPI à des services externes. Il configure les connexions HTTP, les mappings et les jobs de synchronisation. Selon le modèle, un job peut être exécuté manuellement, planifié, déclenché par un webhook ou par un événement GLPI.
 
@@ -12,7 +12,7 @@ UXConnector connecte GLPI à des services externes. Il configure les connexions 
 
 ## Catalogue
 
-Le package contient **14 connecteurs et 40 définitions de jobs, dont 31 instanciables**. Certains modèles sont désactivés ou conservés pour les jobs historiques.
+Le package contient **13 connecteurs et 40 définitions de jobs, dont 31 instanciables**. Certains modèles sont désactivés ou conservés pour les jobs historiques.
 
 | Connecteur | Périmètre |
 | --- | --- |
@@ -24,18 +24,43 @@ Le package contient **14 connecteurs et 40 définitions de jobs, dont 31 instanc
 | GLPI REST v1 et GLPI High-Level API | Modèles de migration ou d’import d’objets GLPI. |
 | Microsoft Intune, Microsoft Graph et MDM REST | Modèles pour les postes gérés et les utilisateurs. |
 | ServiceNow et Zabbix | Définitions désactivées dans cette version. |
-| REST générique et API compatible OpenAI | Connexions configurables selon l’usage, sans job préconfiguré. |
+| REST générique | Connexions configurables selon l’usage, sans job préconfiguré. |
 
 ## Installation et mise à jour
 
 1. Sauvegarder la base GLPI et le dossier du plugin avant une mise à jour.
-2. Extraire le ZIP sous `<GLPI_ROOT>/plugins/`. Le fichier `setup.php` doit se trouver dans `plugins/uxconnector/`.
-3. Dans **Configuration > Plugins**, installer ou mettre à jour UXConnector, puis l’activer. Pour une mise à jour, conserver l’installation existante et remplacer ses fichiers.
+2. Extraire le fichier `.tar.gz` sous `<GLPI_ROOT>/plugins/`. Le fichier `setup.php` doit se trouver dans `plugins/uxconnector/`.
+3. Dans **Configuration > Plugins**, installer ou mettre à jour UXConnector, puis l’activer. Pour une mise à jour, remplacer intégralement le dossier du plugin après sauvegarde.
 4. Créer une connexion avec un compte technique aux droits adaptés, tester son accès et instancier le job en pause. Configurer l’entité cible et les mappings avant le premier lancement.
+
+Les candidates RC2 à RC11 déclarent la même version GLPI. Après remplacement du dossier, exécuter ces commandes depuis la racine GLPI pour appliquer les migrations et enregistrer les nouveaux droits.
+
+```bash
+php bin/console glpi:plugin:install --force uxconnector
+php bin/console cache:clear
+```
+
+Cette migration retire les anciens stockages dédiés et révoque les identifiants des connexions héritées concernées. Les connexions concernées sont désactivées et converties en fiches génériques. Leurs jobs et historiques restent consultables.
+
+Les nouveaux secrets et les secrets remplacés sont liés à l’origine de la connexion et à la méthode d’authentification avant chiffrement. Pour revenir à une version antérieure après une modification de credentials, restaurer la sauvegarde de base prise avant mise à jour.
+
+Dans l’onglet UXConnector du profil GLPI, la ligne **Webhook credentials** donne accès à deux droits distincts, **Reveal** et **Rotate**, désactivés par défaut. L’opérateur doit également pouvoir consulter la connexion et modifier le job dans les entités concernées. Les actions passent par un formulaire protégé et sont journalisées dans `uxconnector-webhook-audit.log`, avec l’action, le job et l’utilisateur.
+
+La rotation du secret de signature invalide immédiatement l’ancien secret. Reporter le nouveau secret dans l’émetteur du webhook pour rétablir ses appels signés.
+
+Les listes de jobs, les fiches et les données d’exécution tiennent compte du périmètre d’entités actif du profil GLPI. La lecture d’un job et de son historique exige l’accès à toutes ses entités cibles. Un job sans périmètre fixe est accessible aux profils qui ont accès à toutes les entités.
 
 ## Documentation
 
-- [Notes de version 2.18.37](docs/releases/RELEASE_NOTES_2.18.37.md)
+### Contrôles de la RC11
+
+- Le webhook entrant est l’unique route machine sans session GLPI. Il accepte POST et exige une signature HMAC liée au job, à l’horodatage et au corps brut. Le traitement s’applique uniquement au job entrant actif associé et à ses cibles configurées. Les droits GLPI et le périmètre d’entités s’appliquent à l’administration des jobs. Le jeton seul est refusé, y compris avec `UXCONNECTOR_REQUIRE_WEBHOOK_HMAC=0`. Une signature déjà reçue est refusée avec HTTP 409.
+- [Revue détaillée des huit signaux et recette RC11](docs/SECURITY_RC11.md)
+- Les secrets récupérables sont chiffrés avant stockage. La recherche par jeton webhook utilise une empreinte. Les paramètres OAuth2 sont construits en mémoire pour la requête d’authentification.
+- Les schémas fixes sont chargés depuis les fichiers SQL livrés via le chargeur GLPI. Le verrouillage `FOR UPDATE` d’un utilisateur emploie une requête préparée et un paramètre entier.
+- L’export CSV neutralise les préfixes de formule, y compris leurs variantes pleine chasse, sur les cellules dynamiques. La lecture des réponses de session REST v1 applique une limite de 1 Mio et respecte le délai restant.
+
+- [Notes de version 2.18.38](docs/releases/RELEASE_NOTES_2.18.38.md)
 - [Historique des notes de version](docs/releases/)
 - [Guide EasyVista](docs/EasyVista_Service_Manager.md)
 - [Guide Matrix42](docs/README_Matrix42_UXConnector.md)
@@ -43,63 +68,4 @@ Le package contient **14 connecteurs et 40 définitions de jobs, dont 31 instanc
 - [Descripteur de publication](uxconnector.xml)
 - [Licence](LICENSE)
 
-Le descripteur cible le dépôt GitHub `UXLINE/UXConnector`, le tag `v2.18.37` et l’actif `uxconnector-2.18.37.zip`. Après publication, vérifier que cette URL donne accès au ZIP prévu avant de transmettre le XML à Teclib.
-
-# Architecture et principes de développement
-
-UXConnector repose sur une **Clean Architecture inspirée des principes de l’architecture hexagonale et du Domain-Driven Design (DDD)**.
-
-L’objectif est d’isoler au maximum la logique métier des dépendances techniques telles que GLPI, les API externes, OAuth, HTTP ou les mécanismes de persistance.
-
-L’architecture suit notamment les principes suivants :
-
-- séparation claire entre `Domain`, `Application`, `Infrastructure` et couches de présentation ;
-- dépendances orientées vers le domaine métier ;
-- application des principes **SOLID** et **Dependency Inversion** ;
-- isolation des connecteurs et intégrations externes derrière des composants dédiés ;
-- limitation du couplage direct entre la logique métier et GLPI ;
-- règles métier et politiques de sécurité placées dans les couches adaptées ;
-- architecture pensée pour rester testable, maintenable et extensible.
-
-Le projet applique une approche **DDD principalement tactique** : les règles métier, policies, services et objets du domaine sont séparés des implémentations techniques. UXConnector ne revendique toutefois pas l’application exhaustive de l’ensemble des patterns du DDD stratégique.
-
-## Stratégie de tests
-
-UXConnector ne se définit pas comme un projet développé intégralement selon un **TDD strict** historique.
-
-La stratégie actuelle repose sur une combinaison de :
-
-- tests unitaires ;
-- tests de sécurité et de non-régression ;
-- tests hors ligne des connecteurs à partir de fixtures ;
-- tests d’idempotence et de replay ;
-- tests de pagination et de volumétrie ;
-- tests d’intégration dans un environnement GLPI dédié lorsque celui-ci est disponible ;
-- validation live des connecteurs externes lorsque nécessaire ;
-- préflight de release reproductible avant publication.
-
-Pour les nouvelles fonctionnalités et les corrections critiques, l’approche tend vers un développement **test-first**, complété par une politique systématique de tests de non-régression.
-
-## DevSecOps et qualité
-
-Le cycle de développement intègre progressivement une démarche **DevSecOps** comprenant notamment :
-
-- contrôles SSRF et validation des destinations HTTP ;
-- authentification des webhooks ;
-- protection des credentials ;
-- allowlists sur les types d’objets et champs GLPI inscriptibles ;
-- recherche de secrets avant publication ;
-- contrôles Git et cohérence des versions ;
-- Quality Gates ;
-- préflight de release ;
-- génération reproductible des artefacts ;
-- traçabilité entre commit, tag, archive et release.
-
-L’objectif est de garantir qu’une version publiée soit à la fois :
-
-- fonctionnellement validée ;
-- sécurisée ;
-- testée ;
-- reproductible ;
-- traçable ;
-- directement exploitable dans un environnement GLPI supporté.
+Le descripteur cible le tag `v2.18.38-rc.11` et l’archive `uxconnector-2.18.38-rc.11.tar.gz`. Après publication, vérifier le téléchargement avant de transmettre le XML à TECLIB.

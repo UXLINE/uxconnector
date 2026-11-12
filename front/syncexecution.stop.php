@@ -13,8 +13,10 @@ try {
     SyncServiceProvider::requestStopSyncExecutionService()->execute(
         new SyncExecutionId((int) ($_POST['id'] ?? 0)),
     );
-    Session::addMessageAfterRedirect(__('Stop requested: the worker will finish its current item before interrupting safely.', 'uxconnector'));
+    Session::addMessageAfterRedirect(
+        __('Stop requested: the worker will finish its current item before interrupting safely.', 'uxconnector')
+    );
 } catch (\Throwable $exception) {
-    Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+    Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
 }
 Html::redirect('/plugins/uxconnector/front/syncjob.php?history=1&id=' . (int) ($_POST['job_id'] ?? 0));

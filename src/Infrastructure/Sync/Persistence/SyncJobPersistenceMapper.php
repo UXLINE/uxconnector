@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence;
 
 use DateTimeImmutable;
+use GlpiPlugin\Uxconnector\Domain\Engine\Security\CredentialVaultInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncJob;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\InteractionTrigger;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncDirection;
@@ -46,6 +47,21 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobName;
  */
 final class SyncJobPersistenceMapper
 {
+    public function __construct(private readonly CredentialVaultInterface $vault)
+    {
+    }
+
+    /** Returns the normalized hash used for webhook bearer lookup. */
+    public static function webhookKeyHash(string $key): string
+    {
+        return hash('sha256', strtolower(trim($key)));
+    }
+
+    private function reveal(?string $ciphertext): ?string
+    {
+        return $ciphertext === null || $ciphertext === '' ? null : $this->vault->reveal($ciphertext);
+    }
+
     /**
      * @param array<string, mixed> $row Raw row as returned by CommonDBTM::fields.
      */
@@ -81,13 +97,17 @@ final class SyncJobPersistenceMapper
             new CollectionPath((string) ($row['collection_path'] ?? '$')),
             $this->decodePaginationConfig($row['pagination_config'] ?? null),
             isset($row['template_id']) && (string) $row['template_id'] !== '' ? (string) $row['template_id'] : null,
-            isset($row['template_version']) && (string) $row['template_version'] !== '' ? (string) $row['template_version'] : null,
+            isset($row['template_version']) && (string) $row['template_version'] !== ''
+                ? (string) $row['template_version'] : null,
             InteractionTrigger::tryFrom((string) ($row['trigger_type'] ?? 'polling')) ?? InteractionTrigger::POLLING,
-            (($row['external_object_type'] ?? '') === 'record' || trim((string) ($row['external_object_type'] ?? '')) === '')
+            (($row['external_object_type'] ?? '') === 'record' || trim(
+                (string) ($row['external_object_type'] ?? '')
+            ) === '')
                 ? $targetItemtype->value
                 : (string) $row['external_object_type'],
             $this->decodeOutboundConfig($row['outbound_config'] ?? null),
-            isset($row['webhook_key']) && (string) $row['webhook_key'] !== '' ? (string) $row['webhook_key'] : null,
+            $this->reveal($row['webhook_token_secret'] ?? null),
+            $this->reveal($row['webhook_signing_secret'] ?? null),
         );
     }
 
@@ -96,6 +116,8 @@ final class SyncJobPersistenceMapper
      */
     public function toPersistence(SyncJob $syncJob): array
     {
+        $key = $syncJob->webhookKey();
+        $signingSecret = $syncJob->webhookSigningSecret();
         $data = [
             'name'                   => $syncJob->name()->value(),
             'auth_config_reference'  => $syncJob->authConfigReference()->value(),
@@ -111,7 +133,9 @@ final class SyncJobPersistenceMapper
             'trigger_type'           => $syncJob->triggerType()->value,
             'external_object_type'   => $syncJob->externalObjectType(),
             'outbound_config'        => $this->encodeOutboundConfig($syncJob->outboundConfig()),
-            'webhook_key'            => $syncJob->webhookKey(),
+            'webhook_key_hash'       => $key === null ? null : self::webhookKeyHash($key),
+            'webhook_token_secret'   => $key === null ? null : $this->vault->protect($key),
+            'webhook_signing_secret' => $signingSecret === null ? null : $this->protectWebhookSecret($signingSecret),
             'field_mappings'         => $this->encodeFieldMappings($syncJob->fieldMappings()),
             'entity_assignment_strategy' => $this->encodeEntityAssignmentStrategy($syncJob->entityAssignmentStrategy()),
             'status'                 => $syncJob->status()->value,
@@ -129,6 +153,11 @@ final class SyncJobPersistenceMapper
     public function assignGeneratedId(SyncJob $syncJob, int $generatedId): void
     {
         $syncJob->assignId(new SyncJobId($generatedId));
+    }
+
+    public function protectWebhookSecret(string $secret): string
+    {
+        return $this->vault->protect($secret);
     }
 
     /**
@@ -293,7 +322,8 @@ final class SyncJobPersistenceMapper
         }
 
         if (($payload['type'] ?? null) === 'mapped') {
-            $unknownPolicy = UnknownEntityPolicy::tryFrom((string) ($payload['unknown_policy'] ?? '')) ?? UnknownEntityPolicy::FAIL;
+            $unknownPolicy = UnknownEntityPolicy::tryFrom((string) ($payload['unknown_policy'] ?? ''))
+                ?? UnknownEntityPolicy::FAIL;
 
             return EntityAssignmentStrategy::mapped(
                 (string) $payload['source_field'],
@@ -314,7 +344,9 @@ final class SyncJobPersistenceMapper
      */
     private function assertHasRequiredFields(array $row): void
     {
-        foreach (['id', 'name', 'auth_config_reference', 'direction', 'resource_path', 'target_itemtype', 'match_field', 'external_id_field', 'field_mappings', 'status', 'date_creation', 'date_mod'] as $field
+        foreach (
+            ['id', 'name', 'auth_config_reference', 'direction', 'resource_path', 'target_itemtype', 'match_field',
+                'external_id_field', 'field_mappings', 'status', 'date_creation', 'date_mod'] as $field
         ) {
             if (!array_key_exists($field, $row)) {
                 throw new \RuntimeException(sprintf(

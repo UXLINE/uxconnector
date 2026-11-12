@@ -8,7 +8,9 @@ use GlpiPlugin\Uxconnector\Domain\Template\Repository\ConnectorTemplateRepositor
 
 final class GetConnectorTemplateService
 {
-    public function __construct(private readonly ConnectorTemplateRepositoryInterface $repository) {}
+    public function __construct(private readonly ConnectorTemplateRepositoryInterface $repository)
+    {
+    }
 
     /** @return array<string,mixed> */
     public function execute(string $id): array

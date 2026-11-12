@@ -41,14 +41,20 @@ final class TargetFieldPolicy
         array $mappings
     ): void {
         if (!in_array($matchField->value(), $this->allowedMatchFields($itemtype), true)) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\UnsafeTargetFieldException::notMatchable($itemtype, $matchField->value());
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\UnsafeTargetFieldException::notMatchable(
+                $itemtype,
+                $matchField->value()
+            );
         }
 
         $allowed = $this->allowedWritableFields($itemtype);
 
         foreach ($mappings as $mapping) {
             if (!in_array($mapping->targetField(), $allowed, true) && !self::isFieldsTarget($mapping->targetField())) {
-                throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\UnsafeTargetFieldException::notWritable($itemtype, $mapping->targetField());
+                throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\UnsafeTargetFieldException::notWritable(
+                    $itemtype,
+                    $mapping->targetField()
+                );
             }
         }
     }
@@ -165,7 +171,8 @@ final class TargetFieldPolicy
                 'name', 'code', 'address', 'postcode', 'town', 'latitude', 'longitude', 'comment', 'locations_id',
             ],
             TargetItemtype::LINE => [
-                'name', 'caller_num', 'caller_name', 'comment', 'locations_id', 'states_id', 'lineoperators_id', 'linetypes_id',
+                'name', 'caller_num', 'caller_name', 'comment', 'locations_id', 'states_id', 'lineoperators_id',
+                    'linetypes_id',
             ],
             TargetItemtype::SOFTWARE_LICENSE => [
                 'name', 'serial', 'otherserial', 'softwares_id', 'softwarelicenses_id',

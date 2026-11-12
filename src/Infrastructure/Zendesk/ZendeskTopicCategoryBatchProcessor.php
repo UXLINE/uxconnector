@@ -23,14 +23,17 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncJob;
  * Scans the non-closed Zendesk ticket stream and materializes only the topic
  * categories actually used by the migration scope.
  */
-final class ZendeskTopicCategoryBatchProcessor implements InboundBatchProcessorInterface, StandaloneInboundProcessorInterface
+final class ZendeskTopicCategoryBatchProcessor implements
+    InboundBatchProcessorInterface,
+    StandaloneInboundProcessorInterface
 {
     private const TEMPLATE_ID = 'zendesk.itilcategories.bootstrap';
 
     public function __construct(
         private readonly ZendeskTopicCatalogInterface $catalog,
         private readonly ZendeskTopicCategoryWriterInterface $categories
-    ) {}
+    ) {
+    }
 
     public function supports(SyncJob $syncJob): bool
     {
@@ -45,7 +48,9 @@ final class ZendeskTopicCategoryBatchProcessor implements InboundBatchProcessorI
     {
         $options = $this->catalog->topicOptionsForJob($syncJob);
         if ($options === []) {
-            throw new \RuntimeException('Zendesk Sujet catalog is empty or unavailable; refusing an empty successful bootstrap.');
+            throw new \RuntimeException(
+                'Zendesk Sujet catalog is empty or unavailable; refusing an empty successful bootstrap.'
+            );
         }
 
         return $this->writeTopics($syncJob, $options, true);

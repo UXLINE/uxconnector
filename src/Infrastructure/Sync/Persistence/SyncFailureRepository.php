@@ -14,7 +14,9 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 final class SyncFailureRepository implements SyncFailureRepositoryInterface
 {
     private const TABLE = 'glpi_plugin_uxconnector_syncfailures';
-    public function __construct(private readonly DBmysql $db) {}
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
     public function add(SyncFailure $failure): void
     {

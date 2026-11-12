@@ -15,6 +15,7 @@ enum SyncExecutionStatus: string
     case SUCCESS_WITH_WARNINGS = 'success_with_warnings';
     case FAILED = 'failed';
     case INTERRUPTED = 'interrupted';
+    case CANCELLED = 'cancelled';
 
     public function label(): string
     {
@@ -26,6 +27,7 @@ enum SyncExecutionStatus: string
             self::SUCCESS_WITH_WARNINGS => 'Succès avec avertissements',
             self::FAILED => 'Échec',
             self::INTERRUPTED => 'Interrompu / reprenable',
+            self::CANCELLED => 'Annulée',
         };
     }
 
@@ -37,6 +39,7 @@ enum SyncExecutionStatus: string
             self::SUCCESS_WITH_WARNINGS,
             self::FAILED,
             self::INTERRUPTED,
+            self::CANCELLED,
         ], true);
     }
 

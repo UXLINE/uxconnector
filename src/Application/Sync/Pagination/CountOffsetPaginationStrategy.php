@@ -21,7 +21,8 @@ final class CountOffsetPaginationStrategy implements PaginationStrategyInterface
     public function __construct(
         private readonly PaginationConfig $config,
         private readonly QueryParameterUpdater $queryUpdater
-    ) {}
+    ) {
+    }
 
     public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string
     {

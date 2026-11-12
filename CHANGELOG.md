@@ -1,3 +1,66 @@
+## 2.18.38 RC11
+
+- Rend la signature HMAC obligatoire et ajoute une réservation persistante contre le rejeu exact des requêtes signées.
+- Retourne HTTP 409 pour une signature déjà consommée ; le stockage en base ne conserve que son empreinte et son expiration.
+- Conserve l’exception de session GLPI exclusivement sur le webhook et les droits natifs pour les écrans.
+- Vérifie le chiffrement natif avant la suppression des anciennes clés webhook lors de leur migration.
+- Masque les paramètres sensibles des méthodes concernées dans les traces PHP et valide les champs OAuth2 du formulaire.
+- Limite les réponses OAuth2 en taille et en durée, refuse les jetons contenant des caractères de contrôle et les réponses non 2xx.
+- Contrôle les erreurs d’écriture du CSV, conserve la neutralisation des formules et ajoute l’en-tête nosniff.
+- Documente les huit signaux conservés par l’analyse heuristique, les protections testées et les limites de la validation locale.
+
+## 2.18.38 RC10
+
+- Exige par défaut une signature HMAC pour le webhook entrant. Le mode jeton seul se réactive explicitement côté serveur.
+- Charge les schémas d’installation fixes avec GLPI et paramètre la requête de verrouillage des e-mails.
+- Renforce les limites de lecture des sessions REST v1 et la neutralisation des formules dans les exports CSV.
+
+## 2.18.38 RC9
+
+- Affiche la matrice des droits via la méthode native GLPI appelée depuis Twig.
+- Utilise le query builder GLPI pour vérifier la possession des verrous de synchronisation.
+- Limite les réponses de session REST v1 et exclut les messages d’exception du journal d’entrée du webhook.
+- Masque les valeurs chiffrées des connexions et bloque leur modification par l’API générique GLPI.
+- Retire le template d’historique inutilisé.
+
+## 2.18.38 RC8
+
+- Vérifie le périmètre d’entités actif pour les listes de jobs, leurs fiches, leur historique et les détails et exports CSV des échecs.
+
+## 2.18.38 RC7
+
+- Retire les identifiants secrets des fiches de connexion et des données de présentation des jobs.
+- Ajoute une consultation explicite et une rotation du secret HMAC, avec droits séparés et journal d’audit.
+- Affiche les actions des webhooks personnalisés dans la fiche de leur connexion, dont l’historique et la suppression.
+
+## 2.18.38 RC6
+
+- Migrate webhook bearer keys to hashed lookup with encrypted recovery.
+- Sign inbound webhook requests with a separate encrypted signing secret and a public job identifier.
+
+## 2.18.38 RC5
+
+- Check the active GLPI entity scope before user-driven job configuration, activation and execution actions.
+- Keep generic GLPI job and execution access read-only so mutations go through the plugin checks.
+
+## 2.18.38 RC4
+
+- Require a new credential on origin changes and bind new encrypted credentials to their origin and authentication method.
+- Block native authentication fields in outbound mappings, at configuration and dispatch.
+- Hide the webhook key from GLPI API responses and escape dynamic GLPI notifications.
+- Document the two deliberate native locking queries.
+
+## 2.18.38 RC3
+
+- Limit the distribution to supported synchronization connectors and their management screens.
+- Retire obsolete integration credentials during the upgrade.
+
+## 2.18.38 candidate
+
+- Render the source Fields diagnostic and Microsoft licence assignments with Twig.
+- Use the GLPI database API for execution stop requests and two legacy data migrations.
+- Track remaining native SQL for schema creation and locking in the release notes.
+
 ## 2.18.37 candidate - 2026-11-06
 
 - Add EasyVista Service Manager with five inbound pilots and one disabled outbound definition.
@@ -393,51 +456,6 @@
 - Support des authentifications Zendesk par API token via Basic (`email/token` + token) ou OAuth Bearer.
 
 > Cette version 2.13.0 couvre le flux de tickets. La reprise des commentaires/pièces jointes n'est pas encore exécutée par le moteur générique de templates et doit être ajoutée dans un lot spécialisé si elle est requise.
-
-# 2.10.2 - Copilot Analytics Semantics
-
-- Corrects TTR coverage: the denominator is now solved/closed tickets, not all opened tickets.
-- Restricts TTR samples to tickets currently solved/closed so historical solved dates on reopened tickets cannot contaminate the KPI.
-- Adds an explicit resolution rate separate from TTR data-quality coverage.
-- Adds period observation metadata (requested days, observed days, observed-through date, partial-period flag).
-- Adds comparison warnings when one period is still in progress or extends beyond the current date.
-- Adds normalized per-observed-day rates for safer comparison of partial versus completed periods.
-- Clarifies OpenAPI semantics for Copilot Studio.
-
-# 2.10.1 - Copilot Analytics Data Quality
-
-- Added KPI sample sizes and coverage.
-- Corrected historical zero-duration handling.
-- Corrected trend semantics (opened by creation date, resolved by solve/close date) and zero buckets.
-- Added group overlap/unassigned counters.
-- Added technician intervention metrics and optional user exclusions.
-- Enriched SLA coverage, current/historical breaches and breach context.
-- Added comparison warnings for weak samples and clarified backlog semantics.
-- Improved local ticket-context duration and final-solution normalization.
-
-# 2.10.0 - Copilot Analytics Lot 2
-
-- Adds a visible **AI Agents / Copilot** entry point directly on the UXConnector Connections page.
-- Adds read-only analytical tools for ticket summary/volume, trends, categories, SLA, groups, technicians and period comparison.
-- Enriches `searchTickets` with requester, assigned groups/users and linked assets for returned rows.
-- Enriches `getTicketContext` with named actors, assigned group list, human-readable TTO/TTR/task durations, canonical timeline and final solution.
-- Extends the Copilot OpenAPI document with dedicated semantic operations for the Lot 2 tools.
-- Keeps Lot 2 analytics local-GLPI-only for this release; remote GLPI HL analytics remains a future adapter.
-
-# Changelog
-
-## 2.9.1
-
-- Ajoute l'écran **AI Agents / Copilot Gateway** dans le menu UXConnector.
-- Ajoute le provider `local_glpi`, recommandé lorsque UXConnector est installé dans le GLPI interrogé : aucun appel HTTP vers soi-même et aucune seconde authentification OAuth ne sont nécessaires.
-- Conserve `glpi_hl_api` pour les GLPI distants via une connexion UXConnector.
-- Ajoute `provider_type` aux clients Copilot et permet de créer/révoquer/activer les clés depuis l'interface.
-- Restreint explicitement la règle Firewall/stateless aux seuls endpoints machine Copilot afin que la page d'administration AI Agents reste protégée par la session GLPI.
-
-## 2.9.0
-
-- Added the read-only UXConnector Copilot Gateway Lot 1.
-- Added canonical ITSM ticket model, GLPI HL provider, Copilot API clients and OpenAPI tools.
 
 ## 2.8.4 - 2026-08-19
 

@@ -17,13 +17,18 @@ final class DeleteSyncJobService
         private readonly SyncJobRepositoryInterface $repository,
         private readonly ?SyncExecutionRepositoryInterface $executionRepository = null,
         private readonly ?TransactionManagerInterface $transaction = null,
-        private readonly ?SyncCheckpointRepositoryInterface $checkpointRepository = null
-    ) {}
+        private readonly ?SyncCheckpointRepositoryInterface $checkpointRepository = null,
+        private readonly ?JobEntityAccess $entityAccess = null
+    ) {
+    }
 
     public function execute(DeleteSyncJobCommand $command): void
     {
+        $this->entityAccess?->assertJobId($command->syncJobId);
         if (!$this->repository->exists($command->syncJobId)) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($command->syncJobId);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId(
+                $command->syncJobId
+            );
         }
 
         if ($this->executionRepository === null || $this->transaction === null) {

@@ -1,6 +1,7 @@
 <?php
 
 /** UXConnector read-only connector catalogue entry point. */
+
 declare(strict_types=1);
 
 use GlpiPlugin\Uxconnector\Infrastructure\Template\TemplateServiceProvider;

@@ -23,7 +23,10 @@ final class TemplateStringResolver
                 : ($definition->default ?? '');
             $value = trim($raw);
             if ($definition->required && $value === '') {
-                throw new \InvalidArgumentException(sprintf('Template parameter "%s" is required.', $definition->label));
+                throw new \InvalidArgumentException(sprintf(
+                    'Template parameter "%s" is required.',
+                    $definition->label
+                ));
             }
             $resolved[$definition->name] = $value;
         }
@@ -48,7 +51,10 @@ final class TemplateStringResolver
                         'urlencode' => rawurlencode($value),
                         'upper' => function_exists('mb_strtoupper') ? \mb_strtoupper($value) : strtoupper($value),
                         'lower' => function_exists('mb_strtolower') ? \mb_strtolower($value) : strtolower($value),
-                        default => throw new \InvalidArgumentException(sprintf('Unsupported template filter "%s".', $filter)),
+                        default => throw new \InvalidArgumentException(sprintf(
+                            'Unsupported template filter "%s".',
+                            $filter
+                        )),
                     };
                 }
 

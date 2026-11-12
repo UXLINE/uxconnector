@@ -29,8 +29,10 @@ final class ExistingValuePolicy
             if ($field === 'id' || $field === 'entities_id') {
                 continue;
             }
-            if (self::isEmpty($field, $existing[$field] ?? null)
-                && !self::isEmpty($field, $value)) {
+            if (
+                self::isEmpty($field, $existing[$field] ?? null)
+                && !self::isEmpty($field, $value)
+            ) {
                 $result[$field] = $value;
             }
         }

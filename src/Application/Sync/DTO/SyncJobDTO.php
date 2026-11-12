@@ -44,7 +44,7 @@ final readonly class SyncJobDTO
         public string $triggerType,
         public string $triggerTypeLabel,
         public string $externalObjectType,
-        public ?string $webhookKey,
+        public bool $webhookConfigured,
         public bool $outboundConfigured,
         public int $fieldMappingsCount,
         public string $entityAssignmentSummary,
@@ -53,7 +53,8 @@ final readonly class SyncJobDTO
         public bool $isRunnable,
         public string $createdAt,
         public string $updatedAt
-    ) {}
+    ) {
+    }
 
     public static function fromEntity(SyncJob $syncJob): self
     {
@@ -83,7 +84,7 @@ final readonly class SyncJobDTO
             triggerType: $syncJob->triggerType()->value,
             triggerTypeLabel: $syncJob->triggerType()->label(),
             externalObjectType: $syncJob->externalObjectType(),
-            webhookKey: $syncJob->webhookKey(),
+            webhookConfigured: $syncJob->webhookKey() !== null,
             outboundConfigured: $syncJob->outboundConfig()->isConfigured(),
             fieldMappingsCount: count($syncJob->fieldMappings()),
             entityAssignmentSummary: self::summarizeEntityAssignment($syncJob),

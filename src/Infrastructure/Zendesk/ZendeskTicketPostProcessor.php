@@ -84,7 +84,8 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
         private readonly DestinationPolicyInterface $destinationPolicy,
         private readonly ZendeskTopicCatalog $topicCatalog,
         private readonly ZendeskTopicCategoryService $topicCategories
-    ) {}
+    ) {
+    }
 
     public function supports(SyncJob $syncJob): bool
     {
@@ -116,7 +117,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
         $commentsOk = $this->importComments($syncJob, $sourceRecord, $ticketId, $externalId);
 
         if (!$relationsOk || !$actorsOk) {
-            $this->failWith('ACTOR_OR_CATEGORY_UNRESOLVED', 'One or more Zendesk actors, organizations or ITIL categories could not be matched.');
+            $this->failWith(
+                'ACTOR_OR_CATEGORY_UNRESOLVED',
+                'One or more Zendesk actors, organizations or ITIL categories could not be matched.'
+            );
         }
         return $relationsOk && $actorsOk && $commentsOk;
     }
@@ -128,7 +132,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
 
         $current = new \Ticket();
         if (!$current->getFromDB($ticketId)) {
-            return $this->failWith('TARGET_TICKET_UNAVAILABLE', 'Target GLPI ticket is unavailable during category processing.');
+            return $this->failWith(
+                'TARGET_TICKET_UNAVAILABLE',
+                'Target GLPI ticket is unavailable during category processing.'
+            );
         }
         // Entity assignment was applied at creation by the job strategy. Root 0
         // is an intentional entity, not an empty value to replace on replay.
@@ -140,7 +147,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
         if ($topicValue !== null) {
             $label = $this->topicCatalog->labelForValue($syncJob, $topicValue);
             $topicDescription = $label === null
-                ? sprintf('Libellé indisponible dans le catalogue Zendesk, valeur technique « %s »', $this->diagnosticText($topicValue))
+                ? sprintf(
+                    'Libellé indisponible dans le catalogue Zendesk, valeur technique « %s »',
+                    $this->diagnosticText($topicValue)
+                )
                 : sprintf('Sujet Zendesk « %s »', $this->diagnosticText($label));
             $categoryId = $this->resolveMappedId(
                 $syncJob,
@@ -157,20 +167,31 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                     try {
                         $categoryId = $this->topicCategories->ensureForTopic($syncJob, $topicValue, $label);
                     } catch (\Throwable) {
-                        return $this->failWith('TOPIC_CATEGORY_UNRESOLVED', $topicDescription . ' : création ou rapprochement de la catégorie GLPI impossible.');
+                        return $this->failWith(
+                            'TOPIC_CATEGORY_UNRESOLVED',
+                            $topicDescription . ' : création ou rapprochement de la catégorie GLPI impossible.'
+                        );
                     }
                 }
             }
 
             if ($categoryId === null) {
-                $ok = $this->failWith('TOPIC_CATEGORY_UNRESOLVED', $topicDescription . ' : aucune catégorie ITIL GLPI utilisable.');
+                $ok = $this->failWith(
+                    'TOPIC_CATEGORY_UNRESOLVED',
+                    $topicDescription . ' : aucune catégorie ITIL GLPI utilisable.'
+                );
             } else {
                 $ticket = new \Ticket();
-                if (!(bool) $ticket->update([
+                if (
+                    !(bool) $ticket->update([
                     'id' => $ticketId,
                     'itilcategories_id' => $categoryId,
-                ])) {
-                    $ok = $this->failWith('CATEGORY_WRITE_FAILED', $topicDescription . ' : GLPI a refusé son affectation au ticket.');
+                    ])
+                ) {
+                    $ok = $this->failWith(
+                        'CATEGORY_WRITE_FAILED',
+                        $topicDescription . ' : GLPI a refusé son affectation au ticket.'
+                    );
                 }
             }
         }
@@ -184,7 +205,11 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
         $ok = true;
         $allowAdditionalAssignees = $syncJob->templateId() === 'zendesk.tickets.delta.inbound';
 
-        if (!$this->hasTicketRole($ticketId, $this->requesterType(), false) && isset($sourceRecord['requester_id']) && is_scalar($sourceRecord['requester_id'])) {
+        if (
+            !$this->hasTicketRole($ticketId, $this->requesterType(), false) && isset(
+                $sourceRecord['requester_id']
+            ) && is_scalar($sourceRecord['requester_id'])
+        ) {
             $userId = $this->resolveMappedId(
                 $syncJob,
                 'zendesk_user',
@@ -343,7 +368,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
     ): bool {
         $authConfig = $this->authConfigs->findById(new AuthConfigId($syncJob->authConfigReference()->value()));
         if ($authConfig === null) {
-            return $this->failWith('COMMENTS_AUTH_MISSING', 'Zendesk connection is unavailable while importing comments.');
+            return $this->failWith(
+                'COMMENTS_AUTH_MISSING',
+                'Zendesk connection is unavailable while importing comments.'
+            );
         }
 
         $ticketIdZendesk = rawurlencode($ticketExternalId->value());
@@ -359,16 +387,25 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
         while ($path !== '') {
             $page++;
             if ($page > self::MAX_COMMENT_PAGES) {
-                return $this->failWith('COMMENTS_PAGE_LIMIT', 'Zendesk comment pagination exceeded the configured safety limit.');
+                return $this->failWith(
+                    'COMMENTS_PAGE_LIMIT',
+                    'Zendesk comment pagination exceeded the configured safety limit.'
+                );
             }
 
             try {
                 $response = $this->httpEngine->execute($authConfig, new HttpRequest(HttpMethod::GET, $path));
             } catch (\Throwable) {
-                return $this->failWith('COMMENTS_HTTP_TRANSPORT', 'Unable to retrieve Zendesk ticket comments (HTTP transport).');
+                return $this->failWith(
+                    'COMMENTS_HTTP_TRANSPORT',
+                    'Unable to retrieve Zendesk ticket comments (HTTP transport).'
+                );
             }
             if (!$response->isSuccessful()) {
-                return $this->failWith('COMMENTS_HTTP_STATUS', sprintf('Zendesk ticket comments returned HTTP %d.', $response->statusCode));
+                return $this->failWith('COMMENTS_HTTP_STATUS', sprintf(
+                    'Zendesk ticket comments returned HTTP %d.',
+                    $response->statusCode
+                ));
             }
 
             try {
@@ -378,12 +415,18 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
             }
             $comments = $payload['comments'] ?? null;
             if (!is_array($comments)) {
-                return $this->failWith('COMMENTS_INVALID_RESPONSE', 'Zendesk comments payload is missing its comments collection.');
+                return $this->failWith(
+                    'COMMENTS_INVALID_RESPONSE',
+                    'Zendesk comments payload is missing its comments collection.'
+                );
             }
 
             foreach ($comments as $comment) {
                 if (!is_array($comment) || !isset($comment['id'])) {
-                    $allCommentsOk = $this->failWith('COMMENTS_INVALID_RECORD', 'A Zendesk comment record has no identifier.');
+                    $allCommentsOk = $this->failWith(
+                        'COMMENTS_INVALID_RECORD',
+                        'A Zendesk comment record has no identifier.'
+                    );
                     continue;
                 }
 
@@ -416,15 +459,17 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                     if (!$ticket->getFromDB($ticketId)) {
                         return false;
                     }
-                    if (!$this->syncCommentAttachments(
-                        $syncJob,
-                        $authConfig,
-                        $attachments,
-                        $ticket,
-                        $body,
-                        0,
-                        $date,
-                    )) {
+                    if (
+                        !$this->syncCommentAttachments(
+                            $syncJob,
+                            $authConfig,
+                            $attachments,
+                            $ticket,
+                            $body,
+                            0,
+                            $date,
+                        )
+                    ) {
                         $allCommentsOk = false;
                     }
                     continue;
@@ -449,15 +494,17 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                     }
                     // System comments are not conversational followups. Preserve
                     // their files on the ticket but do not overwrite its content.
-                    if (!$this->syncCommentAttachments(
-                        $syncJob,
-                        $authConfig,
-                        $attachments,
-                        $ticket,
-                        null,
-                        0,
-                        $date,
-                    )) {
+                    if (
+                        !$this->syncCommentAttachments(
+                            $syncJob,
+                            $authConfig,
+                            $attachments,
+                            $ticket,
+                            null,
+                            0,
+                            $date,
+                        )
+                    ) {
                         $allCommentsOk = false;
                     }
                     continue;
@@ -478,14 +525,17 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                         $this->syncCommentAttachments($syncJob, $authConfig, $attachments, $ticket, null, 0, $date);
                     }
                     $allCommentsOk = $this->failWith('COMMENT_AUTHOR_UNRESOLVED', sprintf(
-                        'Zendesk comment author_id=%s has no usable user ObjectLink for this connection; the comment remains retryable.',
+                        'Zendesk comment author_id=%s has no usable user ObjectLink for this connection; '
+                            . 'the comment remains retryable.',
                         $this->diagnosticId($authorId),
                     ));
                     continue;
                 }
 
                 $followupId = $existingCommentLink?->itemId();
-                if ($existingCommentLink !== null && $existingCommentLink->itemtype() !== TargetItemtype::ITIL_FOLLOWUP) {
+                if (
+                    $existingCommentLink !== null && $existingCommentLink->itemtype() !== TargetItemtype::ITIL_FOLLOWUP
+                ) {
                     return false;
                 }
                 if ($existingCommentLink !== null && $followupId !== null) {
@@ -543,15 +593,17 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                 if (!$followup->getFromDB((int) $followupId)) {
                     return false;
                 }
-                if (!$this->syncCommentAttachments(
-                    $syncJob,
-                    $authConfig,
-                    $attachments,
-                    $followup,
-                    $body,
-                    $glpiAuthorId,
-                    $date,
-                )) {
+                if (
+                    !$this->syncCommentAttachments(
+                        $syncJob,
+                        $authConfig,
+                        $attachments,
+                        $followup,
+                        $body,
+                        $glpiAuthorId,
+                        $date,
+                    )
+                ) {
                     $allCommentsOk = false;
                 }
             }
@@ -654,8 +706,11 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
 
         $path = (string) (parse_url($url, PHP_URL_PATH) ?? '');
         $name = basename($path);
-        if ($name === '' || $name === '/' || $name === '.'
-           || !in_array(strtolower(pathinfo($name, PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'], true)) {
+        if (
+            $name === '' || $name === '/' || $name === '.'
+            || !in_array(strtolower(pathinfo($name, PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp',
+                    'svg'], true)
+        ) {
             $name = 'zendesk-inline-image.png';
         }
 
@@ -719,9 +774,11 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
         $attachmentRecords = [];
         $docData = [];
         $uploadEntity = (int) ($item->fields['entities_id'] ?? ($_SESSION['glpiactive_entity'] ?? 0));
-        if ($item instanceof \ITILFollowup
-           && ($item->fields['itemtype'] ?? '') === \Ticket::class
-           && (int) ($item->fields['items_id'] ?? 0) > 0) {
+        if (
+            $item instanceof \ITILFollowup
+            && ($item->fields['itemtype'] ?? '') === \Ticket::class
+            && (int) ($item->fields['items_id'] ?? 0) > 0
+        ) {
             $parent = new \Ticket();
             if ($parent->getFromDB((int) $item->fields['items_id'])) {
                 $uploadEntity = (int) ($parent->fields['entities_id'] ?? $uploadEntity);
@@ -732,24 +789,37 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
 
         foreach ($attachments as $attachment) {
             if (!is_array($attachment)) {
-                return $this->failWith('ATTACHMENT_INVALID_DESCRIPTOR', 'Zendesk attachment metadata is not a valid object.');
+                return $this->failWith(
+                    'ATTACHMENT_INVALID_DESCRIPTOR',
+                    'Zendesk attachment metadata is not a valid object.'
+                );
             }
             if (($attachment['deleted'] ?? false) === true) {
                 // Zendesk explicitly marks a removed attachment: no URL can be recovered.
                 continue;
             }
             if (($attachment['malware_scan_result'] ?? '') === 'malware_found') {
-                return $this->failWith('ATTACHMENT_MALWARE', 'Zendesk attachment is flagged as malicious and was not downloaded.');
+                return $this->failWith(
+                    'ATTACHMENT_MALWARE',
+                    'Zendesk attachment is flagged as malicious and was not downloaded.'
+                );
             }
 
             $contentUrl = isset($attachment['content_url']) && is_string($attachment['content_url'])
                ? trim($attachment['content_url'])
                : '';
-            if ($contentUrl === '' && isset($attachment['mapped_content_url']) && is_string($attachment['mapped_content_url'])) {
+            if (
+                $contentUrl === '' && isset($attachment['mapped_content_url']) && is_string(
+                    $attachment['mapped_content_url']
+                )
+            ) {
                 $contentUrl = trim($attachment['mapped_content_url']);
             }
             if ($contentUrl === '') {
-                return $this->failWith('ATTACHMENT_URL_MISSING', 'Zendesk attachment metadata has no downloadable URL.');
+                return $this->failWith(
+                    'ATTACHMENT_URL_MISSING',
+                    'Zendesk attachment metadata has no downloadable URL.'
+                );
             }
 
             $rawAttachmentId = $attachment['id'] ?? null;
@@ -768,7 +838,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
             $tag = '';
             if ($existingLink !== null) {
                 if ($existingLink->itemtype() !== TargetItemtype::DOCUMENT) {
-                    return $this->failWith('ATTACHMENT_LINK_INVALID', 'Reconciliation points to an object other than a document.');
+                    return $this->failWith(
+                        'ATTACHMENT_LINK_INVALID',
+                        'Reconciliation points to an object other than a document.'
+                    );
                 }
                 $document = new \Document();
                 if (!$document->getFromDB($existingLink->itemId())) {
@@ -782,7 +855,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                     $documentId = (int) $document->getID();
                     $tag = (string) ($document->fields['tag'] ?? '');
                     if ($tag === '') {
-                        return $this->failWith('ATTACHMENT_DOCUMENT_TAG_MISSING', 'Reconciled GLPI document has no native tag.');
+                        return $this->failWith(
+                            'ATTACHMENT_DOCUMENT_TAG_MISSING',
+                            'Reconciled GLPI document has no native tag.'
+                        );
                     }
                     $docData[$documentId] = $document->fields;
                 }
@@ -796,7 +872,8 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                     $documentId = (int) $orphan->getID();
                     $docData[$documentId] = $orphan->fields;
                 } else {
-                    $fileName = $this->safeFileName((string) ($attachment['file_name'] ?? ('zendesk-' . $attachmentId)));
+                    $fileName = $this->safeFileName((string) ($attachment['file_name'] ?? (
+                                'zendesk-' . $attachmentId)));
                     $tempName = $this->downloadAttachmentToTemp($authConfig, $contentUrl, $fileName, $attachmentId);
                     if ($tempName === null) {
                         // A failed file must not discard earlier downloads or block
@@ -866,7 +943,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
         }
         if (!is_array($processed)) {
             $this->cleanupTempFiles($tempFiles);
-            return $this->failWith('ATTACHMENT_GLPI_UPLOAD_FAILED', 'GLPI native file upload returned an invalid result.');
+            return $this->failWith(
+                'ATTACHMENT_GLPI_UPLOAD_FAILED',
+                'GLPI native file upload returned an invalid result.'
+            );
         }
 
         // Resolve documents created by addFiles() using the tags we assigned.
@@ -886,7 +966,11 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
             }
             if (!$found) {
                 $this->cleanupTempFiles($tempFiles);
-                return $this->failWith('ATTACHMENT_GLPI_UPLOAD_FAILED', 'Native GLPI addFiles did not produce or reuse the expected Document; check allowed file extensions and GLPI file permissions.');
+                return $this->failWith(
+                    'ATTACHMENT_GLPI_UPLOAD_FAILED',
+                    'Native GLPI addFiles did not produce or reuse the expected Document; check allowed file '
+                    . 'extensions and GLPI file permissions.'
+                );
             }
             $record['document_id'] = (int) $document->getID();
             $docData[(int) $document->getID()] = $document->fields;
@@ -907,7 +991,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
             if ($content !== '' && $content !== $oldContent) {
                 $item->fields['content'] = $content;
                 if (!$item->updateInDB(['content'], ['content' => $oldContent])) {
-                    return $this->failWith('ATTACHMENT_INLINE_RENDER_FAILED', 'GLPI could not update inline image references.');
+                    return $this->failWith(
+                        'ATTACHMENT_INLINE_RENDER_FAILED',
+                        'GLPI could not update inline image references.'
+                    );
                 }
             }
         }
@@ -920,7 +1007,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
             // A document may exist through a previous ticket/followup or after a
             // partial import. Reconcile its association for *this* item on replay.
             if (!$this->ensureDocumentItemLink((int) $record['document_id'], $item)) {
-                return $this->failWith('ATTACHMENT_DOCUMENT_ASSOCIATION_FAILED', 'GLPI Document exists but cannot be linked to its ticket or followup.');
+                return $this->failWith(
+                    'ATTACHMENT_DOCUMENT_ASSOCIATION_FAILED',
+                    'GLPI Document exists but cannot be linked to its ticket or followup.'
+                );
             }
             $existing = $this->objectLinks->findByExternalId(
                 $syncJob->authConfigReference(),
@@ -1071,10 +1161,19 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                 $response = $this->httpEngine->execute($authConfig, new HttpRequest(HttpMethod::GET, $relative));
                 if ($response->isSuccessful()) {
                     $contentType = strtolower((string) $response->header('Content-Type'));
-                    $looksHtml = preg_match('/^\s*(?:<!doctype\s+html|<html\b)/i', substr($response->body, 0, 512)) === 1;
-                    if ((str_contains($contentType, 'text/html') || $looksHtml)
-                       && !in_array(strtolower(pathinfo($fileName, PATHINFO_EXTENSION)), ['html', 'htm'], true)) {
-                        $this->failWith('ATTACHMENT_HTML_RESPONSE', 'Authenticated attachment fetch returned a login/HTML page instead of a file.');
+                    $looksHtml = preg_match('/^\s*(?:<!doctype\s+html|<html\b)/i', substr(
+                        $response->body,
+                        0,
+                        512
+                    )) === 1;
+                    if (
+                        (str_contains($contentType, 'text/html') || $looksHtml)
+                        && !in_array(strtolower(pathinfo($fileName, PATHINFO_EXTENSION)), ['html', 'htm'], true)
+                    ) {
+                        $this->failWith(
+                            'ATTACHMENT_HTML_RESPONSE',
+                            'Authenticated attachment fetch returned a login/HTML page instead of a file.'
+                        );
                         return null;
                     }
                     if (strlen($response->body) > self::MAX_ATTACHMENT_BYTES) {
@@ -1084,7 +1183,11 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                     $written = $response->body !== '' ? file_put_contents($tempPath, $response->body) : false;
                     if ($written === false || $written !== strlen($response->body)) {
                         @unlink($tempPath);
-                        $this->failWith('ATTACHMENT_TEMP_WRITE_FAILED', 'GLPI temporary upload directory is unavailable or the downloaded attachment is empty/incomplete.');
+                        $this->failWith(
+                            'ATTACHMENT_TEMP_WRITE_FAILED',
+                            'GLPI temporary upload directory is unavailable or the downloaded attachment is '
+                            . 'empty/incomplete.'
+                        );
                         return null;
                     }
                     return $tempName;
@@ -1092,20 +1195,37 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                 if ($response->statusCode >= 300 && $response->statusCode < 400) {
                     $location = $response->header('Location');
                     if (!is_string($location) || $location === '') {
-                        $this->failWith('ATTACHMENT_REDIRECT_MISSING', 'Authenticated attachment redirect omitted Location.');
+                        $this->failWith(
+                            'ATTACHMENT_REDIRECT_MISSING',
+                            'Authenticated attachment redirect omitted Location.'
+                        );
                         return null;
                     }
                     $current = $downloader->resolveRedirectUrl($current, $location);
                     continue;
                 }
-                $this->failWith('ATTACHMENT_AUTH_HTTP_STATUS', sprintf('Authenticated Zendesk attachment fetch returned HTTP %d (anonymous attempt: %s).', $response->statusCode, $directCode));
+                $this->failWith(
+                    'ATTACHMENT_AUTH_HTTP_STATUS',
+                    sprintf(
+                        'Authenticated Zendesk attachment fetch returned HTTP %d (anonymous attempt: %s).',
+                        $response->statusCode,
+                        $directCode
+                    )
+                );
                 return null;
             } catch (\Throwable) {
-                $this->failWith('ATTACHMENT_AUTH_TRANSPORT', 'Authenticated Zendesk attachment fetch failed (transport; the generic API response limit is 10 MiB).');
+                $this->failWith(
+                    'ATTACHMENT_AUTH_TRANSPORT',
+                    'Authenticated Zendesk attachment fetch failed (transport; the generic API response limit '
+                    . 'is 10 MiB).'
+                );
                 return null;
             }
         }
-        $this->failWith('ATTACHMENT_TOO_MANY_REDIRECTS', 'Authenticated attachment exceeded the redirect safety limit.');
+        $this->failWith(
+            'ATTACHMENT_TOO_MANY_REDIRECTS',
+            'Authenticated attachment exceeded the redirect safety limit.'
+        );
         return null;
     }
 

@@ -126,7 +126,8 @@ final class AuthConfig
     public function assignId(AuthConfigId $id): void
     {
         if ($this->id !== null) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InvalidAuthConfigStateException::cannotAssignIdTwice();
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InvalidAuthConfigStateException::cannotAssignIdTwice(
+            );
         }
 
         $this->id = $id;
@@ -202,9 +203,10 @@ final class AuthConfig
     public function activate(): void
     {
         if ($this->status !== AuthConfigStatus::TESTING) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InvalidAuthConfigStateException::cannotActivateFromStatus(
-                $this->status,
-            );
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InvalidAuthConfigStateException
+                ::cannotActivateFromStatus(
+                    $this->status,
+                );
         }
 
         $this->status = AuthConfigStatus::ACTIVE;

@@ -23,6 +23,7 @@ use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\EntityAssignmentStrategy
 use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\FieldMappingRequestParser;
 use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\PaginationConfigRequestParser;
 use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\SyncJobController;
+use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\SyncReadAccess;
 
 Session::checkRight('plugin_uxconnector_syncjob', READ);
 
@@ -65,8 +66,7 @@ if (isset($_POST['bulk_activate'])) {
     Session::checkRight('plugin_uxconnector_syncjob', UPDATE);
     $controller->fullReplay($_POST);
 } elseif (isset($_GET['history'])) {
-    // Action de lecture pure : le droit READ, déjà vérifié plus haut,
-    // suffit - pas besoin d'UPDATE pour consulter un historique.
+    SyncReadAccess::requireJob((int) ($_GET['id'] ?? 0));
     Html::header(
         __('Synchronization history', 'uxconnector'),
         $_SERVER['PHP_SELF'],

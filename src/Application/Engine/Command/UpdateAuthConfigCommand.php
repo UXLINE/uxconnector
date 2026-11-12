@@ -24,6 +24,7 @@ final readonly class UpdateAuthConfigCommand
         public Endpoint $endpoint,
         public AuthMethod $authMethod,
         public TestPath $testPath,
-        public ?string $plaintextSecret = null
-    ) {}
+        #[\SensitiveParameter] public ?string $plaintextSecret = null
+    ) {
+    }
 }

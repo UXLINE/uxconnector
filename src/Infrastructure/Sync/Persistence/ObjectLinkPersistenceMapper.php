@@ -50,7 +50,9 @@ final class ObjectLinkPersistenceMapper
             new DateTimeImmutable((string) $row['last_seen_at']),
             $externalObjectTypeOverride !== null && trim($externalObjectTypeOverride) !== ''
                 ? $externalObjectTypeOverride
-                : ((($row['external_object_type'] ?? '') === 'record' || trim((string) ($row['external_object_type'] ?? '')) === '')
+                : ((($row['external_object_type'] ?? '') === 'record' || trim(
+                    (string) ($row['external_object_type'] ?? '')
+                ) === '')
                     ? $itemtype->value
                     : (string) $row['external_object_type']),
         );
@@ -88,7 +90,9 @@ final class ObjectLinkPersistenceMapper
      */
     private function assertHasRequiredFields(array $row): void
     {
-        foreach (['id', 'plugin_uxconnector_syncjobs_id', 'auth_config_reference', 'external_id', 'itemtype', 'item_id', 'last_seen_at'] as $field
+        foreach (
+            ['id', 'plugin_uxconnector_syncjobs_id', 'auth_config_reference', 'external_id', 'itemtype', 'item_id',
+                'last_seen_at'] as $field
         ) {
             if (!array_key_exists($field, $row)) {
                 throw new \RuntimeException(sprintf(

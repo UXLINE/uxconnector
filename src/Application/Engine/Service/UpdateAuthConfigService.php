@@ -10,6 +10,7 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Repository\AuthConfigRepositoryInterfac
 use GlpiPlugin\Uxconnector\Domain\Engine\Repository\AuthConfigSecretStoreInterface;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\CredentialVaultInterface;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
+use GlpiPlugin\Uxconnector\Domain\Engine\Security\OriginBoundCredential;
 use GlpiPlugin\Uxconnector\Domain\Shared\Persistence\TransactionManagerInterface;
 
 /**
@@ -27,9 +28,10 @@ final class UpdateAuthConfigService
         private readonly CredentialVaultInterface $vault,
         private readonly DestinationPolicyInterface $destinationPolicy,
         private readonly TransactionManagerInterface $transaction
-    ) {}
+    ) {
+    }
 
-    public function execute(UpdateAuthConfigCommand $command): AuthConfig
+    public function execute(#[\SensitiveParameter] UpdateAuthConfigCommand $command): AuthConfig
     {
         $connection = $this->repository->findById($command->id);
         if ($connection === null) {
@@ -37,29 +39,40 @@ final class UpdateAuthConfigService
         }
 
         if (!$command->authMethod->isImplemented()) {
-            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod($command->authMethod);
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod(
+                $command->authMethod
+            );
         }
 
         if ($command->authMethod->requiresVaultedCredentials() && !$command->endpoint->isSecure()) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InsecureCredentialTransportException::forEndpoint($command->authMethod, $command->endpoint);
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\InsecureCredentialTransportException::forEndpoint(
+                $command->authMethod,
+                $command->endpoint
+            );
         }
 
         $this->destinationPolicy->assertAllowed($command->endpoint);
 
         $authMethodChanged = $connection->authMethod() !== $command->authMethod;
+        $originChanged = $connection->endpoint()->origin() !== $command->endpoint->origin();
         $existingProtectedSecret = $this->secretStore->get($command->id);
         $hasNewSecret = $command->authMethod->requiresVaultedCredentials()
             && $command->plaintextSecret !== null
             && trim($command->plaintextSecret) !== '';
 
         if ($command->authMethod->requiresVaultedCredentials()) {
+            if ($originChanged && !$hasNewSecret) {
+                throw new \InvalidArgumentException('Enter a new credential when changing the connection origin.');
+            }
             if ($authMethodChanged && !$hasNewSecret) {
-                // Re-using an opaque secret after changing its semantic format
-                // (Bearer -> Basic, API key -> OAuth2, ...) is unsafe.
-                throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod($command->authMethod);
+                throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod(
+                    $command->authMethod
+                );
             }
             if (!$hasNewSecret && $existingProtectedSecret === null) {
-                throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod($command->authMethod);
+                throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod(
+                    $command->authMethod
+                );
             }
         }
 
@@ -90,7 +103,11 @@ final class UpdateAuthConfigService
             } elseif ($hasNewSecret) {
                 $this->secretStore->put(
                     $command->id,
-                    $this->vault->protect((string) $command->plaintextSecret),
+                    $this->vault->protect(OriginBoundCredential::wrap(
+                        $command->endpoint,
+                        $command->authMethod,
+                        (string) $command->plaintextSecret,
+                    )),
                 );
             }
 

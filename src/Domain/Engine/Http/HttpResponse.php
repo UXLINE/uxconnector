@@ -28,7 +28,8 @@ final readonly class HttpResponse
         public int $statusCode,
         public array $headers,
         public string $body
-    ) {}
+    ) {
+    }
 
     public function isSuccessful(): bool
     {

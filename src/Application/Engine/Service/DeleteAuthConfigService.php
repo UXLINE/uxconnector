@@ -34,16 +34,21 @@ final class DeleteAuthConfigService
         private readonly AuthConfigUsageCheckerInterface $usageChecker,
         private readonly TransactionManagerInterface $transaction,
         private readonly ?AuthConfigArtifactsCleanerInterface $artifactsCleaner = null
-    ) {}
+    ) {
+    }
 
     public function execute(DeleteAuthConfigCommand $command): void
     {
         if (!$this->repository->exists($command->authConfigId)) {
-            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigNotFoundException::forId($command->authConfigId);
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigNotFoundException::forId(
+                $command->authConfigId
+            );
         }
 
         if ($this->usageChecker->isUsed($command->authConfigId)) {
-            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigInUseException::forId($command->authConfigId);
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthConfigInUseException::forId(
+                $command->authConfigId
+            );
         }
 
         $this->transaction->begin();

@@ -9,7 +9,9 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncExecutionId;
 
 final class ListSyncFailuresService
 {
-    public function __construct(private readonly SyncFailureRepositoryInterface $repository) {}
+    public function __construct(private readonly SyncFailureRepositoryInterface $repository)
+    {
+    }
     public function execute(SyncExecutionId $id): array
     {
         return $this->repository->findByExecution($id);

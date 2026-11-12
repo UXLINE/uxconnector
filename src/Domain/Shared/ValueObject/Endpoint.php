@@ -68,7 +68,8 @@ final readonly class Endpoint
 
         if (parse_url($trimmed, PHP_URL_QUERY) !== null || parse_url($trimmed, PHP_URL_FRAGMENT) !== null) {
             throw new \InvalidArgumentException(
-                'Endpoint must be a base URL without query string or fragment; put resource-specific parameters in the resource path.',
+                'Endpoint must be a base URL without query string or fragment; put resource-specific '
+                    . 'parameters in the resource path.',
             );
         }
 
@@ -83,6 +84,16 @@ final readonly class Endpoint
     public function isSecure(): bool
     {
         return parse_url($this->value, PHP_URL_SCHEME) === 'https';
+    }
+
+    /** Returns the canonical origin used to scope stored credentials. */
+    public function origin(): string
+    {
+        $scheme = (string) parse_url($this->value, PHP_URL_SCHEME);
+        $host = strtolower((string) parse_url($this->value, PHP_URL_HOST));
+        $port = parse_url($this->value, PHP_URL_PORT) ?? ($scheme === 'https' ? 443 : 80);
+
+        return sprintf('%s://%s:%d', $scheme, $host, $port);
     }
 
     public function equals(self $other): bool

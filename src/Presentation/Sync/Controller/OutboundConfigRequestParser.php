@@ -18,7 +18,8 @@ final class OutboundConfigRequestParser
         return OutboundConfig::fromArray([
             'create' => $create,
             'update' => $update,
-            'response_external_id_path' => trim((string) ($request['outbound_response_external_id_path'] ?? 'id')) ?: 'id',
+            'response_external_id_path' => trim((string) ($request['outbound_response_external_id_path'] ?? 'id')) ?
+                : 'id',
         ]);
     }
 
@@ -37,7 +38,10 @@ final class OutboundConfigRequestParser
             return null;
         }
         if ($method === '' || $path === '') {
-            throw new \RuntimeException(sprintf('%s method and path must both be provided.', ucfirst(str_replace('_', ' ', $prefix))));
+            throw new \RuntimeException(sprintf(
+                '%s method and path must both be provided.',
+                ucfirst(str_replace('_', ' ', $prefix))
+            ));
         }
 
         $definition = ['method' => $method, 'path' => $path];
@@ -45,10 +49,17 @@ final class OutboundConfigRequestParser
             try {
                 $body = json_decode($bodyJson, true, flags: JSON_THROW_ON_ERROR);
             } catch (\JsonException $exception) {
-                throw new \RuntimeException(sprintf('%s body must be valid JSON.', ucfirst(str_replace('_', ' ', $prefix))), previous: $exception);
+                throw new \RuntimeException(sprintf('%s body must be valid JSON.', ucfirst(str_replace(
+                    '_',
+                    ' ',
+                    $prefix
+                ))), previous: $exception);
             }
             if (!is_array($body)) {
-                throw new \RuntimeException(sprintf('%s body must be a JSON object or array.', ucfirst(str_replace('_', ' ', $prefix))));
+                throw new \RuntimeException(sprintf(
+                    '%s body must be a JSON object or array.',
+                    ucfirst(str_replace('_', ' ', $prefix))
+                ));
             }
             $definition['body'] = $body;
         }

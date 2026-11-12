@@ -35,7 +35,8 @@ final class SyncJobEditController extends AbstractController
         private readonly UpdateSyncJobService $updateSyncJob,
         private readonly ListAuthConfigsService $listAuthConfigs,
         private readonly ?TargetFieldsCatalogInterface $fieldsCatalog = null
-    ) {}
+    ) {
+    }
 
     /**
      * @param array<string, mixed> $request
@@ -58,7 +59,7 @@ final class SyncJobEditController extends AbstractController
 
                 $this->redirect(
                     '/plugins/uxconnector/front/syncjob.view.php?id='
-               . $syncJob->id,
+                    . $syncJob->id,
                 );
                 return;
             }
@@ -70,7 +71,10 @@ final class SyncJobEditController extends AbstractController
                 $targetFieldCatalog[] = [
                     'value' => $itemtype->value,
                     'label' => $itemtype->label(),
-                    'writable' => array_merge($policy->allowedWritableFields($itemtype), ($this->fieldsCatalog?->writableFor(ltrim($itemtype->glpiClassName(), '\\')) ?? [])),
+                    'writable' => array_merge(
+                        $policy->allowedWritableFields($itemtype),
+                        ($this->fieldsCatalog?->writableFor(ltrim($itemtype->glpiClassName(), '\\')) ?? [])
+                    ),
                     'matchable' => $policy->allowedMatchFields($itemtype),
                 ];
             }
@@ -84,7 +88,7 @@ final class SyncJobEditController extends AbstractController
             ]);
         } catch (\Throwable $exception) {
             Session::addMessageAfterRedirect(
-                $exception->getMessage(),
+                htmlescape($exception->getMessage()),
                 false,
                 ERROR,
             );
@@ -113,14 +117,16 @@ final class SyncJobEditController extends AbstractController
                 (string) ($request['resource_path'] ?? ''),
             );
 
-            if ($trigger === InteractionTrigger::WEBHOOK
-               && $resourcePath === ''
+            if (
+                $trigger === InteractionTrigger::WEBHOOK
+                && $resourcePath === ''
             ) {
                 $resourcePath = '/webhook';
             }
 
-            if ($direction === SyncDirection::OUTBOUND
-               && $resourcePath === ''
+            if (
+                $direction === SyncDirection::OUTBOUND
+                && $resourcePath === ''
             ) {
                 $resourcePath = '/outbound';
             }
@@ -204,18 +210,18 @@ final class SyncJobEditController extends AbstractController
 
             $this->redirect(
                 '/plugins/uxconnector/front/syncjob.view.php?id='
-            . $savedId->value(),
+                . $savedId->value(),
             );
         } catch (\Throwable $exception) {
             Session::addMessageAfterRedirect(
-                $exception->getMessage(),
+                htmlescape($exception->getMessage()),
                 false,
                 ERROR,
             );
 
             $this->redirect(
                 '/plugins/uxconnector/front/syncjob.edit.php?id='
-            . $idValue,
+                . $idValue,
             );
         }
     }
@@ -321,9 +327,10 @@ final class SyncJobEditController extends AbstractController
     ): ?EntityAssignmentStrategy {
         $trimmed = trim($json);
 
-        if ($trimmed === ''
-           || $trimmed === 'null'
-           || $trimmed === '{}'
+        if (
+            $trimmed === ''
+            || $trimmed === 'null'
+            || $trimmed === '{}'
         ) {
             return null;
         }

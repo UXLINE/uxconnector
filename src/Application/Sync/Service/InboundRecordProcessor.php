@@ -57,7 +57,14 @@ final class InboundRecordProcessor
         foreach ($this->batchProcessors as $batchProcessor) {
             if ($batchProcessor instanceof InboundBatchProcessorInterface && $batchProcessor->supports($syncJob)) {
                 if ($batchProcessor instanceof ExecutionAwareBatchProcessorInterface) {
-                    return $batchProcessor->processWithContext($syncJob, $items, $executionId, $page, $cursor, $this->failureRepository);
+                    return $batchProcessor->processWithContext(
+                        $syncJob,
+                        $items,
+                        $executionId,
+                        $page,
+                        $cursor,
+                        $this->failureRepository
+                    );
                 }
                 return $batchProcessor->process($syncJob, $items);
             }
@@ -75,7 +82,20 @@ final class InboundRecordProcessor
             $beforeRecord?->__invoke();
             if (!is_array($item)) {
                 $failed++;
-                $this->recordFailure($executionId, $syncJob, null, null, 'upsert', SyncErrorCategory::VALIDATION, 'INVALID_RECORD', 'Source record is not a JSON object.', null, $page, $cursor, false);
+                $this->recordFailure(
+                    $executionId,
+                    $syncJob,
+                    null,
+                    null,
+                    'upsert',
+                    SyncErrorCategory::VALIDATION,
+                    'INVALID_RECORD',
+                    'Source record is not a JSON object.',
+                    null,
+                    $page,
+                    $cursor,
+                    false
+                );
                 continue;
             }
 
@@ -83,12 +103,31 @@ final class InboundRecordProcessor
             $externalIdValue = is_scalar($rawExternalId) ? trim((string) $rawExternalId) : '';
             if ($externalIdValue === '') {
                 $failed++;
-                $this->recordFailure($executionId, $syncJob, $item, null, 'upsert', SyncErrorCategory::VALIDATION, 'MISSING_EXTERNAL_ID', 'Required external identifier is missing.', null, $page, $cursor, false);
+                $this->recordFailure(
+                    $executionId,
+                    $syncJob,
+                    $item,
+                    null,
+                    'upsert',
+                    SyncErrorCategory::VALIDATION,
+                    'MISSING_EXTERNAL_ID',
+                    'Required external identifier is missing.',
+                    null,
+                    $page,
+                    $cursor,
+                    false
+                );
                 continue;
             }
             $externalId = new ExternalId($externalIdValue);
 
-            if ($this->mustSkipGlpiAssetRecord($syncJob, $item) || $this->mustSkipBeforeFirstZendeskImport($syncJob, $item, $externalId)) {
+            if (
+                $this->mustSkipGlpiAssetRecord($syncJob, $item) || $this->mustSkipBeforeFirstZendeskImport(
+                    $syncJob,
+                    $item,
+                    $externalId
+                )
+            ) {
                 $skipped++;
                 continue;
             }
@@ -101,7 +140,20 @@ final class InboundRecordProcessor
                     $message = $missingRequiredField !== null
                         ? sprintf('Required source field "%s" is missing.', $missingRequiredField)
                         : 'A required source field is missing.';
-                    $this->recordFailure($executionId, $syncJob, $item, $externalIdValue, 'map', SyncErrorCategory::VALIDATION, 'REQUIRED_MAPPING_MISSING', $message, null, $page, $cursor, false);
+                    $this->recordFailure(
+                        $executionId,
+                        $syncJob,
+                        $item,
+                        $externalIdValue,
+                        'map',
+                        SyncErrorCategory::VALIDATION,
+                        'REQUIRED_MAPPING_MISSING',
+                        $message,
+                        null,
+                        $page,
+                        $cursor,
+                        false
+                    );
                     continue;
                 }
 
@@ -110,7 +162,20 @@ final class InboundRecordProcessor
                     $entitiesId = $syncJob->entityAssignmentStrategy()->resolve($item);
                     if ($entitiesId === null) {
                         $failed++;
-                        $this->recordFailure($executionId, $syncJob, $item, $externalIdValue, 'entity_resolution', SyncErrorCategory::BUSINESS, 'ENTITY_UNRESOLVED', 'Target GLPI entity could not be resolved.', null, $page, $cursor, false);
+                        $this->recordFailure(
+                            $executionId,
+                            $syncJob,
+                            $item,
+                            $externalIdValue,
+                            'entity_resolution',
+                            SyncErrorCategory::BUSINESS,
+                            'ENTITY_UNRESOLVED',
+                            'Target GLPI entity could not be resolved.',
+                            null,
+                            $page,
+                            $cursor,
+                            false
+                        );
                         continue;
                     }
                 }
@@ -124,7 +189,11 @@ final class InboundRecordProcessor
                     $syncJob->externalObjectType(),
                     $entitiesId,
                     $syncJob->templateId() === 'zendesk.tickets.delta.inbound'
-                        && in_array($item['status'] ?? null, ['new', 'open', 'pending', 'hold', 'solved', 'closed'], true),
+                        && in_array(
+                            $item['status'] ?? null,
+                            ['new', 'open', 'pending', 'hold', 'solved', 'closed'],
+                            true
+                        ),
                 ), $mappedFields);
 
                 $action = $this->itemWriter instanceof ActionAwareSyncItemWriterInterface
@@ -133,7 +202,20 @@ final class InboundRecordProcessor
 
                 if (!$written) {
                     $failed++;
-                    $this->recordFailure($executionId, $syncJob, $item, $externalIdValue, $action, SyncErrorCategory::TARGET_WRITE, 'TARGET_WRITE_FAILED', 'GLPI target write or reconciliation failed.', null, $page, $cursor, false);
+                    $this->recordFailure(
+                        $executionId,
+                        $syncJob,
+                        $item,
+                        $externalIdValue,
+                        $action,
+                        SyncErrorCategory::TARGET_WRITE,
+                        'TARGET_WRITE_FAILED',
+                        'GLPI target write or reconciliation failed.',
+                        null,
+                        $page,
+                        $cursor,
+                        false
+                    );
                     continue;
                 }
 
@@ -147,13 +229,18 @@ final class InboundRecordProcessor
 
                 $recordWarnings = 0;
                 foreach ($this->postProcessors as $postProcessor) {
-                    if (!$postProcessor instanceof InboundRecordPostProcessorInterface || !$postProcessor->supports($syncJob)) {
+                    if (
+                        !$postProcessor instanceof InboundRecordPostProcessorInterface || !$postProcessor->supports(
+                            $syncJob
+                        )
+                    ) {
                         continue;
                     }
                     if (!$postProcessor->process($syncJob, $item, $externalId)) {
                         $recordWarnings++;
                         $warnings++;
-                        $diagnostic = $postProcessor instanceof PostProcessingDiagnosticInterface ? $postProcessor : null;
+                        $diagnostic = $postProcessor instanceof PostProcessingDiagnosticInterface ? $postProcessor
+                            : null;
                         $this->recordFailure(
                             $executionId,
                             $syncJob,
@@ -162,7 +249,8 @@ final class InboundRecordProcessor
                             'post_process',
                             SyncErrorCategory::POST_PROCESSING,
                             $diagnostic?->lastErrorCode() ?? 'POST_PROCESSING_WARNING',
-                            $diagnostic?->lastErrorMessage() ?? 'Target object was written but one or more enrichments/attachments failed.',
+                            $diagnostic?->lastErrorMessage()
+                                ?? 'Target object was written but one or more enrichments/attachments failed.',
                             null,
                             $page,
                             $cursor,
@@ -183,8 +271,10 @@ final class InboundRecordProcessor
                     SyncErrorCategory::UNKNOWN,
                     $exception::class,
                     $syncJob->targetItemtype() === \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::SIM_CARD
-                        ? 'SIM mapping/target write failed; sensitive source values are withheld. Inspect the exception type and target prerequisites.'
-                        : 'Record processing failed; inspect the exception type and target prerequisites. Source values and database messages are withheld.',
+                        ? 'SIM mapping/target write failed; sensitive source values are withheld. Inspect '
+                            . 'the exception type and target prerequisites.'
+                        : 'Record processing failed; inspect the exception type and target prerequisites. '
+                            . 'Source values and database messages are withheld.',
                     sprintf('%s:%d', basename($exception->getFile()), $exception->getLine()),
                     $page,
                     $cursor,
@@ -237,7 +327,9 @@ final class InboundRecordProcessor
             $code,
             substr($message, 0, 65535),
             $technicalContext,
-            $item !== null && $syncJob->targetItemtype() !== \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::SIM_CARD ? $this->snapshotSanitizer->encode($item) : null,
+            $item !== null
+                && $syncJob->targetItemtype() !== \GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype::SIM_CARD
+                ? $this->snapshotSanitizer->encode($item) : null,
             1,
             $page,
             $cursor,
@@ -274,7 +366,10 @@ final class InboundRecordProcessor
     /** @param array<string,mixed> $item */
     private function mustSkipBeforeFirstZendeskImport(SyncJob $syncJob, array $item, ExternalId $externalId): bool
     {
-        if (!in_array($syncJob->templateId(), ['zendesk.tickets.nonclosed.inbound','zendesk.tickets.delta.inbound','zendesk.tickets.active.inbound'], true)) {
+        if (
+            !in_array($syncJob->templateId(), ['zendesk.tickets.nonclosed.inbound','zendesk.tickets.delta.inbound',
+                    'zendesk.tickets.active.inbound'], true)
+        ) {
             return false;
         }
         $status = strtolower(trim((string) ($this->jsonPathReader->read($item, 'status') ?? '')));

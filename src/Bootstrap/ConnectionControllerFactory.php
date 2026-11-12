@@ -38,6 +38,7 @@ final class ConnectionControllerFactory
             new OAuth2ClientCredentialsSecretComposer(),
             new OAuth2PasswordSecretComposer(),
             new GlpiRestV1SecretComposer(),
+            SyncServiceProvider::jobEntityAccess(),
         );
     }
 }

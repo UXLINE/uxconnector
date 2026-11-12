@@ -13,7 +13,9 @@ final class SyncCheckpointRepository implements SyncCheckpointRepositoryInterfac
 {
     private const TABLE = 'glpi_plugin_uxconnector_sync_checkpoints';
 
-    public function __construct(private readonly DBmysql $db) {}
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
     public function findCursor(SyncJobId $syncJobId): ?string
     {

@@ -18,7 +18,8 @@ final class LockedSyncJobExecutor implements SyncJobExecutorInterface
         private readonly SyncJobExecutorInterface $executor,
         private readonly SyncJobRepositoryInterface $jobs,
         private readonly SyncWorkLockInterface $lock
-    ) {}
+    ) {
+    }
 
     public function execute(ExecuteSyncJobCommand $command): SyncExecution
     {

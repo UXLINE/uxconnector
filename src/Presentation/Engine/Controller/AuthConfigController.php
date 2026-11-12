@@ -59,7 +59,8 @@ final class AuthConfigController extends AbstractController
         private readonly OAuth2ClientCredentialsSecretComposer $oauth2SecretComposer,
         private readonly OAuth2PasswordSecretComposer $oauth2PasswordSecretComposer,
         private readonly GlpiRestV1SecretComposer $glpiRestV1SecretComposer
-    ) {}
+    ) {
+    }
 
     /**
      * Displays every configured AuthConfig.
@@ -108,7 +109,8 @@ final class AuthConfigController extends AbstractController
                 'endpoint' => trim((string) ($defaults['endpoint'] ?? '')),
                 'test_path' => trim((string) ($defaults['test_path'] ?? '/')) ?: '/',
                 'auth_method' => $selectedMethod,
-                'connector_id' => trim((string) ($defaults['connector'] ?? $defaults['connector_id'] ?? 'custom')) ?: 'custom',
+                'connector_id' => trim((string) ($defaults['connector'] ?? $defaults['connector_id'] ?? 'custom')) ?
+                    : 'custom',
             ],
         ]);
     }
@@ -118,7 +120,7 @@ final class AuthConfigController extends AbstractController
      *
      * @param array<string, mixed> $request Typically $_POST.
      */
-    public function create(array $request): void
+    public function create(#[\SensitiveParameter] array $request): void
     {
         try {
             $authMethod = AuthMethod::from((string) ($request['auth_method'] ?? ''));
@@ -140,7 +142,7 @@ final class AuthConfigController extends AbstractController
 
             $this->redirect('/plugins/uxconnector/front/authconfig.php');
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
 
             $this->redirect('/plugins/uxconnector/front/authconfig.form.php');
         }
@@ -182,7 +184,7 @@ final class AuthConfigController extends AbstractController
      *
      * @param array<string, mixed> $request Typically $_POST.
      */
-    public function test(array $request): void
+    public function test(#[\SensitiveParameter] array $request): void
     {
         try {
             $id = new AuthConfigId((int) ($request['id'] ?? 0));
@@ -190,19 +192,22 @@ final class AuthConfigController extends AbstractController
 
             if ($result->success) {
                 Session::addMessageAfterRedirect(sprintf(
-                    __('Connection test succeeded (HTTP %d, %d ms). You may now activate this configuration.', 'uxconnector'),
+                    __(
+                        'Connection test succeeded (HTTP %d, %d ms). You may now activate this configuration.',
+                        'uxconnector'
+                    ),
                     $result->statusCode,
                     (int) round($result->durationMs ?? 0),
                 ));
             } else {
                 Session::addMessageAfterRedirect(
-                    sprintf(__('Connection test failed: %s', 'uxconnector'), $result->errorMessage),
+                    sprintf(__('Connection test failed: %s', 'uxconnector'), htmlescape($result->errorMessage)),
                     false,
                     ERROR,
                 );
             }
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
 
         $this->redirect('/plugins/uxconnector/front/authconfig.php');
@@ -211,7 +216,7 @@ final class AuthConfigController extends AbstractController
     /**
      * @param array<string, mixed> $request Typically $_POST.
      */
-    public function activate(array $request): void
+    public function activate(#[\SensitiveParameter] array $request): void
     {
         try {
             $id = new AuthConfigId((int) ($request['id'] ?? 0));
@@ -219,7 +224,7 @@ final class AuthConfigController extends AbstractController
 
             Session::addMessageAfterRedirect(__('Authentication configuration activated.', 'uxconnector'));
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
 
         $this->redirect('/plugins/uxconnector/front/authconfig.php');
@@ -228,7 +233,7 @@ final class AuthConfigController extends AbstractController
     /**
      * @param array<string, mixed> $request Typically $_POST.
      */
-    public function disable(array $request): void
+    public function disable(#[\SensitiveParameter] array $request): void
     {
         try {
             $id = new AuthConfigId((int) ($request['id'] ?? 0));
@@ -236,7 +241,7 @@ final class AuthConfigController extends AbstractController
 
             Session::addMessageAfterRedirect(__('Authentication configuration disabled.', 'uxconnector'));
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
 
         $this->redirect('/plugins/uxconnector/front/authconfig.php');
@@ -247,7 +252,7 @@ final class AuthConfigController extends AbstractController
      *
      * @param array<string, mixed> $request Typically $_POST.
      */
-    public function delete(array $request): void
+    public function delete(#[\SensitiveParameter] array $request): void
     {
         try {
             $id = new AuthConfigId((int) ($request['id'] ?? 0));
@@ -255,10 +260,9 @@ final class AuthConfigController extends AbstractController
 
             Session::addMessageAfterRedirect(__('Authentication configuration deleted.', 'uxconnector'));
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
 
         $this->redirect('/plugins/uxconnector/front/authconfig.php');
     }
-
 }

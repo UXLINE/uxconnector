@@ -5,6 +5,7 @@ declare(strict_types=1);
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\EngineServiceProvider;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\SyncServiceProvider;
 use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\SyncJobEditController;
+use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\SyncReadAccess;
 
 Session::checkRight(
     'plugin_uxconnector_syncjob',
@@ -24,6 +25,7 @@ if (isset($_POST['update'])) {
     // a second time here: successful validation consumes the token.
     $controller->update($_POST);
 } else {
+    SyncReadAccess::requireJob((int) ($_GET['id'] ?? 0));
     Html::header(
         __('Edit synchronization job', 'uxconnector'),
         $_SERVER['PHP_SELF'],

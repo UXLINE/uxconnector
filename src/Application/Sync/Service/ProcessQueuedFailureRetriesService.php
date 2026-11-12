@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GlpiPlugin\Uxconnector\Application\Sync\Service;
 
 use GlpiPlugin\Uxconnector\Application\Sync\Retry\RetrySourceRecordRefresherInterface;
+use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncExecutionStatus;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncFailureRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncExecutionRepositoryInterface;
@@ -19,7 +20,8 @@ final class ProcessQueuedFailureRetriesService
         private readonly ?RetrySourceRecordRefresherInterface $sourceRefresher = null,
         private readonly ?SyncWorkLockInterface $lock = null,
         private readonly ?SyncExecutionRepositoryInterface $executions = null
-    ) {}
+    ) {
+    }
 
     /** @return array{retried:int,succeeded:int,failed:int,warnings:int} */
     public function execute(int $limit = 50): array
@@ -41,6 +43,11 @@ final class ProcessQueuedFailureRetriesService
             }
             try {
                 if ($this->executions?->hasOpenExecution($failure->syncJobId)) {
+                    continue;
+                }
+                $execution = $this->executions?->findById($failure->executionId);
+                if ($execution?->status() === SyncExecutionStatus::CANCELLED || $execution?->cancellationRequested()) {
+                    $this->failures->updateRetryStatus($failure->id, 'cancelled');
                     continue;
                 }
                 $retried++;
@@ -98,5 +105,4 @@ final class ProcessQueuedFailureRetriesService
 
         return compact('retried', 'succeeded', 'failed', 'warnings');
     }
-
 }

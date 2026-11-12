@@ -23,6 +23,9 @@ interface SyncJobRepositoryInterface
 
     public function findById(SyncJobId $id): ?SyncJob;
 
+    /** Replace the signing secret if the authorized webhook configuration is still current. */
+    public function rotateWebhookSigningSecret(SyncJob $expected, string $newSecret): void;
+
     /**
      * @return list<SyncJob>
      */

@@ -27,7 +27,7 @@ final class Setup
     /**
      * Plugin version exposed by this lifecycle class.
      */
-    public const VERSION = '2.18.37';
+    public const VERSION = '2.18.38';
 
     /**
      * Minimum GLPI version supported by this plugin.
@@ -122,6 +122,12 @@ final class Setup
 
         $migration->executeMigration();
 
+        $migrateWebhookCredentials = require self::pluginRootDirectory() . '/sql/install/migrate-webhook-keys.php';
+        $migrateWebhookCredentials($migration);
+
+        $retireIntegrations = require self::pluginRootDirectory() . '/sql/install/retire-integrations.php';
+        $retireIntegrations($migration);
+
         // ADR-10.10.02 : CronTask registration happens during
         // install/upgrade, never on every plugin_init() (HookManager
         // never touches CronTask - see its class doc-block).
@@ -158,6 +164,7 @@ final class Setup
         // Drop dependent tables before their parent tables. Migration::dropTable()
         // is existence-safe, making uninstall deterministic and replayable.
         $tables = [
+            'glpi_plugin_uxconnector_webhookrequests',
             'glpi_plugin_uxconnector_licenseassignments',
             'glpi_plugin_uxconnector_syncfailures',
             'glpi_plugin_uxconnector_objectlinks',

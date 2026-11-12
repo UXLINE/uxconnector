@@ -21,7 +21,8 @@ final class RunActiveSyncJobsService
         private readonly ?AuthConfigRepositoryInterface $authConfigRepository = null,
         private readonly ?SyncExecutionRepositoryInterface $executionRepository = null,
         private readonly ?QueueSyncJobService $queue = null
-    ) {}
+    ) {
+    }
 
     public function execute(): RunActiveSyncJobsResult
     {
@@ -39,14 +40,21 @@ final class RunActiveSyncJobsService
                 continue;
             }
             if ($this->authConfigRepository !== null) {
-                $connection = $this->authConfigRepository->findById(new AuthConfigId($syncJob->authConfigReference()->value()));
+                $connection = $this->authConfigRepository->findById(new AuthConfigId(
+                    $syncJob->authConfigReference()->value()
+                ));
                 if ($connection === null || !$connection->isUsable()) {
                     continue;
                 }
             }
 
             try {
-                if ($this->executionRepository !== null && !JobScheduleEvaluator::isDue($syncJob, $this->executionRepository)) {
+                if (
+                    $this->executionRepository !== null && !JobScheduleEvaluator::isDue(
+                        $syncJob,
+                        $this->executionRepository
+                    )
+                ) {
                     continue;
                 }
             } catch (\Throwable) {
@@ -59,7 +67,13 @@ final class RunActiveSyncJobsService
                 $execution = $this->queue !== null
                     ? $this->queue->execute($id, 'scheduled')
                     : $this->executeSyncJobService->execute(new ExecuteSyncJobCommand($id));
-                if (in_array($execution->status(), [SyncExecutionStatus::FAILED, SyncExecutionStatus::INTERRUPTED], true)) {
+                if (
+                    in_array(
+                        $execution->status(),
+                        [SyncExecutionStatus::FAILED, SyncExecutionStatus::INTERRUPTED],
+                        true
+                    )
+                ) {
                     ++$failed;
                 } else {
                     ++$succeeded;

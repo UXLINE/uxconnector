@@ -29,7 +29,9 @@ final class ZendeskAttachmentDownloader
     private string $lastErrorCode = 'ATTACHMENT_HTTP_TRANSPORT';
     private string $lastErrorMessage = 'Unable to retrieve Zendesk attachment.';
 
-    public function __construct(private readonly DestinationPolicyInterface $destinationPolicy) {}
+    public function __construct(private readonly DestinationPolicyInterface $destinationPolicy)
+    {
+    }
 
     public function lastErrorCode(): string
     {
@@ -106,7 +108,14 @@ final class ZendeskAttachmentDownloader
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_USERAGENT => 'UXConnector/2.18.25',
-            CURLOPT_HEADERFUNCTION => static function ($ch, string $line) use (&$location, &$contentType, &$advertisedBytes): int {
+            CURLOPT_HEADERFUNCTION => static function (
+                $ch,
+                string $line
+            ) use (
+                &$location,
+                &$contentType,
+                &$advertisedBytes
+): int {
                 if (str_starts_with(strtolower($line), 'location:')) {
                     $location = trim(substr($line, 9));
                 } elseif (str_starts_with(strtolower($line), 'content-type:')) {
@@ -117,7 +126,15 @@ final class ZendeskAttachmentDownloader
                 }
                 return strlen($line);
             },
-            CURLOPT_WRITEFUNCTION => static function ($ch, string $chunk) use ($handle, &$length, &$tooLarge, &$diskFailure): int {
+            CURLOPT_WRITEFUNCTION => static function (
+                $ch,
+                string $chunk
+            ) use (
+                $handle,
+                &$length,
+                &$tooLarge,
+                &$diskFailure
+): int {
                 $len = strlen($chunk);
                 $length += $len;
                 if ($length > self::MAX_BYTES) {
@@ -163,7 +180,10 @@ final class ZendeskAttachmentDownloader
             } elseif ($error === 28) {
                 $this->error('ATTACHMENT_TIMEOUT', 'Zendesk attachment download timed out.');
             } else {
-                $this->error('ATTACHMENT_CURL_ERROR', sprintf('Zendesk attachment HTTP transport error (cURL %d).', $error));
+                $this->error('ATTACHMENT_CURL_ERROR', sprintf(
+                    'Zendesk attachment HTTP transport error (cURL %d).',
+                    $error
+                ));
             }
             return ['success' => false, 'redirect' => null];
         }
@@ -178,8 +198,17 @@ final class ZendeskAttachmentDownloader
             $this->error('ATTACHMENT_HTTP_STATUS', sprintf('Zendesk attachment URL returned HTTP %d.', $status));
             return ['success' => false, 'redirect' => null];
         }
-        if (str_contains($contentType, 'text/html') && !in_array(strtolower(pathinfo($tempPath, PATHINFO_EXTENSION)), ['html', 'htm'], true)) {
-            $this->error('ATTACHMENT_HTML_RESPONSE', 'Attachment endpoint returned HTML instead of a downloadable file.');
+        if (
+            str_contains($contentType, 'text/html') && !in_array(
+                strtolower(pathinfo($tempPath, PATHINFO_EXTENSION)),
+                ['html', 'htm'],
+                true
+            )
+        ) {
+            $this->error(
+                'ATTACHMENT_HTML_RESPONSE',
+                'Attachment endpoint returned HTML instead of a downloadable file.'
+            );
             return ['success' => false, 'redirect' => null];
         }
         if ($length <= 0) {
@@ -203,7 +232,10 @@ final class ZendeskAttachmentDownloader
         ]);
         $stream = @fopen($url, 'rb', false, $context);
         if ($stream === false) {
-            $this->error('ATTACHMENT_STREAM_FAILURE', 'HTTPS attachment stream could not be opened (check TLS and network).');
+            $this->error(
+                'ATTACHMENT_STREAM_FAILURE',
+                'HTTPS attachment stream could not be opened (check TLS and network).'
+            );
             return ['success' => false, 'redirect' => null];
         }
         $meta = stream_get_meta_data($stream);
@@ -228,9 +260,18 @@ final class ZendeskAttachmentDownloader
             $this->error('ATTACHMENT_REDIRECT_MISSING', 'Attachment redirect omitted Location header.');
             return ['success' => false, 'redirect' => null];
         }
-        if ($status < 200 || $status >= 300 || (str_contains($contentType, 'text/html') && !in_array(strtolower(pathinfo($tempPath, PATHINFO_EXTENSION)), ['html', 'htm'], true))) {
+        if (
+            $status < 200 || $status >= 300 || (str_contains($contentType, 'text/html') && !in_array(
+                strtolower(pathinfo($tempPath, PATHINFO_EXTENSION)),
+                ['html', 'htm'],
+                true
+            ))
+        ) {
             fclose($stream);
-            $this->error('ATTACHMENT_HTTP_STATUS', sprintf('Attachment response was not downloadable (HTTP %d).', $status));
+            $this->error('ATTACHMENT_HTTP_STATUS', sprintf(
+                'Attachment response was not downloadable (HTTP %d).',
+                $status
+            ));
             return ['success' => false, 'redirect' => null];
         }
         $dest = @fopen($tempPath, 'wb');
@@ -302,9 +343,11 @@ final class ZendeskAttachmentDownloader
             return false;
         }
         $parts = parse_url($url);
-        if (!is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https'
+        if (
+            !is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https'
             || !isset($parts['host']) || $parts['host'] === ''
-            || isset($parts['user']) || isset($parts['pass'])) {
+            || isset($parts['user']) || isset($parts['pass'])
+        ) {
             return false;
         }
         $host = (string) $parts['host'];

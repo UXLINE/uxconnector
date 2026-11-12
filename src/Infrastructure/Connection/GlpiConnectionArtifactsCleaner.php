@@ -27,7 +27,10 @@ final class GlpiConnectionArtifactsCleaner implements AuthConfigArtifactsCleaner
                 continue;
             }
             if (!$model->delete(['id' => $id], true)) {
-                throw new \RuntimeException(sprintf('Failed to purge ObjectLink #%d while deleting the connection.', $id));
+                throw new \RuntimeException(sprintf(
+                    'Failed to purge ObjectLink #%d while deleting the connection.',
+                    $id
+                ));
             }
         }
     }

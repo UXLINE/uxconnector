@@ -21,7 +21,8 @@ final class AuthConfigInUseException extends \RuntimeException
     public static function forId(AuthConfigId $id): self
     {
         return new self(sprintf(
-            'AuthConfig #%d cannot be deleted because it is referenced by at least one synchronization job. Delete or reconfigure the dependent jobs first.',
+            'AuthConfig #%d cannot be deleted because it is referenced by at least one synchronization '
+                . 'job. Delete or reconfigure the dependent jobs first.',
             $id->value(),
         ));
     }

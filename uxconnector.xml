@@ -2,7 +2,7 @@
 <root>
     <name>UXConnector</name>
     <key>uxconnector</key>
-    <state>stable</state>
+    <state>dev</state>
     <description>
         <short>
             <fr>Moteur de connecteurs générique et configurable pour GLPI.</fr>
@@ -19,9 +19,9 @@
     </authors>
     <versions>
         <version>
-            <num>2.18.37</num>
+            <num>2.18.38</num>
             <compatibility>&gt;=11.0.0 &lt;12.0.0</compatibility>
-            <download_url>https://github.com/UXLINE/UXConnector/releases/download/v2.18.37/uxconnector-2.18.37.zip</download_url>
+            <download_url>https://github.com/UXLINE/uxconnector/releases/download/v2.18.38-rc.11/uxconnector-2.18.38-rc.11.tar.gz</download_url>
         </version>
     </versions>
     <langs>

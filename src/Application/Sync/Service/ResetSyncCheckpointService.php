@@ -21,7 +21,8 @@ final class ResetSyncCheckpointService
         private readonly SyncCheckpointRepositoryInterface $checkpoints,
         private readonly TransactionManagerInterface $transaction,
         private readonly ExecutionMutexInterface $mutex
-    ) {}
+    ) {
+    }
 
     public function execute(SyncJobId $id): void
     {

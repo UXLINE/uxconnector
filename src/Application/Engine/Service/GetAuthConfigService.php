@@ -10,7 +10,9 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
 
 final class GetAuthConfigService
 {
-    public function __construct(private readonly AuthConfigRepositoryInterface $repository) {}
+    public function __construct(private readonly AuthConfigRepositoryInterface $repository)
+    {
+    }
 
     public function execute(AuthConfigId $id): AuthConfigDTO
     {

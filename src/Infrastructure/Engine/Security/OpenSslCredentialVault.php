@@ -40,7 +40,7 @@ final class OpenSslCredentialVault implements CredentialVaultInterface
      *                                 migration tooling. Runtime code leaves it
      *                                 null so GLPIKey reads config/glpicrypt.key.
      */
-    public function __construct(?string $explicitKey = null, ?\GLPIKey $glpiKey = null)
+    public function __construct(#[\SensitiveParameter] ?string $explicitKey = null, ?\GLPIKey $glpiKey = null)
     {
         // Validate an explicitly supplied key before touching GLPIKey. This
         // keeps the constructor deterministic for invalid input and avoids
@@ -56,7 +56,7 @@ final class OpenSslCredentialVault implements CredentialVaultInterface
         }
     }
 
-    public function protect(string $plaintextSecret): string
+    public function protect(#[\SensitiveParameter] string $plaintextSecret): string
     {
         if ($plaintextSecret === '') {
             throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\CredentialVaultException::protectionFailed();
@@ -74,7 +74,7 @@ final class OpenSslCredentialVault implements CredentialVaultInterface
         return $protected;
     }
 
-    public function reveal(string $protectedSecret): string
+    public function reveal(#[\SensitiveParameter] string $protectedSecret): string
     {
         try {
             $plaintext = $this->glpiKey->decrypt($protectedSecret, $this->explicitKey);

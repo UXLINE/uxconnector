@@ -1,0 +1,26 @@
+<div class="mt-2 small">
+    <div><strong>{{ __('Webhook endpoint', 'uxconnector') }}</strong> <code>/plugins/uxconnector/front/webhook.php</code></div>
+    <div><strong>{{ __('Public webhook ID', 'uxconnector') }}</strong> <code>{{ job.id|e }}</code></div>
+    {% if can_reveal_webhook or can_rotate_webhook %}
+        <form method="post" action="webhook.credentials.php" class="d-flex flex-wrap gap-1 mt-2">
+            <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token|e }}">
+            <input type="hidden" name="job_id" value="{{ job.id|e }}">
+            {% if can_reveal_webhook %}
+                <button class="btn btn-sm btn-outline-secondary" name="credential_action" value="reveal_signing">
+                    {{ __('Reveal signing secret', 'uxconnector') }}
+                </button>
+                {% if allow_webhook_bearer|default(false) %}
+                    <button class="btn btn-sm btn-outline-secondary" name="credential_action" value="reveal_bearer">
+                        {{ __('Reveal bearer token', 'uxconnector') }}
+                    </button>
+                {% endif %}
+            {% endif %}
+            {% if can_rotate_webhook %}
+                <button class="btn btn-sm btn-outline-warning" name="credential_action" value="rotate_signing"
+                    onclick="return confirm('{{ __('Replace the signing secret now? The sender must be updated immediately.', 'uxconnector')|e('js') }}')">
+                    {{ __('Rotate signing secret', 'uxconnector') }}
+                </button>
+            {% endif %}
+        </form>
+    {% endif %}
+</div>

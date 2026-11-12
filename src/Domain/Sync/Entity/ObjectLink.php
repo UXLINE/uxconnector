@@ -85,7 +85,14 @@ final class ObjectLink
         int $itemId,
         ?string $externalObjectType = null
     ): self {
-        return new self($syncJobId, $authConfigReference, $externalId, $itemtype, $itemId, self::normalizeExternalObjectType($externalObjectType ?? $itemtype->value));
+        return new self(
+            $syncJobId,
+            $authConfigReference,
+            $externalId,
+            $itemtype,
+            $itemId,
+            self::normalizeExternalObjectType($externalObjectType ?? $itemtype->value)
+        );
     }
 
     /**
@@ -101,7 +108,14 @@ final class ObjectLink
         DateTimeImmutable $lastSeenAt,
         ?string $externalObjectType = null
     ): self {
-        $link = new self($syncJobId, $authConfigReference, $externalId, $itemtype, $itemId, self::normalizeExternalObjectType($externalObjectType ?? $itemtype->value));
+        $link = new self(
+            $syncJobId,
+            $authConfigReference,
+            $externalId,
+            $itemtype,
+            $itemId,
+            self::normalizeExternalObjectType($externalObjectType ?? $itemtype->value)
+        );
         $link->id = $id;
         $link->lastSeenAt = $lastSeenAt;
 

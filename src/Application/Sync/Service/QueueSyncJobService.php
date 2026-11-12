@@ -20,8 +20,10 @@ final class QueueSyncJobService
         private readonly SyncJobRepositoryInterface $jobs,
         private readonly SyncExecutionRepositoryInterface $executions,
         private readonly TransactionManagerInterface $transaction,
-        private readonly ExecutionMutexInterface $mutex
-    ) {}
+        private readonly ExecutionMutexInterface $mutex,
+        private readonly ?JobEntityAccess $entityAccess = null
+    ) {
+    }
 
     public function execute(SyncJobId $id, string $triggerSource = 'manual'): SyncExecution
     {
@@ -41,13 +43,25 @@ final class QueueSyncJobService
             // Serialize the check+insert pair at database level. A simple
             // pre-check is racy when the user double-clicks Run now.
             $this->mutex->lock($id);
+            if ($triggerSource === 'manual') {
+                $this->entityAccess?->assertJobId($id);
+            }
             if ($this->executions->hasOpenExecution($id)) {
-                throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncExecutionBusyException('An execution is already pending or running for this interaction.');
+                throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncExecutionBusyException(
+                    'An execution is already pending or running for this interaction.'
+                );
             }
             if ($triggerSource === 'scheduled') {
                 $current = $this->jobs->findById($id);
-                if ($current === null || !$current->isRunnable() || !JobScheduleEvaluator::isDue($current, $this->executions)) {
-                    throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncExecutionBusyException('Scheduled job is not due.');
+                if (
+                    $current === null || !$current->isRunnable() || !JobScheduleEvaluator::isDue(
+                        $current,
+                        $this->executions
+                    )
+                ) {
+                    throw new \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncExecutionBusyException(
+                        'Scheduled job is not due.'
+                    );
                 }
             }
             $execution = $this->executions->save($execution);

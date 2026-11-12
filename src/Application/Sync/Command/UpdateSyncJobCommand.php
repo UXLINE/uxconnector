@@ -40,5 +40,6 @@ final readonly class UpdateSyncJobCommand
         public InteractionTrigger $triggerType,
         public string $externalObjectType,
         public OutboundConfig $outboundConfig
-    ) {}
+    ) {
+    }
 }

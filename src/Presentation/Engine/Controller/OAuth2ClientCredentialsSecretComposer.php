@@ -34,11 +34,16 @@ final class OAuth2ClientCredentialsSecretComposer
      *         three required fields (token URL, client ID, client
      *         secret) were not all supplied.
      */
-    public function compose(array $request): ?string
+    public function compose(#[\SensitiveParameter] array $request): ?string
     {
+        foreach (['oauth2_token_url', 'oauth2_client_id', 'oauth2_client_secret', 'oauth2_scope'] as $field) {
+            if (isset($request[$field]) && !is_string($request[$field])) {
+                throw new \InvalidArgumentException('OAuth2 form fields must be text values.');
+            }
+        }
         $tokenUrl = trim((string) ($request['oauth2_token_url'] ?? ''));
         $clientId = trim((string) ($request['oauth2_client_id'] ?? ''));
-        $clientSecret = trim((string) ($request['oauth2_client_secret'] ?? ''));
+        $clientSecret = (string) ($request['oauth2_client_secret'] ?? '');
         $scope = trim((string) ($request['oauth2_scope'] ?? ''));
 
         if ($tokenUrl === '' || $clientId === '' || $clientSecret === '') {
@@ -60,7 +65,6 @@ final class OAuth2ClientCredentialsSecretComposer
         } catch (\JsonException $exception) {
             throw new \RuntimeException(
                 'Failed to encode the OAuth2 Client Credentials configuration to JSON.',
-                previous: $exception,
             );
         }
     }

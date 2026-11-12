@@ -57,14 +57,17 @@ final class DestinationPolicy implements DestinationPolicyInterface
 
     public function __construct(
         private readonly HostResolverInterface $resolver
-    ) {}
+    ) {
+    }
 
     public function assertAllowed(Endpoint $endpoint): void
     {
         $host = parse_url($endpoint->value(), PHP_URL_HOST);
 
         if (!is_string($host) || $host === '') {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::unresolvableHost($endpoint->value());
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::unresolvableHost(
+                $endpoint->value()
+            );
         }
 
         // parse_url() keeps the surrounding brackets for an IPv6
@@ -77,12 +80,17 @@ final class DestinationPolicy implements DestinationPolicyInterface
         $ips = $this->resolveHost($host);
 
         if ($ips === []) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::unresolvableHost($host);
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::unresolvableHost(
+                $host
+            );
         }
 
         foreach ($ips as $ip) {
             if ($this->isBlocked($ip)) {
-                throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::blockedAddress($host, $ip);
+                throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::blockedAddress(
+                    $host,
+                    $ip
+                );
             }
         }
     }

@@ -15,7 +15,9 @@ final class JsonConnectorTemplateRepository implements ConnectorTemplateReposito
     /** @var list<ConnectorTemplate>|null */
     private ?array $cache = null;
 
-    public function __construct(private readonly string $directory) {}
+    public function __construct(private readonly string $directory)
+    {
+    }
 
     public function findAll(): array
     {
@@ -202,8 +204,9 @@ final class JsonConnectorTemplateRepository implements ConnectorTemplateReposito
             }
 
             if (array_key_exists('transform', $mapping)) {
-                if ($mapping['transform'] !== null
-                   && !is_string($mapping['transform'])
+                if (
+                    $mapping['transform'] !== null
+                    && !is_string($mapping['transform'])
                 ) {
                     throw new \RuntimeException(
                         sprintf(
@@ -252,8 +255,10 @@ final class JsonConnectorTemplateRepository implements ConnectorTemplateReposito
                     (string) ($parameterData['name'] ?? ''),
                     (string) ($parameterData['label'] ?? ''),
                     (bool) ($parameterData['required'] ?? true),
-                    array_key_exists('default', $parameterData) && $parameterData['default'] !== null ? (string) $parameterData['default'] : null,
-                    array_key_exists('description', $parameterData) && $parameterData['description'] !== null ? (string) $parameterData['description'] : null,
+                    array_key_exists('default', $parameterData) && $parameterData['default'] !== null
+                        ? (string) $parameterData['default'] : null,
+                    array_key_exists('description', $parameterData) && $parameterData['description'] !== null
+                        ? (string) $parameterData['description'] : null,
                 );
             }
 
@@ -283,7 +288,8 @@ final class JsonConnectorTemplateRepository implements ConnectorTemplateReposito
                 available: (bool) ($jobData['available'] ?? true),
                 retired: (bool) ($jobData['retired'] ?? false),
                 triggerType: (string) ($jobData['trigger_type'] ?? 'polling'),
-                externalObjectType: isset($jobData['external_object_type']) ? (string) $jobData['external_object_type'] : null,
+                externalObjectType: isset($jobData['external_object_type']) ? (string) $jobData['external_object_type']
+                    : null,
                 outbound: is_array($jobData['outbound'] ?? null) ? $jobData['outbound'] : [],
             );
         }
@@ -296,7 +302,9 @@ final class JsonConnectorTemplateRepository implements ConnectorTemplateReposito
             icon: (string) ($data['icon'] ?? 'ti ti-plug'),
             endpointHint: (string) ($data['endpoint_hint'] ?? ''),
             testPathHint: (string) ($data['test_path_hint'] ?? '/'),
-            authMethods: array_values(array_map('strval', is_array($data['auth_methods'] ?? null) ? $data['auth_methods'] : [])),
+            authMethods: array_values(
+                array_map('strval', is_array($data['auth_methods'] ?? null) ? $data['auth_methods'] : [])
+            ),
             jobs: $jobs,
         );
     }

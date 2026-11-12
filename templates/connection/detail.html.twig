@@ -111,25 +111,7 @@
                 <div class="d-flex justify-content-between"><div><h4 class="mb-1">{{ template.name }}</h4><div class="text-muted">{{ template.description }}</div><small>{{ template.direction }} · {{ template.triggerType }} · {{ template.targetItemtype }}</small></div>{% if not template.available %}<span class="badge bg-secondary">{{ __('Planned', 'uxconnector') }}</span>{% endif %}</div>
                 {% set existing = jobs_by_template[template.id] ?? [] %}
                 {% for job in existing %}
-                    <div class="border rounded p-2 mt-3 d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-start gap-2">
-                            {% if can_manage_jobs %}<input type="checkbox" class="form-check-input mt-1 uxconnector-connection-job-checkbox" value="{{ job.id }}" aria-label="{{ __('Select interaction', 'uxconnector') }} {{ job.name }}">{% endif %}
-                            <div><strong>#{{ job.id }} {{ job.name }}</strong> - {{ job.statusLabel }}<br><small class="text-muted">{{ job.triggerTypeLabel }} · {{ job.directionLabel }} · {{ job.entityAssignmentSummary }}</small>{% if job.webhookKey %}<div class="mt-2 small"><div><strong>{{ __('Webhook endpoint', 'uxconnector') }}:</strong> <code>/plugins/uxconnector/front/webhook.php</code></div>{% if can_manage_jobs %}<div><strong>{{ __('Preferred header', 'uxconnector') }}:</strong> <code>X-UXConnector-Webhook-Key: {{ job.webhookKey }}</code></div><div class="text-muted">{{ __('Query-string compatibility', 'uxconnector') }}: <code>/plugins/uxconnector/front/webhook.php?key={{ job.webhookKey }}</code></div>{% else %}<div class="text-muted">{{ __('Webhook credential hidden: update permission is required to reveal it.', 'uxconnector') }}</div>{% endif %}</div>{% endif %}</div>
-                        </div>
-                        <div class="d-flex gap-1">
-                        {% if can_manage_jobs %}
-                            {% if job.status != 'active' %}
-                                {% if connection.status == 'active' %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-success" name="activate_job">{{ __('Activate', 'uxconnector') }}</button></form>{% else %}<span class="badge bg-secondary">{{ __('Activate connection first', 'uxconnector') }}</span>{% endif %}
-                            {% else %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-warning" name="pause_job">{{ __('Pause', 'uxconnector') }}</button></form>{% endif %}
-                            {% if job.triggerType == 'polling' and job.direction == 'inbound' %}
-                                <form method="post" class="uxconnector-run-form"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-primary" name="run_job" value="1">{{ __('Run now', 'uxconnector') }}</button></form>
-                                <form method="post" class="uxconnector-run-form"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-warning" name="full_replay_job" value="1" onclick="return confirm('{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('js') }}')">{{ __('Replay from start', 'uxconnector') }}</button></form>
-                            {% endif %}
-                        {% endif %}
-                        <a class="btn btn-sm btn-outline-secondary" href="syncjob.php?history=1&id={{ job.id }}">{{ __('History', 'uxconnector') }}</a>
-                        {% if can_delete_jobs %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-danger" name="delete_job" onclick="return confirm('{{ __('Delete this interaction?', 'uxconnector')|e('js') }}')">{{ __('Delete', 'uxconnector') }}</button></form>{% endif %}
-                        </div>
-                    </div>
+                    {% include '@uxconnector/connection/interaction-row.html.twig' %}
                 {% endfor %}
                 {% if template.available and not template.retired and can_create_jobs %}
                     <form method="post" action="connection.php" class="mt-3"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ connection.id }}"><input type="hidden" name="job_template_id" value="{{ template.id }}">
@@ -145,6 +127,13 @@
     {% else %}
         <div class="alert alert-secondary">{{ __('No standard interaction template is associated with this connection. Use the advanced REST interaction editor.', 'uxconnector') }}</div>
     {% endif %}
+
+    {% set catalog_template_ids = connector ? connector.jobs|map(template => template.id) : [] %}
+    {% for job in jobs %}
+        {% if job.webhookConfigured and job.templateId not in catalog_template_ids %}
+            {% include '@uxconnector/connection/interaction-row.html.twig' %}
+        {% endif %}
+    {% endfor %}
 
     {% if jobs|length > 0 %}<div class="text-muted small">{{ jobs|length }} {{ __('interaction(s) configured on this connection.', 'uxconnector') }}</div>{% endif %}
     </section>

@@ -33,7 +33,8 @@ final class AuthConfigRepository implements AuthConfigRepositoryInterface
     public function __construct(
         private readonly AuthConfigPersistenceMapper $mapper,
         private readonly AuthConfigSecretStoreInterface $secretStore
-    ) {}
+    ) {
+    }
 
     public function save(AuthConfig $authConfig): AuthConfig
     {

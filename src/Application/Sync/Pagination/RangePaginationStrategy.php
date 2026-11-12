@@ -14,7 +14,8 @@ final class RangePaginationStrategy implements PaginationStrategyInterface
         private readonly PaginationConfig $config,
         private readonly JsonPathValueReader $reader,
         private readonly QueryParameterUpdater $queryUpdater
-    ) {}
+    ) {
+    }
 
     public function nextPageReference(string $currentPath, array $response, int $pageItemCount): ?string
     {
@@ -25,7 +26,10 @@ final class RangePaginationStrategy implements PaginationStrategyInterface
         $totalPath = (string) $this->config->option('total_response_path');
         $total = $this->reader->read($response, $totalPath);
         if (!is_numeric($total)) {
-            throw new \RuntimeException(sprintf('Range pagination total at "%s" is missing or non-numeric.', $totalPath));
+            throw new \RuntimeException(sprintf(
+                'Range pagination total at "%s" is missing or non-numeric.',
+                $totalPath
+            ));
         }
         $name = (string) $this->config->option('range_request_parameter');
         $query = parse_url($currentPath, PHP_URL_QUERY);

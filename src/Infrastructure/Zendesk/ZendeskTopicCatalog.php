@@ -50,7 +50,8 @@ final class ZendeskTopicCatalog implements ZendeskTopicCatalogInterface
     public function __construct(
         private readonly AuthConfigRepositoryInterface $authConfigs,
         private readonly HttpEngineInterface $httpEngine
-    ) {}
+    ) {
+    }
 
     /**
      * @return array{field_id:string, labels:array<string,string>}|null
@@ -73,19 +74,26 @@ final class ZendeskTopicCatalog implements ZendeskTopicCatalogInterface
         // or in the shared authentication connection. Existing jobs remain
         // auto-discovered unless the operator explicitly supplies the ID.
         if ($configuredFieldId !== null && $configuredFieldId !== '') {
-            if ((!is_string($configuredFieldId) && !is_int($configuredFieldId))
-                || !preg_match('/^[1-9][0-9]{0,19}$/D', (string) $configuredFieldId)) {
-                throw new \RuntimeException('Invalid zendesk_topic_field_id: expected a positive Zendesk ticket field ID.');
+            if (
+                (!is_string($configuredFieldId) && !is_int($configuredFieldId))
+                || !preg_match('/^[1-9][0-9]{0,19}$/D', (string) $configuredFieldId)
+            ) {
+                throw new \RuntimeException(
+                    'Invalid zendesk_topic_field_id: expected a positive Zendesk ticket field ID.'
+                );
             }
             $fieldId = (string) $configuredFieldId;
             // A successful OPTIONS response alone does not prove that a given
             // field is a tagger. Validate its definition before importing.
             $definition = $this->fetchJson($authConfig, '/api/v2/ticket_fields/' . $fieldId . '.json');
             $field = $definition['ticket_field'] ?? null;
-            if (!is_array($field)
+            if (
+                !is_array($field)
                 || (string) ($field['id'] ?? '') !== $fieldId
-                || strtolower((string) ($field['type'] ?? '')) !== 'tagger') {
-                throw new \RuntimeException('Configured Zendesk Sujet field is not an accessible tagger field (ID ' . $fieldId . ').');
+                || strtolower((string) ($field['type'] ?? '')) !== 'tagger'
+            ) {
+                throw new \RuntimeException('Configured Zendesk Sujet field is not an accessible tagger field (ID '
+                    . $fieldId . ').');
             }
             return $this->loadOptionsForField($authConfig, $cacheKey, $fieldId, true);
         }
@@ -108,7 +116,11 @@ final class ZendeskTopicCatalog implements ZendeskTopicCatalogInterface
             }
 
             foreach ($fields as $field) {
-                if (!is_array($field) || !isset($field['id']) || !is_scalar($field['id']) || !ctype_digit((string) $field['id'])) {
+                if (
+                    !is_array($field) || !isset($field['id']) || !is_scalar($field['id']) || !ctype_digit(
+                        (string) $field['id']
+                    )
+                ) {
                     continue;
                 }
                 if (strtolower((string) ($field['type'] ?? '')) !== 'tagger') {
@@ -133,7 +145,11 @@ final class ZendeskTopicCatalog implements ZendeskTopicCatalogInterface
         if ($candidates === []) {
             return null;
         }
-        $named = array_values(array_filter($candidates, static fn(array $c): bool => in_array($c['title'], ['sujet', 'subject', 'topic'], true)));
+        $named = array_values(array_filter($candidates, static fn(array $c): bool => in_array(
+            $c['title'],
+            ['sujet', 'subject', 'topic'],
+            true
+        )));
         // Fail closed on ambiguous Zendesk fields (even if some values overlap).
         if (count($named) === 1) {
             $selected = $named[0];
@@ -238,15 +254,19 @@ final class ZendeskTopicCatalog implements ZendeskTopicCatalogInterface
         }
         $labels = [];
         foreach ($rawOptions as $option) {
-            if (!is_array($option)
+            if (
+                !is_array($option)
                 || !is_string($option['value'] ?? null)
-                || !is_string($option['name'] ?? null)) {
+                || !is_string($option['name'] ?? null)
+            ) {
                 continue;
             }
             $tag = trim($option['value']);
             $label = trim($option['name']);
-            if ($tag === '' || $label === '' || strlen($tag) > 255
-                || !preg_match('/^[a-zA-Z0-9_:\-]+$/D', $tag)) {
+            if (
+                $tag === '' || $label === '' || strlen($tag) > 255
+                || !preg_match('/^[a-zA-Z0-9_:\-]+$/D', $tag)
+            ) {
                 continue;
             }
             if (isset($labels[$tag]) && $labels[$tag] !== $label) {
@@ -263,7 +283,9 @@ final class ZendeskTopicCatalog implements ZendeskTopicCatalogInterface
         $response = $this->httpEngine->execute($config, new HttpRequest(HttpMethod::GET, $path));
         if (!$response->isSuccessful()) {
             if (in_array($response->statusCode, [408, 429], true) || $response->statusCode >= 500) {
-                throw new TransientInfrastructureException('Zendesk topic catalog temporarily unavailable (HTTP ' . $response->statusCode . ').');
+                throw new TransientInfrastructureException(
+                    'Zendesk topic catalog temporarily unavailable (HTTP ' . $response->statusCode . ').'
+                );
             }
             throw new \RuntimeException('Zendesk topic catalog unavailable (HTTP ' . $response->statusCode . ').');
         }
@@ -345,5 +367,4 @@ final class ZendeskTopicCatalog implements ZendeskTopicCatalogInterface
 
         return $catalog['labels'][$value] ?? null;
     }
-
 }

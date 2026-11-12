@@ -15,7 +15,8 @@ final class AssignConnectorTemplateService
     public function __construct(
         private readonly AuthConfigRepositoryInterface $repository,
         private readonly ConnectorTemplateRepositoryInterface $templates
-    ) {}
+    ) {
+    }
 
     public function execute(AuthConfigId $id, string $connectorId): void
     {

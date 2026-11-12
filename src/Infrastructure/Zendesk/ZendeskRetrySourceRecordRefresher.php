@@ -25,7 +25,8 @@ final class ZendeskRetrySourceRecordRefresher implements RetrySourceRecordRefres
     public function __construct(
         private readonly AuthConfigRepositoryInterface $authConfigs,
         private readonly HttpEngineInterface $httpEngine
-    ) {}
+    ) {
+    }
 
     public function refresh(SyncJob $syncJob, SyncFailure $failure): ?array
     {

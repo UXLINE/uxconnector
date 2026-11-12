@@ -106,6 +106,7 @@ final class SyncJob
     private OutboundConfig $outboundConfig;
 
     private ?string $webhookKey;
+    private ?string $webhookSigningSecret;
 
     /**
      * @param list<FieldMapping> $fieldMappings
@@ -127,17 +128,22 @@ final class SyncJob
         ?InteractionTrigger $triggerType = null,
         ?string $externalObjectType = null,
         ?OutboundConfig $outboundConfig = null,
-        ?string $webhookKey = null
+        ?string $webhookKey = null,
+        ?string $webhookSigningSecret = null
     ) {
         $this->fieldMappings = $fieldMappings;
         $this->collectionPath = $collectionPath ?? CollectionPath::root();
         $this->paginationConfig = $paginationConfig ?? PaginationConfig::none();
         $this->templateId = $templateId !== null && trim($templateId) !== '' ? trim($templateId) : null;
-        $this->templateVersion = $templateVersion !== null && trim($templateVersion) !== '' ? trim($templateVersion) : null;
+        $this->templateVersion = $templateVersion !== null && trim($templateVersion) !== '' ? trim(
+            $templateVersion
+        ) : null;
         $this->triggerType = $triggerType ?? InteractionTrigger::POLLING;
         $this->externalObjectType = self::normalizeExternalObjectType($externalObjectType ?? $targetItemtype->value);
         $this->outboundConfig = $outboundConfig ?? OutboundConfig::none();
         $this->webhookKey = self::normalizeWebhookKey($webhookKey);
+        $this->webhookSigningSecret = $this->webhookKey === null
+            ? null : (self::normalizeWebhookKey($webhookSigningSecret) ?? bin2hex(random_bytes(32)));
         $this->assertMatchFieldIsMapped();
         $this->status = SyncJobStatus::DRAFT;
         $this->createdAt = new DateTimeImmutable();
@@ -169,7 +175,8 @@ final class SyncJob
         ?InteractionTrigger $triggerType = null,
         ?string $externalObjectType = null,
         ?OutboundConfig $outboundConfig = null,
-        ?string $webhookKey = null
+        ?string $webhookKey = null,
+        ?string $webhookSigningSecret = null
     ): self {
         $syncJob = new self(
             $name,
@@ -189,6 +196,7 @@ final class SyncJob
             $externalObjectType,
             $outboundConfig,
             $webhookKey,
+            $webhookSigningSecret,
         );
 
         $syncJob->record(new SyncJobCreatedEvent($name, $direction));
@@ -223,7 +231,8 @@ final class SyncJob
         ?InteractionTrigger $triggerType = null,
         ?string $externalObjectType = null,
         ?OutboundConfig $outboundConfig = null,
-        ?string $webhookKey = null
+        ?string $webhookKey = null,
+        ?string $webhookSigningSecret = null
     ): self {
         $syncJob = new self(
             $name,
@@ -243,6 +252,7 @@ final class SyncJob
             $externalObjectType,
             $outboundConfig,
             $webhookKey,
+            $webhookSigningSecret,
         );
         $syncJob->id = $id;
         $syncJob->status = $status;
@@ -298,8 +308,9 @@ final class SyncJob
 
         $normalizedWebhookKey = self::normalizeWebhookKey($webhookKey);
 
-        if ($direction === SyncDirection::INBOUND
-           && $fieldMappings !== []
+        if (
+            $direction === SyncDirection::INBOUND
+            && $fieldMappings !== []
         ) {
             $matchFieldFound = false;
 
@@ -317,9 +328,10 @@ final class SyncJob
             }
         }
 
-        if ($direction === SyncDirection::OUTBOUND
-           && $entityAssignmentStrategy !== null
-           && !$entityAssignmentStrategy->isFixed()
+        if (
+            $direction === SyncDirection::OUTBOUND
+            && $entityAssignmentStrategy !== null
+            && !$entityAssignmentStrategy->isFixed()
         ) {
             throw new \DomainException(
                 'Outbound interactions support only a fixed GLPI entity as source scope.',
@@ -340,6 +352,9 @@ final class SyncJob
         $this->triggerType = $triggerType;
         $this->externalObjectType = $normalizedExternalObjectType;
         $this->outboundConfig = $outboundConfig;
+        if ($this->webhookKey !== $normalizedWebhookKey) {
+            $this->webhookSigningSecret = $normalizedWebhookKey === null ? null : bin2hex(random_bytes(32));
+        }
         $this->webhookKey = $normalizedWebhookKey;
 
         $this->touch();
@@ -420,15 +435,19 @@ final class SyncJob
     public function activate(): void
     {
         if ($this->direction === SyncDirection::INBOUND && $this->fieldMappings === []) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::cannotActivateWithoutFieldMappings();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException
+                ::cannotActivateWithoutFieldMappings();
         }
 
         if ($this->direction === SyncDirection::OUTBOUND && !$this->outboundConfig->isConfigured()) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::cannotActivateWithoutOutboundConfig();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException
+                ::cannotActivateWithoutOutboundConfig();
         }
 
         if (!in_array($this->status, [SyncJobStatus::DRAFT, SyncJobStatus::PAUSED], true)) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::cannotActivateFromStatus($this->status);
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::cannotActivateFromStatus(
+                $this->status
+            );
         }
 
         $this->status = SyncJobStatus::ACTIVE;
@@ -543,6 +562,12 @@ final class SyncJob
         return $this->webhookKey;
     }
 
+    public function webhookSigningSecret(): ?string
+    {
+        return $this->webhookSigningSecret;
+    }
+
+
     public function isScheduledInteraction(): bool
     {
         return $this->triggerType->isScheduled();
@@ -633,7 +658,8 @@ final class SyncJob
                 }
             }
 
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::assetIdentityRequiresMappedIdentityField();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException
+                ::assetIdentityRequiresMappedIdentityField();
         }
 
         foreach ($this->fieldMappings as $mapping) {
@@ -642,6 +668,8 @@ final class SyncJob
             }
         }
 
-        throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::matchFieldNotMapped($this->matchField);
+        throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::matchFieldNotMapped(
+            $this->matchField
+        );
     }
 }

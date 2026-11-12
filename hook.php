@@ -36,7 +36,9 @@ function plugin_uxconnector_item_changed(CommonDBTM $item): void
     }
 
     try {
-        $result = SyncServiceProvider::dispatchGlpiItemEventService()->execute($itemtype, $itemId, $item->fields);
+        $hiddenFields = [...$item::$undisclosedFields, 'password_forget_token', 'password_forget_token_date'];
+        $fields = array_diff_key($item->fields, array_fill_keys($hiddenFields, true));
+        $result = SyncServiceProvider::dispatchGlpiItemEventService()->execute($itemtype, $itemId, $fields);
         foreach ($result['errors'] as $error) {
             Toolbox::logInFile('uxconnector', sprintf("Outbound interaction failed: %s\n", $error));
         }

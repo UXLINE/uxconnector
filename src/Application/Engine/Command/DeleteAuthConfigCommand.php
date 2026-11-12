@@ -20,5 +20,6 @@ final readonly class DeleteAuthConfigCommand
 {
     public function __construct(
         public AuthConfigId $authConfigId
-    ) {}
+    ) {
+    }
 }

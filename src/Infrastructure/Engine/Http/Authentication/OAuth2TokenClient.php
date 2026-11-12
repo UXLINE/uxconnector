@@ -62,7 +62,8 @@ final class OAuth2TokenClient
 
     public function __construct(
         private readonly DestinationPolicyInterface $destinationPolicy
-    ) {}
+    ) {
+    }
 
     /**
      * @throws HttpEngineException if the token endpoint is an
@@ -73,7 +74,7 @@ final class OAuth2TokenClient
     public function invalidateClientCredentialsToken(
         string $tokenUrl,
         string $clientId,
-        string $clientSecret,
+        #[\SensitiveParameter] string $clientSecret,
         ?string $scope
     ): void {
         $cacheKey = hash('sha256', implode("\0", [$tokenUrl, $clientId, $clientSecret, (string) $scope]));
@@ -83,7 +84,7 @@ final class OAuth2TokenClient
     public function fetchClientCredentialsToken(
         string $tokenUrl,
         string $clientId,
-        string $clientSecret,
+        #[\SensitiveParameter] string $clientSecret,
         ?string $scope
     ): string {
         $cacheKey = hash('sha256', implode("\0", [$tokenUrl, $clientId, $clientSecret, (string) $scope]));
@@ -124,8 +125,11 @@ final class OAuth2TokenClient
     * @param array<string, mixed> $fields
     * @param list<string>         $extraHeaders
     */
-    private function fetchFormToken(string $tokenUrl, array $fields, array $extraHeaders): string
-    {
+    private function fetchFormToken(
+        string $tokenUrl,
+        #[\SensitiveParameter] array $fields,
+        array $extraHeaders
+    ): string {
         return $this->fetchFormTokenPayload($tokenUrl, $fields, $extraHeaders)['access_token'];
     }
 
@@ -135,11 +139,16 @@ final class OAuth2TokenClient
      *
      * @return array{access_token:string,expires_in?:int|float|string}
      */
-    private function fetchFormTokenPayload(string $tokenUrl, array $fields, array $extraHeaders): array
-    {
+    private function fetchFormTokenPayload(
+        string $tokenUrl,
+        #[\SensitiveParameter] array $fields,
+        array $extraHeaders
+    ): array {
         $tokenEndpoint = new Endpoint($tokenUrl);
         if (!$tokenEndpoint->isSecure()) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::insecureCredentialTransport($tokenEndpoint->value());
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::insecureCredentialTransport(
+                $tokenEndpoint->value()
+            );
         }
         $this->destinationPolicy->assertAllowed($tokenEndpoint);
 
@@ -158,16 +167,18 @@ final class OAuth2TokenClient
                 'follow_location' => 0,
                 'max_redirects' => 0,
             ],
+            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
         ]);
 
+        $deadline = hrtime(true) + self::TIMEOUT_SECONDS * 1_000_000_000;
         $stream = @fopen($tokenUrl, 'rb', false, $context);
         if ($stream === false) {
             throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure(
-                error_get_last()['message'] ?? 'unknown stream error while contacting the OAuth2 token endpoint',
+                'Unable to contact the OAuth2 token endpoint.',
             );
         }
         try {
-            $responseBody = $this->readWithSizeLimit($stream);
+            $responseBody = $this->readWithSizeLimit($stream, $deadline);
             $meta = stream_get_meta_data($stream);
         } finally {
             fclose($stream);
@@ -175,14 +186,22 @@ final class OAuth2TokenClient
         /** @var list<string> $headerLines */
         $headerLines = $meta['wrapper_data'] ?? [];
         $statusCode = $this->parseStatusCode($headerLines);
-        if ($statusCode >= 300) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure(sprintf('OAuth2 token endpoint returned HTTP %d.', $statusCode));
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure(
+                sprintf('OAuth2 token endpoint returned HTTP %d.', $statusCode)
+            );
         }
         $decoded = json_decode($responseBody, true);
-        if (!is_array($decoded) || !isset($decoded['access_token']) || !is_string($decoded['access_token'])) {
-            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure('OAuth2 token endpoint response did not contain a usable "access_token".');
+        if (
+            !is_array($decoded) || !is_string($decoded['access_token'] ?? null)
+            || preg_match('/^[A-Za-z0-9._~+\/-]+=*$/D', $decoded['access_token']) !== 1
+        ) {
+            throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure(
+                'OAuth2 token endpoint response did not contain a usable "access_token".'
+            );
         }
-        return $decoded;
+        // Do not retain refresh tokens or unrelated response fields in the caller/cache.
+        return array_intersect_key($decoded, ['access_token' => true, 'expires_in' => true]);
     }
 
     /**
@@ -194,9 +213,9 @@ final class OAuth2TokenClient
     public function fetchPasswordToken(
         string $tokenUrl,
         string $clientId,
-        string $clientSecret,
+        #[\SensitiveParameter] string $clientSecret,
         string $username,
-        string $password,
+        #[\SensitiveParameter] string $password,
         ?string $scope
     ): string {
         return $this->fetchFormToken($tokenUrl, [
@@ -212,16 +231,23 @@ final class OAuth2TokenClient
     /**
      * @param resource $stream
      */
-    private function readWithSizeLimit($stream): string
+    private function readWithSizeLimit($stream, float $deadline): string
     {
         $body = '';
         $bytesRead = 0;
 
         while (!feof($stream)) {
-            $chunk = fread($stream, self::READ_CHUNK_BYTES);
-
-            if ($chunk === false) {
-                break;
+            $remaining = (int) (($deadline - hrtime(true)) / 1000);
+            if ($remaining <= 0) {
+                throw HttpEngineException::transportFailure('OAuth2 token response exceeded the time limit.');
+            }
+            stream_set_timeout($stream, intdiv($remaining, 1_000_000), $remaining % 1_000_000);
+            $chunk = fread($stream, min(self::READ_CHUNK_BYTES, self::MAX_RESPONSE_BYTES + 1 - $bytesRead));
+            if (hrtime(true) >= $deadline || (stream_get_meta_data($stream)['timed_out'] ?? false)) {
+                throw HttpEngineException::transportFailure('OAuth2 token response exceeded the time limit.');
+            }
+            if ($chunk === false || ($chunk === '' && !feof($stream))) {
+                throw HttpEngineException::transportFailure('OAuth2 token response could not be read.');
             }
 
             $bytesRead += strlen($chunk);
@@ -237,6 +263,12 @@ final class OAuth2TokenClient
         }
 
         return $body;
+    }
+
+    /** Debug output must not dump cached access tokens. */
+    public function __debugInfo(): array
+    {
+        return ['cached_token_count' => count($this->clientCredentialsCache)];
     }
 
     /**

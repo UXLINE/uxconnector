@@ -51,8 +51,10 @@ final class CreateSyncJobService
         private readonly AuthConfigRepositoryInterface $authConfigRepository,
         private readonly TargetFieldPolicy $targetFieldPolicy,
         private readonly TransactionManagerInterface $transaction,
-        private readonly EventDispatcherInterface $events
-    ) {}
+        private readonly EventDispatcherInterface $events,
+        private readonly ?JobEntityAccess $entityAccess = null
+    ) {
+    }
 
     /**
      * @throws SyncDirectionNotSupportedException if the command's direction
@@ -63,11 +65,15 @@ final class CreateSyncJobService
     public function execute(CreateSyncJobCommand $command): SyncJob
     {
         if (!$command->direction->isImplemented()) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncDirectionNotSupportedException::forDirection($command->direction);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncDirectionNotSupportedException::forDirection(
+                $command->direction
+            );
         }
 
+        $this->entityAccess?->assertStrategy($command->entityAssignmentStrategy);
         $this->assertAuthConfigExists($command->authConfigReference->value());
         (new BuiltinTemplateTargetPolicy())->assertAllowed($command->templateId, $command->targetItemtype);
+        (new OutboundRuntimeValueResolver())->assertConfiguration($command->outboundConfig);
         if ($command->direction->readsFromExternalSystem()) {
             $this->targetFieldPolicy->assertConfiguration(
                 $command->targetItemtype,

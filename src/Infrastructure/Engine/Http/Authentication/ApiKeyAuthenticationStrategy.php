@@ -33,7 +33,8 @@ final class ApiKeyAuthenticationStrategy implements AuthenticationStrategy
     public function __construct(
         private readonly string $apiKey,
         private readonly string $headerName = self::DEFAULT_HEADER_NAME
-    ) {}
+    ) {
+    }
 
     public function authenticate(HttpRequest $request): HttpRequest
     {

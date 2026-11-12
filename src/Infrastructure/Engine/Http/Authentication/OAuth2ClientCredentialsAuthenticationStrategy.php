@@ -31,9 +31,10 @@ final class OAuth2ClientCredentialsAuthenticationStrategy implements RenewableSe
         private readonly OAuth2TokenClient $tokenClient,
         private readonly string $tokenUrl,
         private readonly string $clientId,
-        private readonly string $clientSecret,
+        #[\SensitiveParameter] private readonly string $clientSecret,
         private readonly ?string $scope
-    ) {}
+    ) {
+    }
 
     public function responseRequiresRenewal(HttpResponse $response): bool
     {
@@ -42,10 +43,17 @@ final class OAuth2ClientCredentialsAuthenticationStrategy implements RenewableSe
 
     public function invalidateSession(): void
     {
-        $this->tokenClient->invalidateClientCredentialsToken($this->tokenUrl, $this->clientId, $this->clientSecret, $this->scope);
+        $this->tokenClient->invalidateClientCredentialsToken(
+            $this->tokenUrl,
+            $this->clientId,
+            $this->clientSecret,
+            $this->scope
+        );
     }
 
-    public function closeSession(): void {}
+    public function closeSession(): void
+    {
+    }
 
     public function authenticate(HttpRequest $request): HttpRequest
     {

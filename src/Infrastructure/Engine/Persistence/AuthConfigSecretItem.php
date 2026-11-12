@@ -35,6 +35,19 @@ final class AuthConfigSecretItem extends CommonDBTM
     // with PluginUxconnectorProfile::getRightDefinitions().
     public static $rightname = 'plugin_uxconnector_authconfig';
 
+    /** Exclude encrypted credentials from generic GLPI API representations. */
+    public static $undisclosedFields = ['protected_secret'];
+
+    /** Credential changes must go through the plugin services. */
+    public function can($ID, int $right, ?array &$input = null): bool
+    {
+        if (in_array($right, [CREATE, UPDATE, DELETE, PURGE], true)) {
+            return false;
+        }
+
+        return parent::can($ID, $right, $input);
+    }
+
     public static function getTable($classname = null): string
     {
         return 'glpi_plugin_uxconnector_authconfig_secrets';

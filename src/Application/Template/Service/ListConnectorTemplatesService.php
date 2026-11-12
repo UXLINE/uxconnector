@@ -8,7 +8,9 @@ use GlpiPlugin\Uxconnector\Domain\Template\Repository\ConnectorTemplateRepositor
 
 final class ListConnectorTemplatesService
 {
-    public function __construct(private readonly ConnectorTemplateRepositoryInterface $repository) {}
+    public function __construct(private readonly ConnectorTemplateRepositoryInterface $repository)
+    {
+    }
 
     /** @return list<array<string,mixed>> */
     public function execute(): array
@@ -22,8 +24,10 @@ final class ListConnectorTemplatesService
             'endpointHint' => $connector->endpointHint,
             'testPathHint' => $connector->testPathHint,
             'authMethods' => $connector->authMethods,
-            'jobCount' => count(array_filter($connector->jobs, static fn($job): bool => $job->available && !$job->retired)),
-            'plannedCount' => count(array_filter($connector->jobs, static fn($job): bool => !$job->available && !$job->retired)),
+            'jobCount' => count(array_filter($connector->jobs, static fn(
+                        $job): bool => $job->available && !$job->retired)),
+            'plannedCount' => count(array_filter($connector->jobs, static fn(
+                        $job): bool => !$job->available && !$job->retired)),
         ], $this->repository->findAll());
     }
 }

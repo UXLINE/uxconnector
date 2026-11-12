@@ -29,7 +29,8 @@ final class GlpiTransactionManager implements TransactionManagerInterface
 {
     public function __construct(
         private readonly DBmysql $db
-    ) {}
+    ) {
+    }
 
     public function begin(): void
     {

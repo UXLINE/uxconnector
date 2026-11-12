@@ -14,16 +14,24 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence;
 
+use DBmysql;
+use GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncExecutionBusyException;
 use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncExecution;
+use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncExecutionStatus;
+use GlpiPlugin\Uxconnector\Domain\Sync\Repository\ExecutionStopRequestRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncExecutionRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncExecutionId;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
-final class SyncExecutionRepository implements SyncExecutionRepositoryInterface, \GlpiPlugin\Uxconnector\Domain\Sync\Repository\LatestSyncExecutionRepositoryInterface
+final class SyncExecutionRepository implements
+    SyncExecutionRepositoryInterface,
+    \GlpiPlugin\Uxconnector\Domain\Sync\Repository\LatestSyncExecutionRepositoryInterface
 {
     public function __construct(
-        private readonly SyncExecutionPersistenceMapper $mapper
-    ) {}
+        private readonly SyncExecutionPersistenceMapper $mapper,
+        private readonly DBmysql $db
+    ) {
+    }
 
     public function save(SyncExecution $execution): SyncExecution
     {
@@ -49,6 +57,11 @@ final class SyncExecutionRepository implements SyncExecutionRepositoryInterface,
             return $this->mustFindById($executionId);
         }
 
+        $previous = $execution->persistedStatus();
+        if ($previous !== null && $previous !== $execution->status()) {
+            return $this->saveTransition($execution, $execution->id(), $previous, $data);
+        }
+
         if (!$model->update($data)) {
             throw new \RuntimeException(sprintf(
                 'Failed to update SyncExecution #%d.',
@@ -57,6 +70,84 @@ final class SyncExecutionRepository implements SyncExecutionRepositoryInterface,
         }
 
         return $this->mustFindById($execution->id());
+    }
+
+    /**
+     * Status transitions use a compare-and-set so stale worker or UI snapshots
+     * cannot resurrect an execution or overwrite an accepted cancellation.
+     *
+     * @param array<string,int|string|null> $data
+     */
+    private function saveTransition(
+        SyncExecution $execution,
+        SyncExecutionId $id,
+        SyncExecutionStatus $previous,
+        array $data
+    ): SyncExecution {
+        unset($data['id']);
+        $where = ['id' => $id->value(), 'status' => $previous->value];
+        $cancel = ExecutionStopRequestRepositoryInterface::CANCELLATION_REQUESTED;
+
+        if ($previous === SyncExecutionStatus::RUNNING && $execution->status()->isFinished()) {
+            $this->db->update(SyncExecutionItem::getTable(), $data, $where + ['stop_requested' => ['<>', $cancel]]);
+            if ($this->db->affectedRows() === 1) {
+                return $this->mustFindById($id);
+            }
+
+            $execution->cancel();
+            $cancelled = $this->mapper->toPersistence($execution);
+            unset($cancelled['id']);
+            $this->db->update(
+                SyncExecutionItem::getTable(),
+                $cancelled + ['stop_requested' => 0],
+                $where + ['stop_requested' => $cancel]
+            );
+        } else {
+            $this->db->update(SyncExecutionItem::getTable(), $data, $where);
+        }
+
+        if ($this->db->affectedRows() !== 1) {
+            throw new SyncExecutionBusyException('The execution changed before the requested action could be applied.');
+        }
+
+        return $this->mustFindById($id);
+    }
+
+    public function requestCancellation(SyncExecutionId $id, SyncJobId $jobId): SyncExecution
+    {
+        $table = SyncExecutionItem::getTable();
+        $where = ['id' => $id->value(), 'plugin_uxconnector_syncjobs_id' => $jobId->value()];
+        $cancellableWithoutWorker = $where + [
+            'status' => [SyncExecutionStatus::PENDING->value, SyncExecutionStatus::INTERRUPTED->value],
+        ];
+        $cancelled = [
+            'status' => SyncExecutionStatus::CANCELLED->value,
+            'finished_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+            'resume_available' => 0,
+            'resume_path' => null,
+            'error_message' => null,
+            'stop_requested' => 0,
+        ];
+
+        $this->db->update($table, $cancelled, $cancellableWithoutWorker);
+        if ($this->db->affectedRows() === 0) {
+            $this->db->update(
+                $table,
+                ['stop_requested' => ExecutionStopRequestRepositoryInterface::CANCELLATION_REQUESTED],
+                $where + ['status' => SyncExecutionStatus::RUNNING->value]
+            );
+            // The worker may have paused between the two conditional updates.
+            $this->db->update($table, $cancelled, $cancellableWithoutWorker);
+        }
+
+        $execution = $this->findById($id);
+        if ($execution === null || $execution->syncJobId()->value() !== $jobId->value()) {
+            throw new SyncExecutionBusyException('Execution not found for this interaction.');
+        }
+        if ($execution->status() !== SyncExecutionStatus::CANCELLED && !$execution->cancellationRequested()) {
+            throw new SyncExecutionBusyException('This execution is no longer cancellable.');
+        }
+        return $execution;
     }
 
     public function findById(SyncExecutionId $id): ?SyncExecution

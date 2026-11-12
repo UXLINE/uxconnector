@@ -20,8 +20,10 @@ final class UpdateSyncJobService
         private readonly SyncJobRepositoryInterface $syncJobRepository,
         private readonly AuthConfigRepositoryInterface $authConfigRepository,
         private readonly TargetFieldPolicy $targetFieldPolicy,
-        private readonly TransactionManagerInterface $transaction
-    ) {}
+        private readonly TransactionManagerInterface $transaction,
+        private readonly ?JobEntityAccess $entityAccess = null
+    ) {
+    }
 
     public function execute(UpdateSyncJobCommand $command): SyncJob
     {
@@ -32,6 +34,9 @@ final class UpdateSyncJobService
                 $command->id,
             );
         }
+
+        $this->entityAccess?->assertStrategy($syncJob->entityAssignmentStrategy());
+        $this->entityAccess?->assertStrategy($command->entityAssignmentStrategy);
 
         if ($syncJob->isRunnable()) {
             throw new \DomainException(
@@ -50,6 +55,7 @@ final class UpdateSyncJobService
         }
 
         (new BuiltinTemplateTargetPolicy())->assertAllowed($syncJob->templateId(), $command->targetItemtype);
+        (new OutboundRuntimeValueResolver())->assertConfiguration($command->outboundConfig);
 
         $this->targetFieldPolicy->assertConfiguration(
             $command->targetItemtype,

@@ -29,8 +29,10 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
 final class PauseSyncJobService
 {
     public function __construct(
-        private readonly SyncJobRepositoryInterface $repository
-    ) {}
+        private readonly SyncJobRepositoryInterface $repository,
+        private readonly ?JobEntityAccess $entityAccess = null
+    ) {
+    }
 
     /**
      * @throws SyncJobNotFoundException if the command's SyncJobId does not
@@ -41,9 +43,12 @@ final class PauseSyncJobService
         $syncJob = $this->repository->findById($command->syncJobId);
 
         if ($syncJob === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId($command->syncJobId);
+            throw \GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException::forId(
+                $command->syncJobId
+            );
         }
 
+        $this->entityAccess?->assertStrategy($syncJob->entityAssignmentStrategy());
         $syncJob->pause();
 
         return $this->repository->save($syncJob);

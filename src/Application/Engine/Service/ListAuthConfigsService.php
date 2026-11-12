@@ -28,7 +28,8 @@ final class ListAuthConfigsService
 {
     public function __construct(
         private readonly AuthConfigRepositoryInterface $repository
-    ) {}
+    ) {
+    }
 
     /**
      * @return list<AuthConfigDTO>

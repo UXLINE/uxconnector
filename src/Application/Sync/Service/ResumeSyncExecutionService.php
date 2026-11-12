@@ -17,8 +17,10 @@ final class ResumeSyncExecutionService
         private readonly SyncExecutionRepositoryInterface $repository,
         private readonly TransactionManagerInterface $transaction,
         private readonly ExecutionMutexInterface $mutex,
-        private readonly ?ExecutionStopRequestRepositoryInterface $stopRequests = null
-    ) {}
+        private readonly ?ExecutionStopRequestRepositoryInterface $stopRequests = null,
+        private readonly ?JobEntityAccess $entityAccess = null
+    ) {
+    }
     public function execute(SyncExecutionId $id): SyncExecution
     {
         $execution = $this->repository->findById($id);
@@ -28,6 +30,7 @@ final class ResumeSyncExecutionService
         $this->transaction->begin();
         try {
             $this->mutex->lock($execution->syncJobId());
+            $this->entityAccess?->assertJobId($execution->syncJobId());
             if ($this->repository->hasOpenExecution($execution->syncJobId())) {
                 throw new \RuntimeException('Another execution is already pending or running for this interaction.');
             }

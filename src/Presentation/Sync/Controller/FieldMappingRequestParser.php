@@ -71,7 +71,8 @@ final class FieldMappingRequestParser
 
             $transform = isset($transforms[$index]) ? trim((string) $transforms[$index]) : '';
 
-            if ($transform !== ''
+            if (
+                $transform !== ''
                  && !in_array($transform, self::ALLOWED_TRANSFORMS, true)
                  && !str_starts_with($transform, 'map:')
                  && preg_match('/^link:[a-z0-9][a-z0-9_.-]{0,63}$/D', $transform) !== 1

@@ -10,7 +10,9 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ReadModel\LicenseAssignmentReaderInterfac
 /** Read-only fixed-shape query; no untrusted table, filter or sort inputs. */
 final class LicenseAssignmentReader implements LicenseAssignmentReaderInterface
 {
-    public function __construct(private readonly DBmysql $db) {}
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
     public function recent(int $limit): array
     {

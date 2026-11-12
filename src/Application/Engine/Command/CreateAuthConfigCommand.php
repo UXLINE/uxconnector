@@ -40,8 +40,9 @@ final readonly class CreateAuthConfigCommand
         public AuthConfigName $name,
         public Endpoint $endpoint,
         public AuthMethod $authMethod,
-        public ?string $plaintextSecret = null,
+        #[\SensitiveParameter] public ?string $plaintextSecret = null,
         public ?TestPath $testPath = null,
         public string $connectorId = 'custom'
-    ) {}
+    ) {
+    }
 }

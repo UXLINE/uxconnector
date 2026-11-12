@@ -29,7 +29,8 @@ final class AuthConfigUsageChecker implements AuthConfigUsageCheckerInterface
 
     public function __construct(
         private readonly DBmysql $db
-    ) {}
+    ) {
+    }
 
     public function isUsed(AuthConfigId $id): bool
     {

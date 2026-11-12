@@ -50,12 +50,14 @@ final readonly class EntityAssignmentStrategy
         private array $valueToEntityId,
         private UnknownEntityPolicy $unknownPolicy,
         private ?int $defaultEntityId
-    ) {}
+    ) {
+    }
 
     public static function fixed(int $entityId): self
     {
         if ($entityId < 0) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidEntityAssignmentStrategyException::fixedEntityIdMustBePositive();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidEntityAssignmentStrategyException
+                ::fixedEntityIdMustBePositive();
         }
 
         return new self(true, $entityId, null, [], UnknownEntityPolicy::FAIL, null);
@@ -72,15 +74,18 @@ final readonly class EntityAssignmentStrategy
         ?int $defaultEntityId = null
     ): self {
         if (trim($sourceField) === '') {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidEntityAssignmentStrategyException::mappedSourceFieldMustNotBeEmpty();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidEntityAssignmentStrategyException
+                ::mappedSourceFieldMustNotBeEmpty();
         }
 
         if ($valueToEntityId === []) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidEntityAssignmentStrategyException::mappedTableMustNotBeEmpty();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidEntityAssignmentStrategyException
+                ::mappedTableMustNotBeEmpty();
         }
 
         if ($unknownPolicy === UnknownEntityPolicy::USE_DEFAULT && $defaultEntityId === null) {
-            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidEntityAssignmentStrategyException::defaultEntityIdRequiredForUseDefaultPolicy();
+            throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidEntityAssignmentStrategyException
+                ::defaultEntityIdRequiredForUseDefaultPolicy();
         }
 
         return new self(false, null, $sourceField, $valueToEntityId, $unknownPolicy, $defaultEntityId);
@@ -166,5 +171,4 @@ final readonly class EntityAssignmentStrategy
 
         return $current;
     }
-
 }

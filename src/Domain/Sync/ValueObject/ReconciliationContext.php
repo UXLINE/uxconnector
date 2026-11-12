@@ -44,5 +44,6 @@ final readonly class ReconciliationContext
         public string $externalObjectType,
         public ?int $entitiesId = null,
         public bool $replaceLinkedTicketStatus = false
-    ) {}
+    ) {
+    }
 }

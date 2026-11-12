@@ -32,34 +32,17 @@ declare(strict_types=1);
 return static function (Migration $migration): void {
     global $DB;
 
+    $webhookRequestsTable = 'glpi_plugin_uxconnector_webhookrequests';
+    if (!$DB->tableExists($webhookRequestsTable)) {
+        $DB->runFile(__DIR__ . '/schema/webhookrequests.sql');
+    }
+
     $authConfigTable = 'glpi_plugin_uxconnector_authconfigs';
 
     if (!$DB->tableExists($authConfigTable)) {
         $migration->displayMessage("Installing $authConfigTable");
 
-        $query = <<<SQL
-            CREATE TABLE `$authConfigTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `name` varchar(128) NOT NULL,
-                `endpoint` varchar(255) NOT NULL,
-                `test_path` varchar(255) NOT NULL DEFAULT '/',
-                `connector_id` varchar(64) NOT NULL DEFAULT 'custom',
-                `auth_method` varchar(64) NOT NULL,
-                `status` varchar(32) NOT NULL DEFAULT 'draft',
-                `date_creation` timestamp NULL DEFAULT NULL,
-                `date_mod` timestamp NULL DEFAULT NULL,
-                PRIMARY KEY (`id`),
-                KEY `name` (`name`),
-                KEY `connector_id` (`connector_id`),
-                KEY `status` (`status`),
-                KEY `date_creation` (`date_creation`),
-                KEY `date_mod` (`date_mod`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-
-        $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $authConfigTable: " . $DB->error(),
-        );
+        $DB->runFile(__DIR__ . '/schema/authconfigs.sql');
     }
 
     // 2.5.2 - AuthConfig connectivity tests now target a configurable
@@ -78,11 +61,7 @@ return static function (Migration $migration): void {
         // could leave an AuthConfig in TESTING. Force those legacy results
         // back to DRAFT so they cannot be activated without a strict 2xx
         // re-test after the upgrade.
-        $DB->doQuery(
-            "UPDATE `$authConfigTable` SET `status` = 'draft' WHERE `status` = 'testing'",
-        ) || throw new \RuntimeException(
-            'Failed to reset legacy AuthConfig testing statuses: ' . $DB->error(),
-        );
+        $DB->update($authConfigTable, ['status' => 'draft'], ['status' => 'testing']);
     }
 
     // RULE-VALUEOBJECT-003/CredentialVault design note : this table is
@@ -96,20 +75,7 @@ return static function (Migration $migration): void {
     if (!$DB->tableExists($secretTable)) {
         $migration->displayMessage("Installing $secretTable");
 
-        $query = <<<SQL
-            CREATE TABLE `$secretTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `plugin_uxconnector_authconfigs_id` int unsigned NOT NULL,
-                `protected_secret` text NOT NULL,
-                `date_mod` timestamp NULL DEFAULT NULL,
-                PRIMARY KEY (`id`),
-                UNIQUE KEY `unicity` (`plugin_uxconnector_authconfigs_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-
-        $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $secretTable: " . $DB->error(),
-        );
+        $DB->runFile(__DIR__ . '/schema/authconfig_secrets.sql');
     }
 
     // Sync bounded context. `auth_config_reference` intentionally has
@@ -126,44 +92,7 @@ return static function (Migration $migration): void {
     if (!$DB->tableExists($syncJobTable)) {
         $migration->displayMessage("Installing $syncJobTable");
 
-        $query = <<<SQL
-            CREATE TABLE `$syncJobTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `name` varchar(128) NOT NULL,
-                `auth_config_reference` int unsigned NOT NULL,
-                `direction` varchar(32) NOT NULL,
-                `resource_path` varchar(255) NOT NULL,
-                `target_itemtype` varchar(32) NOT NULL,
-                `match_field` varchar(128) NOT NULL,
-                `external_id_field` varchar(128) NOT NULL,
-                `collection_path` varchar(255) NOT NULL DEFAULT '$',
-                `pagination_config` text NULL,
-                `template_id` varchar(191) NULL,
-                `template_version` varchar(32) NULL,
-                `trigger_type` varchar(32) NOT NULL DEFAULT 'polling',
-                `external_object_type` varchar(64) NOT NULL DEFAULT 'record',
-                `outbound_config` text NULL,
-                `webhook_key` varchar(64) NULL,
-                `entity_assignment_strategy` text NULL,
-                `field_mappings` text NOT NULL,
-                `status` varchar(32) NOT NULL DEFAULT 'draft',
-                `date_creation` timestamp NULL DEFAULT NULL,
-                `date_mod` timestamp NULL DEFAULT NULL,
-                PRIMARY KEY (`id`),
-                KEY `name` (`name`),
-                KEY `auth_config_reference` (`auth_config_reference`),
-                KEY `template_id` (`template_id`),
-                UNIQUE KEY `webhook_key` (`webhook_key`),
-                KEY `trigger_type` (`trigger_type`),
-                KEY `status` (`status`),
-                KEY `date_creation` (`date_creation`),
-                KEY `date_mod` (`date_mod`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-
-        $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $syncJobTable: " . $DB->error(),
-        );
+        $DB->runFile(__DIR__ . '/schema/syncjobs.sql');
     }
 
     // Deliberately no FK from syncexecutions to syncjobs either
@@ -177,26 +106,7 @@ return static function (Migration $migration): void {
     if (!$DB->tableExists($syncExecutionTable)) {
         $migration->displayMessage("Installing $syncExecutionTable");
 
-        $query = <<<SQL
-            CREATE TABLE `$syncExecutionTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `plugin_uxconnector_syncjobs_id` int unsigned NOT NULL,
-                `status` varchar(32) NOT NULL,
-                `started_at` timestamp NULL DEFAULT NULL,
-                `finished_at` timestamp NULL DEFAULT NULL,
-                `items_processed` int unsigned NOT NULL DEFAULT 0,
-                `items_failed` int unsigned NOT NULL DEFAULT 0,
-                `error_message` text NULL,
-                PRIMARY KEY (`id`),
-                KEY `plugin_uxconnector_syncjobs_id` (`plugin_uxconnector_syncjobs_id`),
-                KEY `status` (`status`),
-                KEY `started_at` (`started_at`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-
-        $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $syncExecutionTable: " . $DB->error(),
-        );
+        $DB->runFile(__DIR__ . '/schema/syncexecutions.sql');
     }
 
     // 2.18.4 - asynchronous execution supervision and resumable checkpoints.
@@ -231,38 +141,7 @@ return static function (Migration $migration): void {
     $syncFailureTable = 'glpi_plugin_uxconnector_syncfailures';
     if (!$DB->tableExists($syncFailureTable)) {
         $migration->displayMessage("Installing $syncFailureTable");
-        $query = <<<SQL
-            CREATE TABLE `$syncFailureTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `plugin_uxconnector_syncexecutions_id` int unsigned NOT NULL,
-                `plugin_uxconnector_syncjobs_id` int unsigned NOT NULL,
-                `source_type` varchar(64) NOT NULL DEFAULT 'record',
-                `source_id` varchar(191) NULL,
-                `source_label` varchar(255) NULL,
-                `target_type` varchar(64) NULL,
-                `target_id` int unsigned NULL,
-                `action` varchar(32) NOT NULL DEFAULT 'upsert',
-                `status` varchar(32) NOT NULL DEFAULT 'failed',
-                `error_category` varchar(64) NOT NULL DEFAULT 'unknown',
-                `error_code` varchar(128) NULL,
-                `error_message` text NOT NULL,
-                `technical_context` text NULL,
-                `source_snapshot` mediumtext NULL,
-                `attempt` int unsigned NOT NULL DEFAULT 1,
-                `page_number` int unsigned NOT NULL DEFAULT 0,
-                `cursor_value` text NULL,
-                `retry_status` varchar(32) NOT NULL DEFAULT 'not_retried',
-                `date_creation` timestamp NULL DEFAULT NULL,
-                PRIMARY KEY (`id`),
-                KEY `execution` (`plugin_uxconnector_syncexecutions_id`),
-                KEY `syncjob` (`plugin_uxconnector_syncjobs_id`),
-                KEY `source_id` (`source_id`),
-                KEY `retry_status` (`retry_status`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-        $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $syncFailureTable: " . $DB->error(),
-        );
+        $DB->runFile(__DIR__ . '/schema/syncfailures.sql');
     }
 
     // 2.13.0 - opaque cursor checkpoints for incremental connectors
@@ -272,20 +151,7 @@ return static function (Migration $migration): void {
     if (!$DB->tableExists($syncCheckpointTable)) {
         $migration->displayMessage("Installing $syncCheckpointTable");
 
-        $query = <<<SQL
-            CREATE TABLE `$syncCheckpointTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `plugin_uxconnector_syncjobs_id` int unsigned NOT NULL,
-                `cursor_value` text NOT NULL,
-                `date_mod` timestamp NULL DEFAULT NULL,
-                PRIMARY KEY (`id`),
-                UNIQUE KEY `syncjob` (`plugin_uxconnector_syncjobs_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-
-        $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $syncCheckpointTable: " . $DB->error(),
-        );
+        $DB->runFile(__DIR__ . '/schema/sync_checkpoints.sql');
     }
 
     // CORRECTIF (réconciliation, revue de code externe) : mémorise le
@@ -298,64 +164,7 @@ return static function (Migration $migration): void {
     if (!$DB->tableExists($objectLinkTable)) {
         $migration->displayMessage("Installing $objectLinkTable");
 
-        $query = <<<SQL
-            CREATE TABLE `$objectLinkTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `auth_config_reference` int unsigned NOT NULL,
-                `plugin_uxconnector_syncjobs_id` int unsigned NOT NULL DEFAULT 0,
-                `external_id` varchar(191) NOT NULL,
-                `external_object_type` varchar(64) NOT NULL DEFAULT 'record',
-                `itemtype` varchar(32) NOT NULL,
-                `item_id` int unsigned NOT NULL,
-                `last_seen_at` timestamp NULL DEFAULT NULL,
-                PRIMARY KEY (`id`),
-                UNIQUE KEY `uniq_scope_external` (`auth_config_reference`, `itemtype`, `plugin_uxconnector_syncjobs_id`, `external_id`),
-                KEY `plugin_uxconnector_syncjobs_id` (`plugin_uxconnector_syncjobs_id`),
-                KEY `connection_external_lookup` (`auth_config_reference`, `external_object_type`, `external_id`),
-                KEY `connection_item_lookup` (`auth_config_reference`, `itemtype`, `item_id`),
-                KEY `item_lookup` (`itemtype`, `item_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-
-        $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $objectLinkTable: " . $DB->error(),
-        );
-    }
-
-    // 2.9.0 - Copilot Gateway API clients. Secrets are never persisted: only a SHA-256 hash of the generated API key is stored.
-    $copilotClientTable = 'glpi_plugin_uxconnector_copilotclients';
-    if (!$DB->tableExists($copilotClientTable)) {
-        $migration->displayMessage("Installing $copilotClientTable");
-        $query = <<<SQL
-            CREATE TABLE `$copilotClientTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `name` varchar(128) NOT NULL,
-                `api_key_hash` char(64) NOT NULL,
-                `provider_type` varchar(32) NOT NULL DEFAULT 'glpi_hl_api',
-                `auth_config_reference` int unsigned NOT NULL,
-                `is_active` tinyint NOT NULL DEFAULT 1,
-                `date_creation` timestamp NULL DEFAULT NULL,
-                `date_mod` timestamp NULL DEFAULT NULL,
-                PRIMARY KEY (`id`),
-                UNIQUE KEY `api_key_hash` (`api_key_hash`),
-                KEY `auth_config_reference` (`auth_config_reference`),
-                KEY `is_active` (`is_active`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-        $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $copilotClientTable: " . $DB->error(),
-        );
-    }
-
-    // 2.9.1 - identify whether an AI client reads the hosting GLPI directly
-    // or delegates to a configured remote GLPI High-Level API connection.
-    if ($DB->tableExists($copilotClientTable) && !$DB->fieldExists($copilotClientTable, 'provider_type')) {
-        $migration->addField(
-            $copilotClientTable,
-            'provider_type',
-            'string',
-            ['after' => 'api_key_hash', 'value' => 'glpi_hl_api'],
-        );
+        $DB->runFile(__DIR__ . '/schema/objectlinks.sql');
     }
 
     // RULE-MIGRATION additive : une instance déjà installée en
@@ -473,16 +282,11 @@ return static function (Migration $migration): void {
                 ['after' => 'external_object_type', 'null' => true],
             );
         }
-        if (!$DB->fieldExists($syncJobTable, 'webhook_key')) {
-            $migration->addField(
-                $syncJobTable,
-                'webhook_key',
-                'string',
-                ['after' => 'outbound_config', 'null' => true],
-            );
-        }
+        $migration->addField($syncJobTable, 'webhook_key_hash', 'char(64)', ['null' => true]);
+        $migration->addField($syncJobTable, 'webhook_token_secret', 'text', ['null' => true]);
+        $migration->addField($syncJobTable, 'webhook_signing_secret', 'text', ['null' => true]);
         $migration->addKey($syncJobTable, 'trigger_type', 'trigger_type');
-        $migration->addKey($syncJobTable, 'webhook_key', 'webhook_key', 'UNIQUE');
+        $migration->addKey($syncJobTable, 'webhook_key_hash', 'webhook_key_hash', 'UNIQUE');
     }
 
     // 2.8.0 - ObjectLink remains the single reconciliation concept, but lookups
@@ -541,64 +345,34 @@ return static function (Migration $migration): void {
         );
     }
 
-    // 2.12.0 - semantic classification engine configuration.
-    // Endpoint/authentication/credential remain owned by Engine/AuthConfig.
-    // `auth_config_reference` is deliberately an application reference only:
-    // no cross-bounded-context SQL foreign key is introduced.
-    $semanticEngineConfigTable = 'glpi_plugin_uxconnector_semanticengineconfigs';
-
-    if (!$DB->tableExists($semanticEngineConfigTable)) {
-        $migration->displayMessage("Installing $semanticEngineConfigTable");
-        $query = <<<SQL
-            CREATE TABLE `$semanticEngineConfigTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `name` varchar(128) NOT NULL,
-                `auth_config_reference` int unsigned NOT NULL,
-                `model` varchar(191) NOT NULL,
-                `inference_path` varchar(255) NOT NULL,
-                `batch_size` int unsigned NOT NULL DEFAULT 20,
-                `confidence_threshold` decimal(5,4) NOT NULL DEFAULT 0.7000,
-                `temperature` decimal(5,4) NOT NULL DEFAULT 0.0000,
-                `classifier_version` varchar(32) NOT NULL DEFAULT '1.0.0',
-                `status` varchar(32) NOT NULL DEFAULT 'draft',
-                `date_creation` timestamp NULL DEFAULT NULL,
-                `date_mod` timestamp NULL DEFAULT NULL,
-                PRIMARY KEY (`id`),
-                KEY `name` (`name`),
-                KEY `auth_config_reference` (`auth_config_reference`),
-                KEY `status` (`status`),
-                KEY `classifier_version` (`classifier_version`),
-                KEY `date_creation` (`date_creation`),
-                KEY `date_mod` (`date_mod`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-
-        $DB->doQuery($query) || throw new \RuntimeException(
-            "Failed to create table $semanticEngineConfigTable: " . $DB->error(),
-        );
-    }
     // 2.17.1 - GLPI High-Level asset jobs created by 2.16.x used resource
     // paths without the `/api.php` prefix when the Connection endpoint was
     // stored as the tenant root URL. Migrate only the six bundled templates
     // and only when they still carry the legacy `/Assets/...` form.
     if ($DB->tableExists($syncJobTable)) {
-        $query = <<<SQL
-            UPDATE `$syncJobTable`
-            SET `resource_path` = CONCAT('/api.php', `resource_path`),
-                `template_version` = '2.17.1'
-            WHERE `template_id` IN (
-                'glpi-hl.assets.computers.inbound',
-                'glpi-hl.assets.monitors.inbound',
-                'glpi-hl.assets.phones.inbound',
-                'glpi-hl.assets.peripherals.inbound',
-                'glpi-hl.assets.printers.inbound',
-                'glpi-hl.assets.network-equipment.inbound'
-            )
-              AND `resource_path` LIKE '/Assets/%';
-            SQL;
-        $DB->doQuery($query) || throw new \RuntimeException(
-            'Failed to migrate GLPI High-Level asset resource paths: ' . $DB->error(),
-        );
+        $legacyJobs = $DB->request([
+            'SELECT' => ['id', 'resource_path', 'template_id'],
+            'FROM' => $syncJobTable,
+            'WHERE' => [
+                'template_id' => [
+                    'glpi-hl.assets.computers.inbound',
+                    'glpi-hl.assets.monitors.inbound',
+                    'glpi-hl.assets.phones.inbound',
+                    'glpi-hl.assets.peripherals.inbound',
+                    'glpi-hl.assets.printers.inbound',
+                    'glpi-hl.assets.network-equipment.inbound',
+                ],
+                'resource_path' => ['LIKE', '/Assets/%'],
+            ],
+        ]);
+        foreach ($legacyJobs as $job) {
+            $DB->update(
+                $syncJobTable,
+                ['resource_path' => '/api.php' . $job['resource_path'], 'template_version' => '2.17.1'],
+                ['id' => (int) $job['id'], 'resource_path' => $job['resource_path'],
+                    'template_id' => $job['template_id']],
+            );
+        }
     }
 
     // 2.18.20 - individualized Microsoft licence assignments. This table is
@@ -606,49 +380,18 @@ return static function (Migration $migration): void {
     $licenseAssignmentTable = 'glpi_plugin_uxconnector_licenseassignments';
     if (!$DB->tableExists($licenseAssignmentTable)) {
         $migration->displayMessage("Installing $licenseAssignmentTable");
-        $query = <<<SQL
-            CREATE TABLE `$licenseAssignmentTable` (
-                `id` int unsigned NOT NULL AUTO_INCREMENT,
-                `source_authconfig_id` int unsigned NOT NULL,
-                `source_location_id` varchar(128) NOT NULL,
-                `softwarelicenses_id` int unsigned NOT NULL DEFAULT 0,
-                `product` varchar(255) NOT NULL,
-                `beneficiary` varchar(255) NOT NULL DEFAULT '',
-                `registration_number` varchar(128) NOT NULL DEFAULT '',
-                `job_function` varchar(255) NOT NULL DEFAULT '',
-                `activation_source` varchar(128) NOT NULL DEFAULT '',
-                `deactivation_source` varchar(128) NOT NULL DEFAULT '',
-                `annual_price_source` varchar(128) NOT NULL DEFAULT '',
-                `monthly_price_source` varchar(128) NOT NULL DEFAULT '',
-                `assignment_status` varchar(128) NOT NULL DEFAULT '',
-                `entity_code` varchar(128) NOT NULL DEFAULT '',
-                `code_da` varchar(128) NOT NULL DEFAULT '',
-                `code_da_accounting` varchar(128) NOT NULL DEFAULT '',
-                `code_ets` varchar(128) NOT NULL DEFAULT '',
-                `code_db` varchar(128) NOT NULL DEFAULT '',
-                `code_na` varchar(128) NOT NULL DEFAULT '',
-                `code_nb` varchar(128) NOT NULL DEFAULT '',
-                `date_creation` timestamp NULL DEFAULT NULL,
-                `date_mod` timestamp NULL DEFAULT NULL,
-                PRIMARY KEY (`id`),
-                UNIQUE KEY `source_assignment` (`source_authconfig_id`,`source_location_id`),
-                KEY `softwarelicenses_id` (`softwarelicenses_id`),
-                KEY `beneficiary` (`beneficiary`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-            SQL;
-        $DB->doQuery($query) || throw new \RuntimeException(
-            'Unable to install licence assignments storage: ' . $DB->error(),
-        );
+        $DB->runFile(__DIR__ . '/schema/licenseassignments.sql');
     }
 
     // Rights registration (RULE-MIGRATION-002 : Migration::addRight()
     // is itself idempotent - it never duplicates an existing grant on
     // re-run). PluginUxconnectorProfile::getRightDefinitions() is the
-    // single source of truth for these two right names; every
+    // single source of truth for these right names; every
     // Session::checkRight()/haveRight() call in the plugin, and both
     // AuthConfigItem::$rightname/SyncJobItem::$rightname, must stay
     // in sync with it.
     foreach (\PluginUxconnectorProfile::getRightDefinitions() as $definition) {
-        $migration->addRight($definition['field'], ALLSTANDARDRIGHT);
+        $defaultRights = isset($definition['rights']) ? 0 : ALLSTANDARDRIGHT;
+        $migration->addRight($definition['field'], $defaultRights);
     }
 };

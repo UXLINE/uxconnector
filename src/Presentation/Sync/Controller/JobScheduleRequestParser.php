@@ -17,7 +17,10 @@ final class JobScheduleRequestParser
             return $config;
         }
         $raw = $request['schedule_interval_minutes'] ?? '60';
-        if (!is_scalar($raw) || filter_var($raw, FILTER_VALIDATE_INT, ['options' => ['min_range' => 5, 'max_range' => 43200]]) === false) {
+        if (
+            !is_scalar($raw) || filter_var($raw, FILTER_VALIDATE_INT, ['options' => ['min_range' => 5,
+                        'max_range' => 43200]]) === false
+        ) {
             throw new \InvalidArgumentException('La périodicité doit être comprise entre 5 et 43200 minutes.');
         }
         $start = $request['schedule_start_at'] ?? '';

@@ -28,6 +28,7 @@ use GlpiPlugin\Uxconnector\Application\Sync\Service\GetSyncJobForEditService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\GetSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\InboundRecordProcessor;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\JsonPathValueReader;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\JobEntityAccess;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ListSyncExecutionsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\RetryFailedItemsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ResumeSyncExecutionService;
@@ -48,11 +49,16 @@ use GlpiPlugin\Uxconnector\Application\Sync\Service\RunActiveSyncJobsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\RunQueuedExecutionsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\UpdateSyncJobService;
 use GlpiPlugin\Uxconnector\Domain\Sync\Policy\TargetFieldPolicy;
+use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncCheckpointRepositoryInterface;
+use GlpiPlugin\Uxconnector\Domain\Sync\Repository\ExecutionStopRequestRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\InteractionLookupRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\ObjectLinkRepositoryInterface;
-use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncExecutionRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncFailureRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
+use GlpiPlugin\Uxconnector\Infrastructure\Sync\Security\WebhookRequestAuthenticator;
+use GlpiPlugin\Uxconnector\Domain\Sync\Enum\InteractionTrigger;
+use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncJobStatus;
+use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\EngineServiceProvider;
 use GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\GlpiAssetReferencePostProcessor;
 use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\GlpiRestV1LocationSearchOptionCatalog;
@@ -105,17 +111,32 @@ final class SyncServiceProvider
 
     public static function syncJobRepository(): SyncJobRepositoryInterface
     {
-        return new SyncJobRepository(new SyncJobPersistenceMapper());
+        return new SyncJobRepository(new SyncJobPersistenceMapper(EngineServiceProvider::credentialVault()));
     }
 
     public static function interactionLookupRepository(): InteractionLookupRepositoryInterface
     {
-        return new SyncJobRepository(new SyncJobPersistenceMapper());
+        return new SyncJobRepository(new SyncJobPersistenceMapper(EngineServiceProvider::credentialVault()));
+    }
+
+    /** Reads the current GLPI session when a user operates on a synchronization job. */
+    public static function jobEntityAccess(): JobEntityAccess
+    {
+        return new JobEntityAccess(self::syncJobRepository(), static function (?array $ids): bool {
+            if ($ids === null) {
+                $ids = [];
+                foreach ($GLOBALS['DB']->request(['SELECT' => ['id'], 'FROM' => \Entity::getTable()]) as $entity) {
+                    $ids[] = (int) $entity['id'];
+                }
+            }
+
+            return $ids !== [] && \Session::haveAccessToAllOfEntities($ids);
+        });
     }
 
     public static function listSyncJobsService(): ListSyncJobsService
     {
-        return new ListSyncJobsService(self::syncJobRepository());
+        return new ListSyncJobsService(self::syncJobRepository(), self::jobEntityAccess());
     }
 
     public static function getSyncJobService(): GetSyncJobService
@@ -136,6 +157,7 @@ final class SyncServiceProvider
             EngineServiceProvider::authConfigRepository(),
             new TargetFieldPolicy(),
             new GlpiTransactionManager($GLOBALS['DB']),
+            self::jobEntityAccess(),
         );
     }
     public static function createSyncJobService(): CreateSyncJobService
@@ -146,6 +168,7 @@ final class SyncServiceProvider
             new TargetFieldPolicy(),
             new GlpiTransactionManager($GLOBALS['DB']),
             new SynchronousEventDispatcher(),
+            self::jobEntityAccess(),
         );
     }
 
@@ -154,7 +177,7 @@ final class SyncServiceProvider
         return new ObjectLinkRepository(new ObjectLinkPersistenceMapper());
     }
 
-    public static function syncCheckpointRepository(): \GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncCheckpointRepositoryInterface
+    public static function syncCheckpointRepository(): SyncCheckpointRepositoryInterface
     {
         return new SyncCheckpointRepository($GLOBALS['DB']);
     }
@@ -164,9 +187,9 @@ final class SyncServiceProvider
         return new SyncFailureRepository($GLOBALS['DB']);
     }
 
-    public static function syncExecutionRepository(): SyncExecutionRepositoryInterface
+    public static function syncExecutionRepository(): SyncExecutionRepository
     {
-        return new SyncExecutionRepository(new SyncExecutionPersistenceMapper());
+        return new SyncExecutionRepository(new SyncExecutionPersistenceMapper(), $GLOBALS['DB']);
     }
 
     public static function listSyncExecutionsService(): ListSyncExecutionsService
@@ -179,14 +202,18 @@ final class SyncServiceProvider
         return new ListSyncFailuresService(self::syncFailureRepository());
     }
 
-    public static function stopRequestRepository(): \GlpiPlugin\Uxconnector\Domain\Sync\Repository\ExecutionStopRequestRepositoryInterface
+    public static function stopRequestRepository(): ExecutionStopRequestRepositoryInterface
     {
         return new ExecutionStopRequestRepository($GLOBALS['DB']);
     }
 
     public static function requestStopSyncExecutionService(): RequestStopSyncExecutionService
     {
-        return new RequestStopSyncExecutionService(self::syncExecutionRepository(), self::stopRequestRepository());
+        return new RequestStopSyncExecutionService(
+            self::syncExecutionRepository(),
+            self::stopRequestRepository(),
+            self::jobEntityAccess(),
+        );
     }
 
     public static function resumeSyncExecutionService(): ResumeSyncExecutionService
@@ -196,12 +223,17 @@ final class SyncServiceProvider
             new GlpiTransactionManager($GLOBALS['DB']),
             new MySqlExecutionMutex($GLOBALS['DB']),
             self::stopRequestRepository(),
+            self::jobEntityAccess(),
         );
     }
 
     public static function retryFailedItemsService(): RetryFailedItemsService
     {
-        return new RetryFailedItemsService(self::syncFailureRepository());
+        return new RetryFailedItemsService(
+            self::syncFailureRepository(),
+            self::syncExecutionRepository(),
+            self::jobEntityAccess(),
+        );
     }
 
     public static function processQueuedFailureRetriesService(): ProcessQueuedFailureRetriesService
@@ -287,11 +319,13 @@ final class SyncServiceProvider
                     $zendeskPostProcessor,
                     new GlpiAssetReferencePostProcessor($GLOBALS['DB'], $objectLinks),
                 ],
-                [$zendeskTopicBatchProcessor, $indigoTelecomProcessor, $indigoNetworkProcessor, $indigoMicrosoftProcessor],
+                [$zendeskTopicBatchProcessor, $indigoTelecomProcessor, $indigoNetworkProcessor,
+                    $indigoMicrosoftProcessor],
                 self::syncFailureRepository(),
             ),
             self::syncCheckpointRepository(),
-            [new GlpiRestV1TelecomLocationResourcePathResolver($glpiRestLocationCatalog), new LegacyLocationProfilePathResolver($profileCatalog)],
+            [new GlpiRestV1TelecomLocationResourcePathResolver($glpiRestLocationCatalog),
+                new LegacyLocationProfilePathResolver($profileCatalog)],
             [$zendeskTopicBatchProcessor],
             self::stopRequestRepository(),
             $workLock,
@@ -310,6 +344,7 @@ final class SyncServiceProvider
             self::syncExecutionRepository(),
             new GlpiTransactionManager($GLOBALS['DB']),
             new MySqlExecutionMutex($GLOBALS['DB']),
+            self::jobEntityAccess(),
         );
     }
 
@@ -352,6 +387,7 @@ final class SyncServiceProvider
             self::syncCheckpointRepository(),
             new GlpiTransactionManager($GLOBALS['DB']),
             new MySqlExecutionMutex($GLOBALS['DB']),
+            self::jobEntityAccess(),
         );
     }
 
@@ -383,6 +419,7 @@ final class SyncServiceProvider
             self::syncExecutionRepository(),
             new GlpiTransactionManager($GLOBALS['DB']),
             self::syncCheckpointRepository(),
+            self::jobEntityAccess(),
         );
     }
 
@@ -413,6 +450,24 @@ final class SyncServiceProvider
             [new ZendeskTopicCategoryBatchProcessor($topicCatalog, $topicCategories)],
             self::syncFailureRepository(),
         );
+    }
+
+    public static function webhookRequestAuthenticator(): WebhookRequestAuthenticator
+    {
+        return WebhookRequestAuthenticator::fromEnvironment(static function (int $id): ?array {
+            $job = self::syncJobRepository()->findById(new SyncJobId($id));
+            if (
+                $job === null || $job->triggerType() !== InteractionTrigger::WEBHOOK
+                || $job->status() !== SyncJobStatus::ACTIVE
+                || $job->direction() !== \GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncDirection::INBOUND
+            ) {
+                return null;
+            }
+
+            $token = $job->webhookKey();
+            $secret = $job->webhookSigningSecret();
+            return $token === null || $secret === null ? null : ['token' => $token, 'signing_secret' => $secret];
+        }, (new Security\WebhookReplayStore($GLOBALS['DB']))->claim(...));
     }
 
     public static function processInboundWebhookService(): ProcessInboundWebhookService
@@ -454,11 +509,18 @@ final class SyncServiceProvider
      */
     public static function activateSyncJobService(): ActivateSyncJobService
     {
-        return new ActivateSyncJobService(self::syncJobRepository(), EngineServiceProvider::authConfigRepository());
+        return new ActivateSyncJobService(
+            self::syncJobRepository(),
+            EngineServiceProvider::authConfigRepository(),
+            self::jobEntityAccess(),
+        );
     }
 
     public static function pauseSyncJobService(): PauseSyncJobService
     {
-        return new PauseSyncJobService(self::syncJobRepository());
+        return new PauseSyncJobService(
+            self::syncJobRepository(),
+            self::jobEntityAccess(),
+        );
     }
 }

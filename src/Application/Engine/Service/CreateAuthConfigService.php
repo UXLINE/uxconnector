@@ -24,6 +24,7 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Repository\AuthConfigRepositoryInterfac
 use GlpiPlugin\Uxconnector\Domain\Engine\Repository\AuthConfigSecretStoreInterface;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\CredentialVaultInterface;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
+use GlpiPlugin\Uxconnector\Domain\Engine\Security\OriginBoundCredential;
 use GlpiPlugin\Uxconnector\Domain\Shared\Event\EventDispatcherInterface;
 use GlpiPlugin\Uxconnector\Domain\Shared\Persistence\TransactionManagerInterface;
 
@@ -56,7 +57,8 @@ final class CreateAuthConfigService
         private readonly DestinationPolicyInterface $destinationPolicy,
         private readonly TransactionManagerInterface $transaction,
         private readonly EventDispatcherInterface $events
-    ) {}
+    ) {
+    }
 
     /**
      * @throws AuthMethodNotSupportedException if the chosen AuthMethod is not
@@ -71,10 +73,12 @@ final class CreateAuthConfigService
      * @throws MissingCredentialException if the chosen AuthMethod requires
      *         a credential and none was supplied.
      */
-    public function execute(CreateAuthConfigCommand $command): AuthConfig
+    public function execute(#[\SensitiveParameter] CreateAuthConfigCommand $command): AuthConfig
     {
         if (!$command->authMethod->isImplemented()) {
-            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod($command->authMethod);
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\AuthMethodNotSupportedException::forMethod(
+                $command->authMethod
+            );
         }
 
         if ($command->authMethod->requiresVaultedCredentials() && !$command->endpoint->isSecure()) {
@@ -87,7 +91,9 @@ final class CreateAuthConfigService
         $this->destinationPolicy->assertAllowed($command->endpoint);
 
         if ($command->authMethod->requiresVaultedCredentials() && $command->plaintextSecret === null) {
-            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod($command->authMethod);
+            throw \GlpiPlugin\Uxconnector\Application\Engine\Exception\MissingCredentialException::forAuthMethod(
+                $command->authMethod
+            );
         }
 
         $this->transaction->begin();
@@ -106,7 +112,11 @@ final class CreateAuthConfigService
             $authConfig = $this->repository->save($authConfig);
 
             if ($command->plaintextSecret !== null) {
-                $protectedSecret = $this->vault->protect($command->plaintextSecret);
+                $protectedSecret = $this->vault->protect(OriginBoundCredential::wrap(
+                    $command->endpoint,
+                    $command->authMethod,
+                    $command->plaintextSecret,
+                ));
                 $authConfigId = $authConfig->id();
                 if ($authConfigId === null) {
                     throw new \RuntimeException(

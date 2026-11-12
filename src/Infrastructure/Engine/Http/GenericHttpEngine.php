@@ -15,6 +15,7 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Resilience\ErrorClassification;
 use GlpiPlugin\Uxconnector\Domain\Engine\Resilience\RetryPolicy;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\CredentialVaultInterface;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
+use GlpiPlugin\Uxconnector\Domain\Engine\Security\OriginBoundCredential;
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication\AuthenticationStrategyFactory;
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication\RenewableSessionAuthenticationStrategy;
 
@@ -37,7 +38,8 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
         private readonly DestinationPolicyInterface $destinationPolicy,
         private readonly RetryPolicy $retryPolicy = new RetryPolicy(),
         private readonly ErrorClassification $errorClassification = new ErrorClassification()
-    ) {}
+    ) {
+    }
 
     public function execute(AuthConfig $authConfig, HttpRequest $request): HttpResponse
     {
@@ -71,7 +73,8 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
                 continue;
             }
 
-            if ($strategy instanceof RenewableSessionAuthenticationStrategy
+            if (
+                $strategy instanceof RenewableSessionAuthenticationStrategy
                 && !$authRenewed
                 && $strategy->responseRequiresRenewal($response)
             ) {
@@ -80,7 +83,11 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
                 continue;
             }
 
-            if (!$this->errorClassification->isRetryableStatus($response->statusCode) || $attempt >= $this->retryPolicy->maxAttempts) {
+            if (
+                !$this->errorClassification->isRetryableStatus(
+                    $response->statusCode
+                ) || $attempt >= $this->retryPolicy->maxAttempts
+            ) {
                 return $response;
             }
 
@@ -132,7 +139,11 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
         if ($protectedSecret === null) {
             throw HttpEngineException::missingCredential($authConfig->authMethod());
         }
-        return $this->vault->reveal($protectedSecret);
+        return OriginBoundCredential::unwrap(
+            $authConfig->endpoint(),
+            $authConfig->authMethod(),
+            $this->vault->reveal($protectedSecret),
+        );
     }
 
     private function buildUrl(AuthConfig $authConfig, HttpRequest $request): string

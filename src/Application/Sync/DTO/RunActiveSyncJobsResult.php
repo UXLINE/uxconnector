@@ -32,7 +32,8 @@ final readonly class RunActiveSyncJobsResult
         public int $succeeded,
         public int $failed,
         public array $errors = []
-    ) {}
+    ) {
+    }
 
     public function hasRun(): bool
     {

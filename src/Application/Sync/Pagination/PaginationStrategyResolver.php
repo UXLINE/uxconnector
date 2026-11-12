@@ -10,7 +10,9 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\PaginationConfig;
 
 final class PaginationStrategyResolver
 {
-    public function __construct(private readonly JsonPathValueReader $reader) {}
+    public function __construct(private readonly JsonPathValueReader $reader)
+    {
+    }
 
     public function resolve(PaginationConfig $config): PaginationStrategyInterface
     {

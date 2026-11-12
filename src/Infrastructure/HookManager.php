@@ -124,16 +124,21 @@ final class HookManager
 
         $PLUGIN_HOOKS[Hooks::SECURED_FIELDS]['uxconnector'] = [
             'glpi_plugin_uxconnector_authconfig_secrets.protected_secret',
+            'glpi_plugin_uxconnector_syncjobs.webhook_token_secret',
+            'glpi_plugin_uxconnector_syncjobs.webhook_signing_secret',
         ];
     }
 
 
-    /** Public endpoint is authenticated by the interaction's 256-bit webhook key. */
+    /**
+     * Only this exact route replaces session authentication with mandatory HMAC and durable replay protection.
+     * Never broaden this pattern to the credential UI or other front scripts. See docs/SECURITY_RC11.md.
+     */
     private static function registerMachineEndpoints(): void
     {
         Firewall::addPluginStrategyForLegacyScripts(
             'uxconnector',
-            '#^/front/(webhook|copilot|copilot-openapi|copilot-search|copilot-context|copilot-capabilities|copilot-ticket-summary|copilot-ticket-trends|copilot-categories|copilot-sla|copilot-sla-breaches|copilot-groups|copilot-technicians|copilot-compare|copilot-incidentology-global|copilot-incidentology-groups|copilot-incidentology-typologies|copilot-semantic-classification|copilot-semantic-prepare|copilot-semantic-finalize)\.php$#',
+            '#^/front/webhook\.php$#',
             Firewall::STRATEGY_NO_CHECK,
         );
     }
@@ -158,5 +163,4 @@ final class HookManager
         $PLUGIN_HOOKS['item_add']['uxconnector'] = $callbacks;
         $PLUGIN_HOOKS['item_update']['uxconnector'] = $callbacks;
     }
-
 }

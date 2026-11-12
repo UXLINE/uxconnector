@@ -18,8 +18,10 @@ use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\EntityAssignmentStrategy
 use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\FieldMappingRequestParser;
 use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\PaginationConfigRequestParser;
 use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\SyncJobController;
+use GlpiPlugin\Uxconnector\Presentation\Sync\Controller\SyncReadAccess;
 
 Session::checkRight('plugin_uxconnector_syncjob', READ);
+SyncReadAccess::requireJob((int) ($_GET['id'] ?? 0));
 
 $controller = new SyncJobController(
     SyncServiceProvider::listSyncJobsService(),

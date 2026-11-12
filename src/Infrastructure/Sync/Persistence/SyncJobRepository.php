@@ -26,7 +26,8 @@ final class SyncJobRepository implements SyncJobRepositoryInterface, Interaction
 {
     public function __construct(
         private readonly SyncJobPersistenceMapper $mapper
-    ) {}
+    ) {
+    }
 
     public function save(SyncJob $syncJob): SyncJob
     {
@@ -52,6 +53,14 @@ final class SyncJobRepository implements SyncJobRepositoryInterface, Interaction
             return $this->mustFindById($syncJobId);
         }
 
+        if (
+            $model->getFromDB($data['id'])
+            && ($model->fields['webhook_key_hash'] ?? null) === $data['webhook_key_hash']
+        ) {
+            // Lifecycle and settings updates must not overwrite an independently rotated signing secret.
+            unset($data['webhook_key_hash'], $data['webhook_token_secret'], $data['webhook_signing_secret']);
+        }
+
         if (!$model->update($data)) {
             throw new \RuntimeException(sprintf(
                 'Failed to update SyncJob #%d.',
@@ -71,6 +80,37 @@ final class SyncJobRepository implements SyncJobRepositoryInterface, Interaction
         }
 
         return $this->mapper->toDomain($model->fields);
+    }
+
+    public function rotateWebhookSigningSecret(SyncJob $expected, string $newSecret): void
+    {
+        $model = new SyncJobItem();
+        $id = $expected->id()?->value();
+        if ($id === null || !$model->getFromDB($id)) {
+            throw new \DomainException('The webhook no longer exists.');
+        }
+
+        $current = $this->mapper->toDomain($model->fields);
+        if (
+            $current->triggerType() !== InteractionTrigger::WEBHOOK
+            || $current->direction() !== SyncDirection::INBOUND
+            || $current->webhookSigningSecret() !== $expected->webhookSigningSecret()
+            || $current->entityAssignmentStrategy() != $expected->entityAssignmentStrategy()
+        ) {
+            throw new \DomainException('The webhook has changed. Reopen the connection and try again.');
+        }
+
+        $fields = array_intersect_key($model->fields, array_flip([
+            'id', 'trigger_type', 'direction', 'webhook_key_hash', 'webhook_signing_secret',
+            'entity_assignment_strategy',
+        ]));
+        $db = $GLOBALS['DB'];
+        $db->update(SyncJobItem::getTable(), [
+            'webhook_signing_secret' => $this->mapper->protectWebhookSecret($newSecret),
+        ], $fields);
+        if ($db->affectedRows() !== 1) {
+            throw new \DomainException('The webhook has changed. Reopen the connection and try again.');
+        }
     }
 
     /**
@@ -113,7 +153,7 @@ final class SyncJobRepository implements SyncJobRepositoryInterface, Interaction
         }
 
         $rows = (new SyncJobItem())->find([
-            'webhook_key' => $webhookKey,
+            'webhook_key_hash' => SyncJobPersistenceMapper::webhookKeyHash($webhookKey),
             'status' => SyncJobStatus::ACTIVE->value,
             'trigger_type' => InteractionTrigger::WEBHOOK->value,
             'direction' => SyncDirection::INBOUND->value,

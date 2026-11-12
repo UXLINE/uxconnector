@@ -14,31 +14,18 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Sync\Security;
 
-/**
- * Authenticates inbound webhook requests without coupling the public endpoint
- * to a specific external provider.
- *
- * Backward compatibility:
- * - the historical X-UXConnector-Webhook-Key bearer header remains accepted;
- * - legacy ?key=... support is disabled by default and can be re-enabled with
- *   UXCONNECTOR_ALLOW_LEGACY_WEBHOOK_QUERY_KEY=1 during a migration window.
- *
- * Optional hardened mode:
- * - set UXCONNECTOR_REQUIRE_WEBHOOK_HMAC=1;
- * - send X-UXConnector-Timestamp and X-UXConnector-Signature;
- * - signature = HMAC-SHA256("<timestamp>.<raw body>", webhook key).
- *
- * When signature headers are supplied, they are always verified, even when
- * hardened mode is not globally required. This lets integrations migrate to
- * signed requests without a flag day.
- */
+/** Requires a fresh, single-use HMAC signature bound to a public job ID and raw body. */
 final class WebhookRequestAuthenticator
 {
     public const DEFAULT_MAX_CLOCK_SKEW_SECONDS = 300;
 
+    /**
+     * @param \Closure(int): ?array{token: string, signing_secret: string} $loadCredentials
+     * @param \Closure(string, int, int): bool $claimRequest Durable, atomic replay reservation.
+     */
     public function __construct(
-        private readonly bool $requireHmac = false,
-        private readonly bool $allowLegacyQueryKey = false,
+        private readonly \Closure $loadCredentials,
+        private readonly \Closure $claimRequest,
         private readonly int $maxClockSkewSeconds = self::DEFAULT_MAX_CLOCK_SKEW_SECONDS
     ) {
         if ($this->maxClockSkewSeconds < 1) {
@@ -46,71 +33,84 @@ final class WebhookRequestAuthenticator
         }
     }
 
-    public static function fromEnvironment(): self
+    /**
+     * @param \Closure(int): ?array{token: string, signing_secret: string} $loadCredentials
+     * @param \Closure(string, int, int): bool $claimRequest
+     */
+    public static function fromEnvironment(\Closure $loadCredentials, \Closure $claimRequest): self
     {
         return new self(
-            requireHmac: getenv('UXCONNECTOR_REQUIRE_WEBHOOK_HMAC') === '1',
-            allowLegacyQueryKey: getenv('UXCONNECTOR_ALLOW_LEGACY_WEBHOOK_QUERY_KEY') === '1',
-            maxClockSkewSeconds: self::environmentClockSkew(),
+            $loadCredentials,
+            $claimRequest,
+            self::environmentClockSkew(),
         );
     }
 
-    /**
-     * @param array<string, mixed> $server
-     * @param array<string, mixed> $query
-     */
-    public function authenticate(array $server, array $query, string $rawBody, ?int $now = null): string
+    public static function requiresHmac(): bool
     {
-        $key = strtolower(trim((string) ($server['HTTP_X_UXCONNECTOR_WEBHOOK_KEY'] ?? '')));
-
-        if ($key === '' && $this->allowLegacyQueryKey) {
-            $key = strtolower(trim((string) ($query['key'] ?? '')));
-        }
-
-        if (preg_match('/^[a-f0-9]{64}$/D', $key) !== 1) {
-            throw new \RuntimeException('Unknown webhook interaction.');
-        }
-
-        $timestamp = trim((string) ($server['HTTP_X_UXCONNECTOR_TIMESTAMP'] ?? ''));
-        $signature = trim((string) ($server['HTTP_X_UXCONNECTOR_SIGNATURE'] ?? ''));
-        $hasSignatureMaterial = $timestamp !== '' || $signature !== '';
-
-        if ($this->requireHmac || $hasSignatureMaterial) {
-            $this->assertValidHmac($key, $timestamp, $signature, $rawBody, $now ?? time());
-        }
-
-        return $key;
+        // Compatibility accessor for the UI. A server variable cannot disable signatures anymore.
+        return true;
     }
 
-    private function assertValidHmac(
-        string $key,
-        string $timestamp,
-        string $signature,
-        string $rawBody,
-        int $now
-    ): void {
-        if (preg_match('/^\d{10,}$/D', $timestamp) !== 1) {
-            throw new \RuntimeException('Missing or invalid webhook timestamp.');
+    /** @param array<string, mixed> $server */
+    public function authenticate(
+        #[\SensitiveParameter] array $server,
+        #[\SensitiveParameter] string $rawBody,
+        ?int $now = null
+    ): string {
+        $key = strtolower(trim((string) ($server['HTTP_X_UXCONNECTOR_WEBHOOK_KEY'] ?? '')));
+        $publicId = trim((string) ($server['HTTP_X_UXCONNECTOR_WEBHOOK_ID'] ?? ''));
+        $timestamp = trim((string) ($server['HTTP_X_UXCONNECTOR_TIMESTAMP'] ?? ''));
+        $signature = trim((string) ($server['HTTP_X_UXCONNECTOR_SIGNATURE'] ?? ''));
+        if ($key !== '') {
+            throw new \RuntimeException('Signed webhook requests must not contain a bearer key.');
         }
+        return $this->authenticateSignature($publicId, $timestamp, $signature, $rawBody, $now ?? time());
+    }
 
-        $timestampValue = (int) $timestamp;
-        if (abs($now - $timestampValue) > $this->maxClockSkewSeconds) {
+    private function authenticateSignature(
+        string $publicId,
+        string $timestamp,
+        #[\SensitiveParameter] string $signature,
+        #[\SensitiveParameter] string $rawBody,
+        int $now
+    ): string {
+        $jobId = filter_var($publicId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($jobId === false || (string) $jobId !== $publicId || preg_match('/^[0-9]{10}$/D', $timestamp) !== 1) {
+            throw new \RuntimeException('Invalid signed webhook identifier or timestamp.');
+        }
+        if (abs($now - (int) $timestamp) > $this->maxClockSkewSeconds) {
             throw new \RuntimeException('Webhook timestamp is outside the accepted freshness window.');
         }
 
-        if (str_starts_with(strtolower($signature), 'sha256=')) {
+        $signature = strtolower($signature);
+        if (str_starts_with($signature, 'sha256=')) {
             $signature = substr($signature, 7);
         }
-
-        $signature = strtolower($signature);
         if (preg_match('/^[a-f0-9]{64}$/D', $signature) !== 1) {
             throw new \RuntimeException('Missing or invalid webhook signature.');
         }
 
-        $expected = hash_hmac('sha256', $timestamp . '.' . $rawBody, $key);
-        if (!hash_equals($expected, $signature)) {
+        $credentials = ($this->loadCredentials)($jobId);
+        if ($credentials === null) {
+            throw new \RuntimeException('Unknown webhook interaction.');
+        }
+        foreach (['token', 'signing_secret'] as $field) {
+            if (preg_match('/^[a-f0-9]{64}$/D', $credentials[$field] ?? '') !== 1) {
+                throw new \RuntimeException('Webhook credential unavailable.');
+            }
+        }
+        $message = $publicId . '.' . $timestamp . '.' . $rawBody;
+        if (!hash_equals(hash_hmac('sha256', $message, $credentials['signing_secret']), $signature)) {
             throw new \RuntimeException('Invalid webhook signature.');
         }
+
+        $fingerprint = hash('sha256', $publicId . '.' . $timestamp . '.' . $signature);
+        if (!(($this->claimRequest)($fingerprint, (int) $timestamp + $this->maxClockSkewSeconds, $now))) {
+            throw new WebhookReplayException('Webhook request already received.');
+        }
+
+        return $credentials['token'];
     }
 
     private static function environmentClockSkew(): int

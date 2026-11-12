@@ -13,8 +13,10 @@ final class RequestStopSyncExecutionService
 {
     public function __construct(
         private readonly SyncExecutionRepositoryInterface $executions,
-        private readonly ExecutionStopRequestRepositoryInterface $stopRequests
-    ) {}
+        private readonly ExecutionStopRequestRepositoryInterface $stopRequests,
+        private readonly ?JobEntityAccess $entityAccess = null
+    ) {
+    }
 
     public function execute(SyncExecutionId $id): void
     {
@@ -22,6 +24,7 @@ final class RequestStopSyncExecutionService
         if ($execution === null) {
             throw new \RuntimeException('Synchronization execution not found.');
         }
+        $this->entityAccess?->assertJobId($execution->syncJobId());
         if ($execution->status() !== SyncExecutionStatus::RUNNING) {
             throw new \RuntimeException('Only a running execution can be stopped.');
         }

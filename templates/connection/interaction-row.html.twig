@@ -1,0 +1,26 @@
+<div class="border rounded p-2 mt-3 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-start gap-2">
+        {% if can_manage_jobs %}<input type="checkbox" class="form-check-input mt-1 uxconnector-connection-job-checkbox" value="{{ job.id }}" aria-label="{{ __('Select interaction', 'uxconnector') }} {{ job.name }}">{% endif %}
+        <div>
+            <strong><a href="syncjob.view.php?id={{ job.id|e }}">#{{ job.id|e }} {{ job.name|e }}</a></strong>
+            - {{ job.statusLabel }}<br>
+            <small class="text-muted">{{ job.triggerTypeLabel }} · {{ job.directionLabel }} · {{ job.entityAssignmentSummary }}</small>
+            {% if job.webhookConfigured %}
+                {% include '@uxconnector/connection/webhook-controls.html.twig' %}
+            {% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-1">
+    {% if can_manage_jobs %}
+        {% if job.status != 'active' %}
+            {% if connection.status == 'active' %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-success" name="activate_job">{{ __('Activate', 'uxconnector') }}</button></form>{% else %}<span class="badge bg-secondary">{{ __('Activate connection first', 'uxconnector') }}</span>{% endif %}
+        {% else %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-warning" name="pause_job">{{ __('Pause', 'uxconnector') }}</button></form>{% endif %}
+        {% if job.triggerType == 'polling' and job.direction == 'inbound' %}
+            <form method="post" class="uxconnector-run-form"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-primary" name="run_job" value="1">{{ __('Run now', 'uxconnector') }}</button></form>
+            <form method="post" class="uxconnector-run-form"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-warning" name="full_replay_job" value="1" onclick="return confirm('{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('js') }}')">{{ __('Replay from start', 'uxconnector') }}</button></form>
+        {% endif %}
+    {% endif %}
+    <a class="btn btn-sm btn-outline-secondary" href="syncjob.php?history=1&id={{ job.id }}">{{ __('History', 'uxconnector') }}</a>
+    {% if can_delete_jobs %}<form method="post"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}"><input type="hidden" name="connection_id" value="{{ connection.id }}"><input type="hidden" name="job_id" value="{{ job.id }}"><button class="btn btn-sm btn-outline-danger" name="delete_job" onclick="return confirm('{{ __('Delete this interaction?', 'uxconnector')|e('js') }}')">{{ __('Delete', 'uxconnector') }}</button></form>{% endif %}
+    </div>
+</div>

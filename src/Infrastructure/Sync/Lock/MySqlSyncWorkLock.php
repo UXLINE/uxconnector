@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GlpiPlugin\Uxconnector\Infrastructure\Sync\Lock;
 
 use DBmysql;
+use Glpi\DBAL\QueryExpression;
 use GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncExecutionOwnershipLostException;
 use GlpiPlugin\Uxconnector\Domain\Sync\Entity\SyncJob;
 use GlpiPlugin\Uxconnector\Domain\Sync\Service\SyncWorkLockInterface;
@@ -12,10 +13,15 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Service\SyncWorkLockInterface;
 /** MySQL connection-scoped ownership, automatically released on disconnect. */
 final class MySqlSyncWorkLock implements SyncWorkLockInterface
 {
+    private const LOCK_PREFIX = 'uxc29:';
+    private const NATIVE_HASH_LENGTH = 24;
+
     /** @var list<string> */
     private array $held = [];
 
-    public function __construct(private readonly DBmysql $db) {}
+    public function __construct(private readonly DBmysql $db)
+    {
+    }
 
     public function acquire(SyncJob $job): bool
     {
@@ -32,34 +38,34 @@ final class MySqlSyncWorkLock implements SyncWorkLockInterface
             'job:' . $id->value(),
             'target:' . $job->authConfigReference()->value() . ':' . $job->targetItemtype()->value,
         ];
+        // GLPI prepends the database name. Respect both engines' lock name limits.
+        $suffixLength = 1 + strlen(self::LOCK_PREFIX) + self::NATIVE_HASH_LENGTH;
+        $databaseName = $this->db->dbdefault;
+        if (
+            mb_strlen($databaseName, 'UTF-8') + $suffixLength > 64
+            && (
+                strlen($databaseName) + $suffixLength > 192
+                || $this->db->getVersionAndServer()['server'] !== 'MariaDB'
+            )
+        ) {
+            throw new \RuntimeException(
+                'The database name is too long for GLPI worker locks. '
+                . 'Use at most 33 characters on MySQL or 161 bytes on MariaDB.'
+            );
+        }
         try {
             foreach ($keys as $key) {
-                // Only a fixed-length hexadecimal hash enters SQL. DATABASE()
-                // isolates independent GLPI databases on a shared MySQL server.
-                $hash = hash('sha256', $key);
-                $result = $this->db->doQuery("SELECT GET_LOCK(" . $this->nameExpression($hash) . ", 0) AS acquired");
-                $row = $result === false ? false : $this->db->fetchAssoc($result);
-                if (!is_array($row) || !array_key_exists('acquired', $row) || $row['acquired'] === null) {
-                    throw new \RuntimeException('Unable to acquire synchronization worker ownership.');
-                }
-                if ((int) $row['acquired'] !== 1) {
+                if (!$this->acquireKey($key)) {
                     $this->release();
                     return false;
                 }
-                $this->held[] = $hash;
             }
             $configured = getenv('UXCONNECTOR_MAX_CONCURRENT_JOBS');
-            $maximum = filter_var($configured, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 8]]);
+            $maximum = filter_var($configured, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1,
+                        'max_range' => 8]]);
             $maximum = $maximum === false ? 2 : $maximum;
             for ($slot = 1; $slot <= $maximum; ++$slot) {
-                $hash = hash('sha256', 'slot:' . $slot);
-                $result = $this->db->doQuery('SELECT GET_LOCK(' . $this->nameExpression($hash) . ', 0) AS acquired');
-                $row = $result === false ? false : $this->db->fetchAssoc($result);
-                if (!is_array($row) || !array_key_exists('acquired', $row) || $row['acquired'] === null) {
-                    throw new \RuntimeException('Unable to acquire a synchronization worker slot.');
-                }
-                if ((int) $row['acquired'] === 1) {
-                    $this->held[] = $hash;
+                if ($this->acquireKey('slot:' . $slot)) {
                     return true;
                 }
             }
@@ -75,11 +81,11 @@ final class MySqlSyncWorkLock implements SyncWorkLockInterface
     {
         $held = array_reverse($this->held);
         $this->held = [];
-        foreach ($held as $hash) {
+        foreach ($held as $name) {
             // A broken DB connection has already released its named locks.
             // Do not conceal the job's original exception during cleanup.
             try {
-                $this->db->doQuery('SELECT RELEASE_LOCK(' . $this->nameExpression($hash) . ')');
+                $this->db->releaseLock($name);
             } catch (\Throwable) {
             }
         }
@@ -90,16 +96,32 @@ final class MySqlSyncWorkLock implements SyncWorkLockInterface
         if (count($this->held) !== 3) {
             throw new SyncExecutionOwnershipLostException('Synchronization worker no longer owns its locks.');
         }
-        $checks = array_map(fn(string $hash): string => 'IS_USED_LOCK(' . $this->nameExpression($hash) . ') = CONNECTION_ID()', $this->held);
-        $result = $this->db->doQuery('SELECT (' . implode(' AND ', $checks) . ') AS owned');
-        $row = $result === false ? false : $this->db->fetchAssoc($result);
-        if (!is_array($row) || (int) ($row['owned'] ?? 0) !== 1) {
-            throw new SyncExecutionOwnershipLostException('Synchronization worker database ownership was lost.');
+        $checks = [];
+        foreach ($this->held as $name) {
+            $fullName = $this->db->dbdefault . '.' . $name;
+            $checks[] = 'IS_USED_LOCK(' . $this->db->quote($fullName) . ') = CONNECTION_ID()';
         }
+        $result = $this->db->request([
+            'SELECT' => [new QueryExpression('(' . implode(' AND ', $checks) . ') AS owned')],
+            'FROM' => new QueryExpression('DUAL'),
+        ]);
+        foreach ($result as $row) {
+            if ((int) ($row['owned'] ?? 0) === 1) {
+                return;
+            }
+        }
+        throw new SyncExecutionOwnershipLostException('Synchronization worker database ownership was lost.');
     }
 
-    private function nameExpression(string $hash): string
+    private function acquireKey(string $key): bool
     {
-        return "CONCAT('uxc29:', SHA1(CONCAT(DATABASE(), ':', '" . $hash . "')))";
+        $hash = sha1($this->db->dbdefault . ':' . hash('sha256', $key));
+        $name = self::LOCK_PREFIX . substr($hash, 0, self::NATIVE_HASH_LENGTH);
+        if (!$this->db->getLock($name)) {
+            return false;
+        }
+
+        $this->held[] = $name;
+        return true;
     }
 }

@@ -23,7 +23,9 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ExternalId;
 /** Builds/reconciles the GLPI ITIL category hierarchy from Zendesk topic labels. */
 final class ZendeskTopicCategoryService implements ZendeskTopicCategoryWriterInterface
 {
-    public function __construct(private readonly ObjectLinkRepositoryInterface $objectLinks) {}
+    public function __construct(private readonly ObjectLinkRepositoryInterface $objectLinks)
+    {
+    }
 
     public function ensureForTopic(SyncJob $syncJob, string $topicValue, string $label): ?int
     {
@@ -94,11 +96,13 @@ final class ZendeskTopicCategoryService implements ZendeskTopicCategoryWriterInt
                 $currentParent = (int) ($category->fields['itilcategories_id'] ?? 0);
                 $currentName = (string) ($category->fields['name'] ?? '');
                 if ($currentParent !== $parentId || $currentName !== $segment) {
-                    if (!$category->update([
+                    if (
+                        !$category->update([
                         'id' => $categoryId,
                         'name' => $segment,
                         'itilcategories_id' => $parentId,
-                    ])) {
+                        ])
+                    ) {
                         return null;
                     }
                     if ($isLeaf) {

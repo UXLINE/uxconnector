@@ -28,7 +28,8 @@ final readonly class CredentialVaultRekeyResult
         public int $skipped,
         public int $failed,
         public array $errors = []
-    ) {}
+    ) {
+    }
 
     public function isFullySuccessful(): bool
     {

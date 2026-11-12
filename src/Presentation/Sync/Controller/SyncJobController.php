@@ -68,7 +68,8 @@ final class SyncJobController extends AbstractController
         private readonly ?QueueSyncJobService $queueSyncJob = null,
         private readonly ?QueueFullReplayService $queueFullReplay = null,
         private readonly ?TargetFieldsCatalogInterface $fieldsCatalog = null
-    ) {}
+    ) {
+    }
 
     /**
      * Displays every configured SyncJob.
@@ -108,7 +109,10 @@ final class SyncJobController extends AbstractController
             $targetFieldCatalog[] = [
                 'value' => $itemtype->value,
                 'label' => $itemtype->label(),
-                'writable' => array_merge($targetFieldPolicy->allowedWritableFields($itemtype), ($this->fieldsCatalog?->writableFor(ltrim($itemtype->glpiClassName(), '\\')) ?? [])),
+                'writable' => array_merge(
+                    $targetFieldPolicy->allowedWritableFields($itemtype),
+                    ($this->fieldsCatalog?->writableFor(ltrim($itemtype->glpiClassName(), '\\')) ?? [])
+                ),
                 'matchable' => $targetFieldPolicy->allowedMatchFields($itemtype),
             ];
         }
@@ -155,7 +159,9 @@ final class SyncJobController extends AbstractController
                 : OutboundConfig::none();
             $entityAssignment = $this->entityAssignmentStrategyParser->parse($request);
             if ($direction === SyncDirection::OUTBOUND && $entityAssignment !== null && !$entityAssignment->isFixed()) {
-                throw new \RuntimeException('Advanced outbound interactions support only a fixed GLPI entity as source scope.');
+                throw new \RuntimeException(
+                    'Advanced outbound interactions support only a fixed GLPI entity as source scope.'
+                );
             }
 
             $command = new CreateSyncJobCommand(
@@ -173,7 +179,8 @@ final class SyncJobController extends AbstractController
                 null,
                 null,
                 $trigger,
-                trim((string) ($request['external_object_type'] ?? '')) ?: (string) ($request['target_itemtype'] ?? 'record'),
+                trim((string) ($request['external_object_type'] ?? '')) ?: (string) (
+                    $request['target_itemtype'] ?? 'record'),
                 $outbound,
                 $trigger === InteractionTrigger::WEBHOOK ? bin2hex(random_bytes(32)) : null,
             );
@@ -182,7 +189,10 @@ final class SyncJobController extends AbstractController
 
             Session::addMessageAfterRedirect(
                 $trigger === InteractionTrigger::WEBHOOK
-                    ? __('Webhook interaction created. Open the connection to copy its generated webhook endpoint.', 'uxconnector')
+                    ? __(
+                        'Webhook interaction created. Open the connection to copy its generated webhook endpoint.',
+                        'uxconnector'
+                    )
                     : __('Interaction created.', 'uxconnector'),
             );
 
@@ -191,10 +201,11 @@ final class SyncJobController extends AbstractController
                 ? '/plugins/uxconnector/front/connection.php?id=' . $connectionId
                 : '/plugins/uxconnector/front/syncjob.php');
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
 
             $connectionId = (int) ($request['auth_config_reference'] ?? 0);
-            $this->redirect('/plugins/uxconnector/front/syncjob.form.php' . ($connectionId > 0 ? '?auth_config_id=' . $connectionId : ''));
+            $this->redirect('/plugins/uxconnector/front/syncjob.form.php' . (
+                    $connectionId > 0 ? '?auth_config_id=' . $connectionId : ''));
         }
     }
 
@@ -223,7 +234,10 @@ final class SyncJobController extends AbstractController
 
     private function assertAdvancedInteractionCombination(SyncDirection $direction, InteractionTrigger $trigger): void
     {
-        if ($direction === SyncDirection::INBOUND && !in_array($trigger, [InteractionTrigger::POLLING, InteractionTrigger::WEBHOOK], true)) {
+        if (
+            $direction === SyncDirection::INBOUND && !in_array($trigger, [InteractionTrigger::POLLING,
+                    InteractionTrigger::WEBHOOK], true)
+        ) {
             throw new \RuntimeException('Advanced inbound interactions support polling or webhook triggers.');
         }
         if ($direction === SyncDirection::OUTBOUND && $trigger !== InteractionTrigger::GLPI_EVENT) {
@@ -247,7 +261,7 @@ final class SyncJobController extends AbstractController
 
             Session::addMessageAfterRedirect(__('Synchronization job activated.', 'uxconnector'));
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
 
         $this->redirect('/plugins/uxconnector/front/syncjob.php');
@@ -264,7 +278,7 @@ final class SyncJobController extends AbstractController
 
             Session::addMessageAfterRedirect(__('Synchronization job paused.', 'uxconnector'));
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
 
         $this->redirect('/plugins/uxconnector/front/syncjob.php');
@@ -299,7 +313,7 @@ final class SyncJobController extends AbstractController
                 Session::addMessageAfterRedirect($message, false, WARNING);
             }
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
         $this->redirect('/plugins/uxconnector/front/syncjob.php');
     }
@@ -332,7 +346,7 @@ final class SyncJobController extends AbstractController
                 Session::addMessageAfterRedirect($message, false, WARNING);
             }
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
         $this->redirect('/plugins/uxconnector/front/syncjob.php');
     }
@@ -386,7 +400,7 @@ final class SyncJobController extends AbstractController
                 $execution->id()?->value() ?? 0,
             ));
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
 
         $this->redirect('/plugins/uxconnector/front/syncjob.php');
@@ -401,11 +415,14 @@ final class SyncJobController extends AbstractController
             $id = new SyncJobId((int) ($request['id'] ?? 0));
             $execution = $this->queueFullReplay->execute($id);
             Session::addMessageAfterRedirect(sprintf(
-                __('Checkpoint reset. Full replay queued as execution #%d; existing object links are preserved.', 'uxconnector'),
+                __(
+                    'Checkpoint reset. Full replay queued as execution #%d; existing object links are preserved.',
+                    'uxconnector'
+                ),
                 $execution->id()?->value() ?? 0,
             ));
         } catch (\Throwable $exception) {
-            Session::addMessageAfterRedirect($exception->getMessage(), false, ERROR);
+            Session::addMessageAfterRedirect(htmlescape($exception->getMessage()), false, ERROR);
         }
         $this->redirect('/plugins/uxconnector/front/syncjob.php');
     }
