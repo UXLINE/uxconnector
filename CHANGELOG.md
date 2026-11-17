@@ -1,3 +1,20 @@
+## 2.18.38 RC13
+
+- Corrige le refus de modification des jobs utilisant `asset_identity` avec des mappings valides.
+- Unifie la validation du rapprochement entre création et modification, avant mutation.
+- Conserve les restrictions des mappings invalides et des jobs actifs.
+- Voir docs/releases/RELEASE_NOTES_2.18.38_RC13.md.
+
+## 2.18.38 RC12
+
+- Restreint les téléchargements Zendesk et leurs redirections, y compris le repli authentifié.
+- Épingle les connexions aux adresses DNS validées avec conservation de la vérification TLS.
+- Contrôle le parent, l’entité et l’auteur des suivis génériques avant écriture.
+- Applique l’entité configurée aux imports spécifiques et aux catégories Zendesk ; conserve les lieux dans l’entité de l’équipement.
+- Refuse les reprises à partir de valeurs masquées et renforce la validation de l’éditeur JSON.
+- Corrige le placeholder Twig, les versions User-Agent et l’ancienne commande de rotation partielle.
+- Voir docs/SECURITY_RC12.md pour les changements de comportement et la recette requise.
+
 ## 2.18.38 RC11
 
 - Rend la signature HMAC obligatoire et ajoute une réservation persistante contre le rejeu exact des requêtes signées.

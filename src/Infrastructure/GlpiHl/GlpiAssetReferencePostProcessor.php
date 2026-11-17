@@ -20,12 +20,7 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
     private array $stateCache = [];
 
     /** @var array<string, int> */
-    private array $entityCache = [];
-
-    /** @var array<string, int> */
     private array $locationCache = [];
-
-    private ?string $rootEntityNameCache = null;
 
     public function __construct(
         private readonly DBmysql $db,
@@ -69,13 +64,11 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
         $update = ['id' => $assetLink->itemId()];
         $entityId = $this->currentEntityId($asset);
 
-        if ($this->hasNamedReference($sourceRecord['entity'] ?? null)) {
-            $resolved = $this->resolveEntity($sourceRecord['entity']);
-            if ($resolved === null) {
-                return false;
-            }
-            $entityId = $resolved;
-            $this->queueChangedReference($update, $asset, 'entities_id', $resolved);
+        // Source entity names are descriptive only. The job controls placement;
+        // a post-processor must neither create entities nor attach a foreign location.
+        $configured = $syncJob->entityAssignmentStrategy()?->resolve($sourceRecord);
+        if ($configured !== null && $configured !== $entityId) {
+            return false;
         }
 
         if ($this->hasNamedReference($sourceRecord['status'] ?? null)) {
@@ -127,8 +120,11 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
 
     private function currentEntityId(\CommonDBTM $asset): int
     {
-        $value = $asset->fields['entities_id'] ?? 0;
-        return is_numeric($value) ? max(0, (int) $value) : 0;
+        $value = filter_var($asset->fields['entities_id'] ?? null, FILTER_VALIDATE_INT);
+        if ($value === false || $value < 0) {
+            throw new \RuntimeException('Asset entity is unavailable.');
+        }
+        return $value;
     }
 
     private function hasNamedReference(mixed $reference): bool
@@ -234,81 +230,6 @@ final class GlpiAssetReferencePostProcessor implements InboundRecordPostProcesso
 
         $this->stateCache[$cacheKey] = $parentStateId;
         return $parentStateId;
-    }
-
-    private function rootEntityName(): string
-    {
-        if ($this->rootEntityNameCache !== null) {
-            return $this->rootEntityNameCache;
-        }
-
-        $result = $this->db->request([
-            'SELECT' => ['id', 'name'],
-            'FROM' => 'glpi_entities',
-            'WHERE' => ['id' => 0],
-        ]);
-
-        foreach ($result as $row) {
-            $this->rootEntityNameCache = trim((string) ($row['name'] ?? ''));
-            return $this->rootEntityNameCache;
-        }
-
-        $this->rootEntityNameCache = '';
-        return $this->rootEntityNameCache;
-    }
-
-    /** @param array<string, mixed> $reference */
-    private function resolveEntity(array $reference): ?int
-    {
-        $name = $this->referenceName($reference);
-        if ($name === null) {
-            return null;
-        }
-
-        $segments = $this->splitPath($this->referencePath($reference, $name));
-        if ($segments === []) {
-            return null;
-        }
-
-        $rootName = $this->rootEntityName();
-
-        if ($rootName !== '' && $this->sameName($segments[0], $rootName)) {
-            array_shift($segments);
-        }
-
-        if ($segments === []) {
-            return 0;
-        }
-
-        $cacheKey = $this->normalizeCacheValue(implode(' > ', $segments));
-        if (isset($this->entityCache[$cacheKey])) {
-            return $this->entityCache[$cacheKey];
-        }
-
-        $parentId = 0;
-        foreach ($segments as $segment) {
-            $entity = new \Entity();
-            $existing = $this->findUniqueId($entity->getTable(), [
-                'name' => $segment,
-                'entities_id' => $parentId,
-            ]);
-            if ($existing !== null) {
-                $parentId = $existing;
-                continue;
-            }
-
-            $generatedId = SyncRuntimeGuard::run(static fn() => $entity->add([
-                'name' => $segment,
-                'entities_id' => $parentId,
-            ]));
-            if ($generatedId === false) {
-                return null;
-            }
-            $parentId = (int) $generatedId;
-        }
-
-        $this->entityCache[$cacheKey] = $parentId;
-        return $parentId;
     }
 
     /** @param array<string, mixed> $reference */

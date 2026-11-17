@@ -289,6 +289,7 @@ final class SyncJobEditController extends AbstractController
                 (string) ($row['transform'] ?? ''),
             );
 
+            FieldMappingRequestParser::assertTransform($transform);
             $result[] = new FieldMapping(
                 $source,
                 $target,
@@ -344,7 +345,7 @@ final class SyncJobEditController extends AbstractController
 
         if ($type === 'fixed') {
             return EntityAssignmentStrategy::fixed(
-                (int) ($payload['entity_id'] ?? 0),
+                self::parseEntityId($payload['entity_id'] ?? null),
             );
         }
 
@@ -365,21 +366,37 @@ final class SyncJobEditController extends AbstractController
         $mapping = [];
 
         foreach ($rawMapping as $value => $entityId) {
-            $mapping[(string) $value] = (int) $entityId;
+            $mapping[(string) $value] = self::parseEntityId($entityId);
         }
 
         $unknownPolicy = UnknownEntityPolicy::tryFrom(
             (string) ($payload['unknown_policy'] ?? 'fail'),
-        ) ?? UnknownEntityPolicy::FAIL;
+        );
+        if ($unknownPolicy === null) {
+            throw new \InvalidArgumentException('Unknown entity fallback policy.');
+        }
 
         return EntityAssignmentStrategy::mapped(
             (string) ($payload['source_field'] ?? ''),
             $mapping,
             $unknownPolicy,
             isset($payload['default_entity_id'])
-              ? (int) $payload['default_entity_id']
+              ? self::parseEntityId($payload['default_entity_id'])
               : null,
         );
+    }
+
+    /** Rejects coercions such as a missing ID, boolean, negative number or "10junk". */
+    private static function parseEntityId(mixed $value): int
+    {
+        if ((!is_int($value) && !is_string($value)) || !preg_match('/^[0-9]+$/D', (string) $value)) {
+            throw new \InvalidArgumentException('Entity ID must be a non-negative integer.');
+        }
+        $id = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        if ($id === false) {
+            throw new \InvalidArgumentException('Entity ID is out of range.');
+        }
+        return $id;
     }
 
     private function parseOutbound(string $json): OutboundConfig

@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Zendesk;
 
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
 use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
 
@@ -29,8 +30,10 @@ final class ZendeskAttachmentDownloader
     private string $lastErrorCode = 'ATTACHMENT_HTTP_TRANSPORT';
     private string $lastErrorMessage = 'Unable to retrieve Zendesk attachment.';
 
-    public function __construct(private readonly DestinationPolicyInterface $destinationPolicy)
-    {
+    public function __construct(
+        private readonly DestinationPolicyInterface $destinationPolicy,
+        private readonly Endpoint $zendeskEndpoint
+    ) {
     }
 
     public function lastErrorCode(): string
@@ -69,6 +72,9 @@ final class ZendeskAttachmentDownloader
             }
             $this->error('ATTACHMENT_TOO_MANY_REDIRECTS', 'Attachment exceeded the redirect safety limit.');
             return false;
+        } catch (\Throwable) {
+            $this->error('ATTACHMENT_URL_BLOCKED', 'Attachment destination or transport failed security validation.');
+            return false;
         } finally {
             // The caller owns the file after a successful download. Every failed
             // path removes partial bytes, including DNS, timeout and size aborts.
@@ -81,13 +87,15 @@ final class ZendeskAttachmentDownloader
     /** @return array{success:bool,redirect:?string} */
     private function downloadCurlHop(string $url, string $tempPath): array
     {
+        $destination = PinnedHttpDestination::resolve($url, $this->destinationPolicy);
+        $destination->requirePublicAddresses();
         $handle = @fopen($tempPath, 'wb');
         if ($handle === false) {
             $this->error('ATTACHMENT_TEMP_WRITE_FAILED', 'GLPI temporary directory cannot be written.');
             return ['success' => false, 'redirect' => null];
         }
 
-        $curl = curl_init($url);
+        $curl = curl_init($destination->url);
         if ($curl === false) {
             fclose($handle);
             $this->error('ATTACHMENT_HTTP_TRANSPORT', 'Could not initialize HTTPS attachment download.');
@@ -107,7 +115,7 @@ final class ZendeskAttachmentDownloader
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_USERAGENT => 'UXConnector/2.18.25',
+            CURLOPT_USERAGENT => 'UXConnector/' . PLUGIN_UXCONNECTOR_VERSION,
             CURLOPT_HEADERFUNCTION => static function (
                 $ch,
                 string $line
@@ -159,6 +167,7 @@ final class ZendeskAttachmentDownloader
         }
 
         try {
+            curl_setopt_array($curl, $destination->curlOptions());
             $ok = curl_exec($curl);
             $error = curl_errno($curl);
             $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
@@ -222,15 +231,18 @@ final class ZendeskAttachmentDownloader
     /** @return array{success:bool,redirect:?string} */
     private function downloadStreamHop(string $url, string $tempPath): array
     {
+        $destination = PinnedHttpDestination::resolve($url, $this->destinationPolicy);
+        $destination->requirePublicAddresses();
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET', 'timeout' => self::TIMEOUT_SECONDS,
                 'ignore_errors' => true, 'follow_location' => 0, 'max_redirects' => 0,
-                'header' => "User-Agent: UXConnector/2.18.25\r\n",
+                'header' => 'User-Agent: UXConnector/' . PLUGIN_UXCONNECTOR_VERSION
+                    . "\r\n" . $destination->hostHeader(),
             ],
-            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+            'ssl' => $destination->tlsOptions(),
         ]);
-        $stream = @fopen($url, 'rb', false, $context);
+        $stream = @fopen($destination->streamUrl(), 'rb', false, $context);
         if ($stream === false) {
             $this->error(
                 'ATTACHMENT_STREAM_FAILURE',
@@ -350,17 +362,7 @@ final class ZendeskAttachmentDownloader
         ) {
             return false;
         }
-        $host = (string) $parts['host'];
-        $origin = 'https://' . (str_contains($host, ':') ? '[' . trim($host, '[]') . ']' : $host);
-        if (isset($parts['port'])) {
-            $origin .= ':' . (int) $parts['port'];
-        }
-        try {
-            $this->destinationPolicy->assertAllowed(new Endpoint($origin));
-        } catch (\Throwable) {
-            return false;
-        }
-        return true;
+        return ZendeskAttachmentHostPolicy::allows($url, $this->zendeskEndpoint);
     }
 
     private function error(string $code, string $message): void

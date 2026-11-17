@@ -71,18 +71,7 @@ final class FieldMappingRequestParser
 
             $transform = isset($transforms[$index]) ? trim((string) $transforms[$index]) : '';
 
-            if (
-                $transform !== ''
-                 && !in_array($transform, self::ALLOWED_TRANSFORMS, true)
-                 && !str_starts_with($transform, 'map:')
-                 && preg_match('/^link:[a-z0-9][a-z0-9_.-]{0,63}$/D', $transform) !== 1
-            ) {
-                throw new \InvalidArgumentException(sprintf(
-                    'Unsupported field transform "%s" on row %d.',
-                    $transform,
-                    $index + 1,
-                ));
-            }
+            self::assertTransform($transform);
 
             $mappings[] = new FieldMapping(
                 $sourceField,
@@ -93,5 +82,16 @@ final class FieldMappingRequestParser
         }
 
         return $mappings;
+    }
+    /** Shared by the tabular creation form and JSON edition screen. */
+    public static function assertTransform(string $transform): void
+    {
+        if (
+            $transform !== '' && !in_array($transform, self::ALLOWED_TRANSFORMS, true)
+            && !str_starts_with($transform, 'map:')
+            && preg_match('/^link:[a-z0-9][a-z0-9_.-]{0,63}$/D', $transform) !== 1
+        ) {
+            throw new \InvalidArgumentException('Unsupported field transform.');
+        }
     }
 }

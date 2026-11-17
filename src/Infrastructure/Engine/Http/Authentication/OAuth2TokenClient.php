@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication;
 
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
 use GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
 use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
@@ -150,13 +151,13 @@ final class OAuth2TokenClient
                 $tokenEndpoint->value()
             );
         }
-        $this->destinationPolicy->assertAllowed($tokenEndpoint);
+        $destination = PinnedHttpDestination::resolve($tokenUrl, $this->destinationPolicy);
 
         $body = http_build_query(array_filter(
             $fields,
             static fn(mixed $value): bool => $value !== null && $value !== '',
         ));
-        $headers = ['Content-Type: application/x-www-form-urlencoded', ...$extraHeaders];
+        $headers = [$destination->hostHeader(), 'Content-Type: application/x-www-form-urlencoded', ...$extraHeaders];
         $context = stream_context_create([
             'http' => [
                 'method' => 'POST',
@@ -167,11 +168,11 @@ final class OAuth2TokenClient
                 'follow_location' => 0,
                 'max_redirects' => 0,
             ],
-            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+            'ssl' => $destination->tlsOptions(),
         ]);
 
         $deadline = hrtime(true) + self::TIMEOUT_SECONDS * 1_000_000_000;
-        $stream = @fopen($tokenUrl, 'rb', false, $context);
+        $stream = @fopen($destination->streamUrl(), 'rb', false, $context);
         if ($stream === false) {
             throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure(
                 'Unable to contact the OAuth2 token endpoint.',

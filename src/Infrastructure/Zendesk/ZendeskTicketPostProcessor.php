@@ -1140,7 +1140,7 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
         // as paths. Zendesk authorization must not be forwarded to CDN hosts.
         $tempName = 'uxc-zd-' . bin2hex(random_bytes(10)) . '-' . $fileName;
         $tempPath = rtrim((string) GLPI_TMP_DIR, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $tempName;
-        $downloader = new ZendeskAttachmentDownloader($this->destinationPolicy);
+        $downloader = new ZendeskAttachmentDownloader($this->destinationPolicy, $authConfig->endpoint());
         if ($downloader->download($contentUrl, $tempPath)) {
             return $tempName;
         }
@@ -1148,6 +1148,10 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
         $directCode = $downloader->lastErrorCode();
         $current = $contentUrl;
         for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
+            if (!ZendeskAttachmentHostPolicy::allows($current, $authConfig->endpoint())) {
+                $this->failWith('ATTACHMENT_URL_BLOCKED', 'Attachment destination is not an approved Zendesk host.');
+                return null;
+            }
             $relative = $this->relativePathFromZendeskUrl($authConfig->endpoint()->value(), $current);
             if ($relative === '') {
                 // CDN request is deliberately anonymous, with HTTPS and SSRF checks.
@@ -1158,7 +1162,11 @@ final class ZendeskTicketPostProcessor implements InboundRecordPostProcessorInte
                 return null;
             }
             try {
-                $response = $this->httpEngine->execute($authConfig, new HttpRequest(HttpMethod::GET, $relative));
+                $response = $this->httpEngine->execute($authConfig, new HttpRequest(
+                    HttpMethod::GET,
+                    $relative,
+                    requirePublicDestination: true
+                ));
                 if ($response->isSuccessful()) {
                     $contentType = strtolower((string) $response->header('Content-Type'));
                     $looksHtml = preg_match('/^\s*(?:<!doctype\s+html|<html\b)/i', substr(

@@ -74,9 +74,11 @@ final class IndigoMicrosoftLicenseBatchProcessor extends AbstractLegacyLocationB
             }
         }
         $this->stage = 'software_resolution';
-        $software = $this->firstUnique('glpi_softwares', ['name' => $product, 'entities_id' => 0, 'is_deleted' => 0]);
+        $software = $this->firstUnique('glpi_softwares', [
+            'name' => $product, 'entities_id' => $this->targetEntityId, 'is_deleted' => 0,
+        ]);
         if ($software === null) {
-            $softwareId = (int) (new \Software())->add(['name' => $product, 'entities_id' => 0]);
+            $softwareId = (int) (new \Software())->add(['name' => $product, 'entities_id' => $this->targetEntityId]);
             if ($softwareId <= 0) {
                 throw new \RuntimeException('TARGET_SOFTWARE_CREATE_FAILED');
             }
@@ -104,7 +106,7 @@ final class IndigoMicrosoftLicenseBatchProcessor extends AbstractLegacyLocationB
             $id = (int) $item->add([
                 'name' => $product . ' / ' . $beneficiary . ' [source ' . $sourceId . ']',
                 'softwares_id' => $softwareId,
-                'entities_id' => 0,
+                'entities_id' => $this->targetEntityId,
                 // An assigned unit per row, not an inferred purchased pool.
                 'number' => 1,
             ]);

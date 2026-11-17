@@ -1,3 +1,5 @@
+> Note historique RC11. Pour cette livraison, consulter [SECURITY_RC12.md](SECURITY_RC12.md).
+
 # Revue ciblée UXConnector 2.18.38 RC11
 
 Cette candidate renforce les contrôles associés aux huit signaux relevés dans la RC10. Un signal du scanner est une demande de revue, pas la preuve d’une vulnérabilité. Le scanner générique est conservé sans exception ajoutée et peut donc afficher ces huit signaux après correction. Cette revue ne vaut ni homologation TECLIB, ni audit exhaustif de l’application.

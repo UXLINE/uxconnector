@@ -10,6 +10,17 @@ final class SourceSnapshotSanitizer
     private const SECRET_FRAGMENTS = ['authorization','token','password','passwd','secret','api_key','apikey','cookie',
         'session','puk','pin','iccid'];
 
+    /** Redacted audit evidence must never be reused as an authoritative source record. */
+    public static function isReplayable(array $record): bool
+    {
+        foreach ($record as $value) {
+            if ($value === '[REDACTED]' || (is_array($value) && !self::isReplayable($value))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public function encode(array $record): ?string
     {
         $redacted = $this->redact($record);

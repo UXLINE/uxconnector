@@ -37,6 +37,14 @@ final class ZendeskTopicCategoryService implements ZendeskTopicCategoryWriterInt
         string $topicValue,
         string $label
     ): ?ZendeskTopicCategoryOutcome {
+        $strategy = $syncJob->entityAssignmentStrategy();
+        if ($strategy === null || !$strategy->isFixed()) {
+            throw new \RuntimeException('Zendesk topic import requires an explicit fixed entity.');
+        }
+        $entityId = $strategy->resolve([]);
+        if ($entityId === null || !(new \Entity())->getFromDB($entityId)) {
+            throw new \RuntimeException('Zendesk topic target entity is unavailable.');
+        }
         $topicValue = trim($topicValue);
         $label = trim($label);
         if ($topicValue === '' || $label === '') {
@@ -75,9 +83,9 @@ final class ZendeskTopicCategoryService implements ZendeskTopicCategoryWriterInt
                ? $topicValue
                : 'path:' . sha1(implode('::', $path));
 
-            $categoryId = $this->resolveLinkedCategory($syncJob, $externalType, $externalId);
+            $categoryId = $this->resolveLinkedCategory($syncJob, $externalType, $externalId, $entityId);
             if ($categoryId === null) {
-                $resolution = $this->findOrCreateCategoryWithOutcome($segment, $parentId);
+                $resolution = $this->findOrCreateCategoryWithOutcome($segment, $parentId, $entityId);
                 if ($resolution === null) {
                     return null;
                 }
@@ -122,8 +130,12 @@ final class ZendeskTopicCategoryService implements ZendeskTopicCategoryWriterInt
         return $leafId !== null ? new ZendeskTopicCategoryOutcome($leafId, $leafAction) : null;
     }
 
-    private function resolveLinkedCategory(SyncJob $syncJob, string $externalType, string $externalId): ?int
-    {
+    private function resolveLinkedCategory(
+        SyncJob $syncJob,
+        string $externalType,
+        string $externalId,
+        int $entityId
+    ): ?int {
         $link = $this->objectLinks->findByExternalId(
             $syncJob->authConfigReference(),
             $externalType,
@@ -141,18 +153,22 @@ final class ZendeskTopicCategoryService implements ZendeskTopicCategoryWriterInt
             return null;
         }
 
+        if ((int) ($category->fields['entities_id'] ?? -1) !== $entityId) {
+            throw new \RuntimeException('Linked Zendesk category is outside the interaction entity.');
+        }
         return $link->itemId();
     }
 
     private function findOrCreateCategoryWithOutcome(
         string $name,
-        int $parentId
+        int $parentId,
+        int $entityId
     ): ?ZendeskTopicCategoryOutcome {
         $model = new \ITILCategory();
         $matches = $model->find([
             'name' => $name,
             'itilcategories_id' => $parentId,
-            'entities_id' => 0,
+            'entities_id' => $entityId,
         ], ['id ASC'], 2);
 
         if (count($matches) > 1) {
@@ -166,8 +182,8 @@ final class ZendeskTopicCategoryService implements ZendeskTopicCategoryWriterInt
         $generatedId = $model->add([
             'name' => $name,
             'itilcategories_id' => $parentId,
-            'entities_id' => 0,
-            'is_recursive' => 1,
+            'entities_id' => $entityId,
+            'is_recursive' => 0,
             'is_helpdeskvisible' => 1,
             'is_incident' => 1,
             'is_request' => 1,

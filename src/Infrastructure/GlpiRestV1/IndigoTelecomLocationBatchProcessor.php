@@ -28,6 +28,8 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ExternalId;
  */
 final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchProcessorInterface
 {
+    private ?int $targetEntityId = null;
+
     private const TEMPLATE_ID = GlpiRestV1TelecomLocationResourcePathResolver::TEMPLATE_ID;
 
     public function __construct(
@@ -92,6 +94,7 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
                 continue;
             }
             try {
+                $this->targetEntityId = MigrationEntityScope::resolve($syncJob, $item);
                 $sourceId = $this->value($item, $map, 'source_id');
                 $fullName = $this->value($item, $map, 'full_name');
                 $lineNumber = $this->value($item, $map, 'line_number');
@@ -165,7 +168,7 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         $existing ??= $this->firstRow('glpi_locations', ['name' => $name]);
         $location = new \Location();
         if ($existing === null) {
-            $id = (int) $location->add($data + ['entities_id' => 0]);
+            $id = (int) $location->add($data + ['entities_id' => $this->targetEntityId]);
             if ($id <= 0) {
                 throw new \RuntimeException('Unable to create target Location "' . $name . '".');
             }
@@ -207,7 +210,7 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         $location = $this->firstRow('glpi_locations', ['name' => $parentName]);
         if ($location === null) {
             $obj = new \Location();
-            $locationId = (int) $obj->add(['name' => $parentName, 'entities_id' => 0]);
+            $locationId = (int) $obj->add(['name' => $parentName, 'entities_id' => $this->targetEntityId]);
             if ($locationId <= 0) {
                 throw new \RuntimeException('Unable to create parent Location "' . $parentName . '".');
             }
@@ -233,7 +236,7 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         $existing = $this->firstRow('glpi_lines', ['caller_num' => $number]);
         $line = new \Line();
         if ($existing === null) {
-            $id = (int) $line->add($data + ['entities_id' => 0]);
+            $id = (int) $line->add($data + ['entities_id' => $this->targetEntityId]);
             if ($id <= 0) {
                 throw new \RuntimeException('Unable to create target Line "' . $number . '".');
             }
@@ -476,7 +479,7 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
                 'locations_id' => $locationId]);
         $obj = \GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\NativeItemFactory::create($class);
         if ($existing === null) {
-            $equipmentId = (int) $obj->add($data + ['entities_id' => 0]);
+            $equipmentId = (int) $obj->add($data + ['entities_id' => $this->targetEntityId]);
             if ($equipmentId <= 0) {
                 throw new TelecomEnrichmentException('EQUIPMENT_CREATE_REJECTED');
             }
@@ -667,7 +670,12 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
             return 0;
         }
         $obj = \GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\NativeItemFactory::create($class);
-        $id = (int) $obj->add(['name' => $name]);
+        $id = (int) $obj->add(MigrationEntityScope::constrain(
+            $this->db,
+            $table,
+            ['name' => $name],
+            $this->targetEntityId
+        ));
         return max(0, $id);
     }
 
@@ -707,11 +715,16 @@ final class IndigoTelecomLocationBatchProcessor implements ExecutionAwareBatchPr
         if (!$this->db->tableExists($table)) {
             return null;
         }
-        $rows = $this->db->request(['FROM' => $table, 'WHERE' => $where, 'LIMIT' => 1]);
+        $where = MigrationEntityScope::constrain($this->db, $table, $where, $this->targetEntityId);
+        $rows = $this->db->request(['FROM' => $table, 'WHERE' => $where, 'LIMIT' => 2]);
+        $found = null;
         foreach ($rows as $row) {
-            return $row;
+            if ($found !== null) {
+                throw new \RuntimeException('TARGET_MATCH_AMBIGUOUS');
+            }
+            $found = $row;
         }
-        return null;
+        return $found;
     }
 
     private function date(string $value): string

@@ -74,6 +74,11 @@ final class ProcessQueuedFailureRetriesService
                         $this->failures->updateRetryStatus($failure->id, 'snapshot_invalid');
                         continue;
                     }
+                    if (!SourceSnapshotSanitizer::isReplayable($record)) {
+                        $failed++;
+                        $this->failures->updateRetryStatus($failure->id, 'snapshot_redacted');
+                        continue;
+                    }
                 }
 
                 try {

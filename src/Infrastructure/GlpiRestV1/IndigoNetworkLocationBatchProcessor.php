@@ -42,7 +42,7 @@ final class IndigoNetworkLocationBatchProcessor extends AbstractLegacyLocationBa
         $existingSite ??= $this->firstUnique('glpi_locations', ['name' => $siteName]);
         $site = new \Location();
         if ($existingSite === null) {
-            $siteId = (int) $site->add($siteData + ['entities_id' => 0]);
+            $siteId = (int) $site->add($siteData + ['entities_id' => $this->targetEntityId]);
             if ($siteId <= 0) {
                 throw new \RuntimeException('TARGET_SITE_CREATE_FAILED');
             }
@@ -127,7 +127,7 @@ final class IndigoNetworkLocationBatchProcessor extends AbstractLegacyLocationBa
         $this->stage = 'equipment_write';
         $item = new \NetworkEquipment();
         if ($existing === null) {
-            $id = (int) $item->add($equipmentData + ['entities_id' => 0]);
+            $id = (int) $item->add($equipmentData + ['entities_id' => $this->targetEntityId]);
             if ($id <= 0) {
                 throw new \RuntimeException('NETWORK_EQUIPMENT_CREATE_FAILED');
             }

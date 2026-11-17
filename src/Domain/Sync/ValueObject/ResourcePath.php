@@ -32,7 +32,13 @@ final readonly class ResourcePath
 
     public function __construct(string $value)
     {
+        if (preg_match('/[\x00-\x1f\x7f]/', $value) === 1) {
+            throw new \InvalidArgumentException('ResourcePath must not contain control characters.');
+        }
         $trimmed = trim($value);
+        if (str_starts_with($trimmed, '//')) {
+            throw new \InvalidArgumentException('ResourcePath must be relative to the configured endpoint.');
+        }
 
         if ($trimmed === '') {
             throw new \InvalidArgumentException('ResourcePath must not be empty.');

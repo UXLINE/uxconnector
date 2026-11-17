@@ -1,6 +1,6 @@
 # UXConnector pour GLPI
 
-**Version de recette 2.18.38 RC11** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
+**Version de recette 2.18.38 RC13** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
 
 UXConnector connecte GLPI à des services externes. Il configure les connexions HTTP, les mappings et les jobs de synchronisation. Selon le modèle, un job peut être exécuté manuellement, planifié, déclenché par un webhook ou par un événement GLPI.
 
@@ -33,7 +33,7 @@ Le package contient **13 connecteurs et 40 définitions de jobs, dont 31 instanc
 3. Dans **Configuration > Plugins**, installer ou mettre à jour UXConnector, puis l’activer. Pour une mise à jour, remplacer intégralement le dossier du plugin après sauvegarde.
 4. Créer une connexion avec un compte technique aux droits adaptés, tester son accès et instancier le job en pause. Configurer l’entité cible et les mappings avant le premier lancement.
 
-Les candidates RC2 à RC11 déclarent la même version GLPI. Après remplacement du dossier, exécuter ces commandes depuis la racine GLPI pour appliquer les migrations et enregistrer les nouveaux droits.
+Les candidates RC2 à RC13 déclarent la même version GLPI. Après remplacement du dossier, exécuter ces commandes depuis la racine GLPI pour appliquer les migrations et enregistrer les nouveaux droits.
 
 ```bash
 php bin/console glpi:plugin:install --force uxconnector
@@ -52,7 +52,10 @@ Les listes de jobs, les fiches et les données d’exécution tiennent compte du
 
 ## Documentation
 
-### Contrôles de la RC11
+- [Correction de la modification des jobs asset_identity](docs/releases/RELEASE_NOTES_2.18.38_RC13.md)
+- [Correctifs et précautions de la RC12](docs/SECURITY_RC12.md)
+
+### Contrôles hérités de la RC11
 
 - Le webhook entrant est l’unique route machine sans session GLPI. Il accepte POST et exige une signature HMAC liée au job, à l’horodatage et au corps brut. Le traitement s’applique uniquement au job entrant actif associé et à ses cibles configurées. Les droits GLPI et le périmètre d’entités s’appliquent à l’administration des jobs. Le jeton seul est refusé, y compris avec `UXCONNECTOR_REQUIRE_WEBHOOK_HMAC=0`. Une signature déjà reçue est refusée avec HTTP 409.
 - [Revue détaillée des huit signaux et recette RC11](docs/SECURITY_RC11.md)

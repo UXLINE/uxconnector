@@ -35,7 +35,8 @@ final readonly class HttpRequest
         public string $path,
         public array $headers = [],
         public array $queryParameters = [],
-        public ?string $body = null
+        public ?string $body = null,
+        public bool $requirePublicDestination = false
     ) {
         if (trim($this->path) === '') {
             throw new \InvalidArgumentException('HttpRequest path must not be empty.');
@@ -78,6 +79,7 @@ final readonly class HttpRequest
             [...$this->headers, $name => $value],
             $this->queryParameters,
             $this->body,
+            $this->requirePublicDestination,
         );
     }
 }

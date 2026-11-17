@@ -25,6 +25,7 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncExecutionId;
  */
 abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBatchProcessorInterface
 {
+    protected ?int $targetEntityId = null;
     protected string $stage = 'source_validation';
     protected ?int $targetId = null;
 
@@ -88,6 +89,7 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
             $this->stage = 'source_validation';
             $this->targetId = null;
             try {
+                $this->targetEntityId = MigrationEntityScope::resolve($job, $row);
                 $sourceId = $this->value($row, $map, 'source_id');
                 if ($sourceId === '') {
                     throw new \RuntimeException('SOURCE_LOCATION_ID_MISSING');
@@ -182,6 +184,7 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
         if (!$this->db->tableExists($table)) {
             throw new \RuntimeException('TARGET_TABLE_UNAVAILABLE');
         }
+        $where = MigrationEntityScope::constrain($this->db, $table, $where, $this->targetEntityId);
         $rows = $this->db->request(['FROM' => $table, 'WHERE' => $where, 'LIMIT' => 2]);
         $found = null;
         foreach ($rows as $row) {
@@ -218,7 +221,12 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
             throw new \RuntimeException('TARGET_DROPDOWN_CLASS_MISSING');
         }
         $obj = \GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\NativeItemFactory::create($className);
-        $id = (int) $obj->add(['name' => $name, 'entities_id' => 0]);
+        $id = (int) $obj->add(MigrationEntityScope::constrain(
+            $this->db,
+            $table,
+            ['name' => $name],
+            $this->targetEntityId
+        ));
         if ($id <= 0) {
             throw new \RuntimeException('TARGET_DROPDOWN_CREATE_FAILED');
         }

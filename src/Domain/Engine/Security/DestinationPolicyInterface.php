@@ -44,4 +44,12 @@ interface DestinationPolicyInterface
      *         this plugin, or cannot be resolved at all.
      */
     public function assertAllowed(Endpoint $endpoint): void;
+
+    /**
+     * Resolves and validates all addresses once for a transport connection.
+     *
+     * @return non-empty-list<string> Approved literal IP addresses, never hostnames.
+     * @throws ForbiddenDestinationException If any address is forbidden or resolution fails.
+     */
+    public function resolveAllowed(Endpoint $endpoint): array;
 }

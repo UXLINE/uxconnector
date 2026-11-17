@@ -130,13 +130,15 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
         }
         // Explicit ObjectLink resolution is required for cross-instance
         // associations. Never interpret a GLPI 10 primary key as a GLPI 11 id.
+        $linkedAuthor = false;
         foreach ($data as $field => $value) {
             if (!$value instanceof LinkedTargetReference) {
                 continue;
             }
             if (
-                $context->itemtype !== TargetItemtype::SIM_CARD
-                || !in_array($field, ['lines_id', 'items_id', 'locations_id', 'users_id'], true)
+                !($context->itemtype === TargetItemtype::SIM_CARD
+                    && in_array($field, ['lines_id', 'items_id', 'locations_id', 'users_id'], true))
+                && !($context->itemtype === TargetItemtype::ITIL_FOLLOWUP && $field === 'users_id')
             ) {
                 throw new \RuntimeException('ObjectLink transformation is not permitted for this target field.');
             }
@@ -166,6 +168,14 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
                 throw new \RuntimeException('Equipment type conflicts with ObjectLink target.');
             }
             $data[$field] = $linked->itemId();
+            $linkedAuthor = $linkedAuthor || $field === 'users_id';
+        }
+        if ($context->itemtype === TargetItemtype::ITIL_FOLLOWUP) {
+            if ($fieldsValues !== []) {
+                throw new \RuntimeException('Fields mappings are not supported on follow-up imports.');
+            }
+            $data = (new GlpiFollowupReferencePolicy($this->db))->validate($data, $context->entitiesId, $linkedAuthor);
+            return $this->writeFollowup($context, $data);
         }
         $fieldsWriter = null;
         if ($fieldsValues !== []) {
@@ -249,6 +259,12 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
                 return $this->writeAndEnrich($item, $context, $data, $fieldsWriter, $fieldsValues, $email);
             }
 
+            if (
+                $context->entitiesId !== null && $item->isEntityAssign() && isset($item->fields['entities_id'])
+                && (int) $item->fields['entities_id'] !== $context->entitiesId
+            ) {
+                throw new \RuntimeException('Linked target is outside the interaction entity.');
+            }
             $data['id'] = $existingLink->itemId();
             $this->lastAction = 'update';
             $success = $this->updateExisting(
@@ -270,6 +286,56 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
         }
 
         return $this->writeAndEnrich($item, $context, $data, $fieldsWriter, $fieldsValues, $email);
+    }
+
+    /**
+     * Uses the connection-scoped ObjectLink as identity, never a shared parent ticket ID.
+     * @param array<string,mixed> $data References already validated against the interaction entity.
+     */
+    private function writeFollowup(ReconciliationContext $context, array $data): bool
+    {
+        unset($data['id'], $data['entities_id'], $data['date_mod'], $data['date_creation']);
+        $link = $this->objectLinkRepository->findByExternalId(
+            $context->authConfigReference,
+            $context->externalObjectType,
+            $context->externalId,
+        );
+        $item = new \ITILFollowup();
+        if ($link !== null) {
+            if ($link->itemtype() !== TargetItemtype::ITIL_FOLLOWUP) {
+                throw new \RuntimeException('Follow-up ObjectLink has an incompatible target.');
+            }
+            if ($item->getFromDB($link->itemId())) {
+                if (
+                    ($item->fields['itemtype'] ?? '') !== $data['itemtype']
+                    || (int) ($item->fields['items_id'] ?? 0) !== $data['items_id']
+                ) {
+                    throw new \RuntimeException('Follow-up ObjectLink belongs to a different parent.');
+                }
+                // Replays preserve the original author and never move an existing follow-up.
+                unset($data['users_id'], $data['itemtype'], $data['items_id']);
+                $data['id'] = $link->itemId();
+                $this->lastAction = 'update';
+                return $this->updateExisting($item, $data);
+            }
+            if ($link->id() !== null) {
+                $this->objectLinkRepository->delete($link->id());
+            }
+        }
+        $id = SyncRuntimeGuard::run(static fn() => $item->add($data));
+        if ($id === false) {
+            return false;
+        }
+        $this->objectLinkRepository->save(ObjectLink::create(
+            $context->syncJobId,
+            $context->authConfigReference,
+            $context->externalId,
+            TargetItemtype::ITIL_FOLLOWUP,
+            (int) $id,
+            $context->externalObjectType,
+        ));
+        $this->lastAction = 'create';
+        return true;
     }
 
     /** @param array<string, mixed> $data @param array<string, mixed> $fieldsValues */

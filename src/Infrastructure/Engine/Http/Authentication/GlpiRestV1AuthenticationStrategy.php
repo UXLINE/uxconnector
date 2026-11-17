@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication;
 
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
 use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpRequest;
 use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpResponse;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
@@ -115,17 +116,18 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
         $timeout = max(1, min(120, (int) ($this->config['timeout'] ?? 60)));
 
         for ($attempt = 1; $attempt <= $maxAttempts; ++$attempt) {
+            $destination = PinnedHttpDestination::resolve($url, $this->destinationPolicy);
             $context = stream_context_create([
                 'http' => [
-                    'method' => 'GET', 'header' => implode("\r\n", $headerLines),
+                    'method' => 'GET', 'header' => implode("\r\n", [...$headerLines, $destination->hostHeader()]),
                     'timeout' => $timeout,
                     'ignore_errors' => true, 'follow_location' => 0, 'max_redirects' => 0,
                     'protocol_version' => 1.1,
                 ],
-                'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+                'ssl' => $destination->tlsOptions(),
             ]);
             $deadline = hrtime(true) + $timeout * 1_000_000_000;
-            $stream = @fopen($url, 'rb', false, $context);
+            $stream = @fopen($destination->streamUrl(), 'rb', false, $context);
             if ($stream === false) {
                 $lastError = (string) (error_get_last()['message'] ?? 'unknown stream error');
                 if ($attempt < $maxAttempts) {

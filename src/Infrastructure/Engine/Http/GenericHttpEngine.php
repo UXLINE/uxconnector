@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Engine\Http;
 
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
 use GlpiPlugin\Uxconnector\Domain\Engine\Entity\AuthConfig;
 use GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException;
 use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpEngineInterface;
@@ -27,7 +28,6 @@ use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication\RenewableSe
 final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHttpEngineInterface
 {
     private const TIMEOUT_SECONDS = 60;
-    private const USER_AGENT = 'UXConnector/2.18.13 (+https://www.helpline.fr)';
     private const MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
     private const READ_CHUNK_BYTES = 8192;
 
@@ -165,7 +165,11 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
 
     private function sendWithCurl(string $url, HttpRequest $request, bool $forceHttp1): HttpResponse
     {
-        $ch = curl_init($url);
+        $destination = PinnedHttpDestination::resolve($url, $this->destinationPolicy);
+        if ($request->requirePublicDestination) {
+            $destination->requirePublicAddresses();
+        }
+        $ch = curl_init($destination->url);
         if ($ch === false) {
             throw HttpEngineException::transportFailure('Unable to initialize cURL.');
         }
@@ -174,9 +178,13 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
         $tooLarge = false;
         $requestHeaders = [];
         foreach ($request->headers as $name => $value) {
-            $requestHeaders[] = $name . ': ' . $value;
+            if (strtolower($name) !== 'host') {
+                $requestHeaders[] = $name . ': ' . $value;
+            }
         }
-        $requestHeaders[] = 'User-Agent: ' . self::USER_AGENT;
+        $requestHeaders[] = $destination->hostHeader();
+        $requestHeaders[] = 'User-Agent: UXConnector/'
+            . (defined('PLUGIN_UXCONNECTOR_VERSION') ? PLUGIN_UXCONNECTOR_VERSION : 'unknown');
 
         $options = [
             CURLOPT_CUSTOMREQUEST => $request->method->value,
@@ -217,7 +225,7 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
                 $options[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_2TLS;
             }
         }
-        curl_setopt_array($ch, $options);
+        curl_setopt_array($ch, array_replace($options, $destination->curlOptions()));
         $ok = curl_exec($ch);
         $errno = curl_errno($ch);
         $error = curl_error($ch);
@@ -235,10 +243,14 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
 
     private function sendWithStreams(string $url, HttpRequest $request): HttpResponse
     {
+        $destination = PinnedHttpDestination::resolve($url, $this->destinationPolicy);
+        if ($request->requirePublicDestination) {
+            $destination->requirePublicAddresses();
+        }
         $context = stream_context_create([
             'http' => [
                 'method' => $request->method->value,
-                'header' => $this->formatHeaders($request),
+                'header' => $this->formatHeaders($request) . "\r\n" . $destination->hostHeader(),
                 'content' => $request->body ?? '',
                 'timeout' => self::TIMEOUT_SECONDS,
                 'ignore_errors' => true,
@@ -246,9 +258,9 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
                 'max_redirects' => 0,
                 'protocol_version' => 1.1,
             ],
-            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+            'ssl' => $destination->tlsOptions(),
         ]);
-        $stream = @fopen($url, 'rb', false, $context);
+        $stream = @fopen($destination->streamUrl(), 'rb', false, $context);
         if ($stream === false) {
             throw HttpEngineException::transportFailure(error_get_last()['message'] ?? 'unknown stream error');
         }
@@ -301,9 +313,12 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
     {
         $lines = [];
         foreach ($request->headers as $name => $value) {
-            $lines[] = $name . ': ' . $value;
+            if (strtolower($name) !== 'host') {
+                $lines[] = $name . ': ' . $value;
+            }
         }
-        $lines[] = 'User-Agent: ' . self::USER_AGENT;
+        $lines[] = 'User-Agent: UXConnector/'
+            . (defined('PLUGIN_UXCONNECTOR_VERSION') ? PLUGIN_UXCONNECTOR_VERSION : 'unknown');
         return implode("\r\n", $lines);
     }
 

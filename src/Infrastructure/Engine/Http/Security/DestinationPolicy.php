@@ -36,12 +36,8 @@ use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
  * alone would not catch a name that simply resolves to a forbidden
  * address.
  *
- * Résiduel documenté : cette vérification a lieu à un instant T. Un
- * hôte dont la résolution DNS change entre cette vérification et la
- * connexion réelle effectuée par GenericHttpEngine (DNS rebinding)
- * n'est pas protégé par cette classe seule - une protection complète
- * nécessiterait un « pinning » de l'adresse IP résolue jusqu'à
- * l'établissement effectif de la connexion, non implémenté ici.
+ * Transports connect only to the addresses returned by resolveAllowed().
+ * TLS still verifies the original hostname; redirects require a new approval.
  */
 final class DestinationPolicy implements DestinationPolicyInterface
 {
@@ -52,6 +48,8 @@ final class DestinationPolicy implements DestinationPolicyInterface
         '127.0.0.0/8',    // loopback
         '0.0.0.0/8',      // "this network"
         '169.254.0.0/16', // link-local, includes cloud instance metadata (169.254.169.254)
+        '224.0.0.0/4',   // multicast
+        '240.0.0.0/4',   // reserved
         '100.64.0.0/10',  // carrier-grade NAT, used by some cloud metadata setups
     ];
 
@@ -61,6 +59,12 @@ final class DestinationPolicy implements DestinationPolicyInterface
     }
 
     public function assertAllowed(Endpoint $endpoint): void
+    {
+        $this->resolveAllowed($endpoint);
+    }
+
+    /** @return non-empty-list<string> Addresses used directly by the transport. */
+    public function resolveAllowed(Endpoint $endpoint): array
     {
         $host = parse_url($endpoint->value(), PHP_URL_HOST);
 
@@ -86,13 +90,14 @@ final class DestinationPolicy implements DestinationPolicyInterface
         }
 
         foreach ($ips as $ip) {
-            if ($this->isBlocked($ip)) {
+            if (filter_var($ip, FILTER_VALIDATE_IP) === false || $this->isBlocked($ip)) {
                 throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException::blockedAddress(
                     $host,
                     $ip
                 );
             }
         }
+        return array_values(array_unique($ips));
     }
 
     private function assertHostAllowlist(string $host): void
@@ -183,11 +188,21 @@ final class DestinationPolicy implements DestinationPolicyInterface
             return true;
         }
 
-        if ($ip === '::1' || $ip === '::') {
+        if ($this->ipv6InPrefix($packed, '::', 128) || $this->ipv6InPrefix($packed, '::1', 128)) {
             return true;
         }
 
-        if ($this->ipv6InPrefix($packed, 'fe80::', 10)) {
+        // Block ULA metadata, link-local, multicast, translation and transition
+        // ranges. IPv4-mapped forms are classified separately below.
+        if (
+            $this->ipv6InPrefix($packed, 'fe80::', 10)
+            || $this->ipv6InPrefix($packed, 'fc00::', 7)
+            || $this->ipv6InPrefix($packed, 'ff00::', 8)
+            || $this->ipv6InPrefix($packed, '64:ff9b::', 96)
+            || $this->ipv6InPrefix($packed, '64:ff9b:1::', 48)
+            || $this->ipv6InPrefix($packed, '2002::', 16)
+            || $this->ipv6InPrefix($packed, '2001::', 32)
+        ) {
             return true;
         }
 
@@ -204,6 +219,10 @@ final class DestinationPolicy implements DestinationPolicyInterface
             return $mapped === false || $this->isBlockedIpv4($mapped);
         }
 
+        // Deprecated IPv4-compatible encodings must not bypass the IPv4 policy.
+        if ($this->ipv6InPrefix($packed, '::', 96)) {
+            return true;
+        }
         return false;
     }
 

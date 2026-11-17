@@ -51,6 +51,8 @@ final class GlpiUserEmailWriter
     {
         $this->db->beginTransaction();
         try {
+            // Deliberate exception: GLPI DBrequest does not expose FOR UPDATE.
+            // Keep this transactional row lock, using a bound integer and no SQL interpolation.
             $statement = $this->db->prepare('SELECT `id` FROM `glpi_users` WHERE `id` = ? FOR UPDATE');
             try {
                 $this->db->executeStatement($statement, [$userId], ['i']);

@@ -308,25 +308,7 @@ final class SyncJob
 
         $normalizedWebhookKey = self::normalizeWebhookKey($webhookKey);
 
-        if (
-            $direction === SyncDirection::INBOUND
-            && $fieldMappings !== []
-        ) {
-            $matchFieldFound = false;
-
-            foreach ($fieldMappings as $mapping) {
-                if ($mapping->targetField() === $matchField->value()) {
-                    $matchFieldFound = true;
-                    break;
-                }
-            }
-
-            if (!$matchFieldFound) {
-                throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::matchFieldNotMapped(
-                    $matchField,
-                );
-            }
-        }
+        self::assertMatchFieldMatchesMappings($direction, $matchField, $fieldMappings);
 
         if (
             $direction === SyncDirection::OUTBOUND
@@ -645,14 +627,28 @@ final class SyncJob
      */
     private function assertMatchFieldIsMapped(): void
     {
-        if ($this->direction !== SyncDirection::INBOUND || $this->fieldMappings === []) {
+        self::assertMatchFieldMatchesMappings($this->direction, $this->matchField, $this->fieldMappings);
+    }
+
+    /**
+     * Validate proposed configuration before reconfigure() changes any property.
+     * Creation and editing must share the same composite identity rule.
+     *
+     * @param list<FieldMapping> $fieldMappings
+     */
+    private static function assertMatchFieldMatchesMappings(
+        SyncDirection $direction,
+        MatchField $matchField,
+        array $fieldMappings
+    ): void {
+        if ($direction !== SyncDirection::INBOUND || $fieldMappings === []) {
             return;
         }
 
-        if ($this->matchField->value() === 'asset_identity') {
+        if ($matchField->value() === 'asset_identity') {
             $identityFields = ['uuid', 'serial', 'otherserial', 'name'];
 
-            foreach ($this->fieldMappings as $mapping) {
+            foreach ($fieldMappings as $mapping) {
                 if (in_array($mapping->targetField(), $identityFields, true)) {
                     return;
                 }
@@ -662,14 +658,14 @@ final class SyncJob
                 ::assetIdentityRequiresMappedIdentityField();
         }
 
-        foreach ($this->fieldMappings as $mapping) {
-            if ($mapping->targetField() === $this->matchField->value()) {
+        foreach ($fieldMappings as $mapping) {
+            if ($mapping->targetField() === $matchField->value()) {
                 return;
             }
         }
 
         throw \GlpiPlugin\Uxconnector\Domain\Sync\Exception\InvalidSyncJobStateException::matchFieldNotMapped(
-            $this->matchField
+            $matchField
         );
     }
 }
