@@ -78,7 +78,7 @@
         <form method="post" action="syncjob.php" class="uxconnector-run-form">
             <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="id" value="{{ syncjob.id }}">
-            <button type="submit" name="full_replay" value="1" class="btn btn-outline-warning" onclick="return confirm('{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('js') }}')">
+            <button type="submit" name="full_replay" value="1" class="btn btn-outline-warning" data-uxconnector-confirm="{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('html_attr') }}">
                 <i class="ti ti-refresh"></i> {{ __('Replay from start', 'uxconnector') }}
             </button>
         </form>

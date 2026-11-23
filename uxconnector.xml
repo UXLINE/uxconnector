@@ -19,9 +19,9 @@
     </authors>
     <versions>
         <version>
-            <num>2.18.38</num>
+            <num>2.18.39</num>
             <compatibility>&gt;=11.0.0 &lt;12.0.0</compatibility>
-            <download_url>https://github.com/UXLINE/uxconnector/releases/download/v2.18.38-rc.13/uxconnector-2.18.38-rc.13.tar.gz</download_url>
+            <download_url>https://github.com/UXLINE/uxconnector/releases/download/v2.18.39/uxconnector-2.18.39.tar.gz</download_url>
         </version>
     </versions>
     <langs>

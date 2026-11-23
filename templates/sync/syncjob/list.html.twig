@@ -29,7 +29,7 @@
                     <input type="checkbox" class="form-check-input" id="uxconnector-select-all-jobs-toolbar">
                     <span class="form-check-label fw-bold">{{ __('Select all jobs', 'uxconnector') }}</span>
                 </label>
-                <span class="badge bg-blue-lt" id="uxconnector-selected-count">0 {{ __('selected', 'uxconnector') }}</span>
+                <span class="badge bg-blue-lt" id="uxconnector-selected-count" data-uxconnector-selected-label="{{ __('selected', 'uxconnector')|e('html_attr') }}">0 {{ __('selected', 'uxconnector') }}</span>
             </div>
             <form id="uxconnector-bulk-jobs" method="post" action="syncjob.php" class="d-flex flex-wrap gap-2 mb-0">
                 <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
@@ -135,7 +135,7 @@
                                 <form method="post" action="syncjob.php" class="d-inline uxconnector-run-form">
                                     <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="id" value="{{ syncjob.id }}">
-                                    <button type="submit" name="full_replay" value="1" class="btn btn-sm btn-outline-warning" onclick="return confirm('{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('js') }}')">
+                                    <button type="submit" name="full_replay" value="1" class="btn btn-sm btn-outline-warning" data-uxconnector-confirm="{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('html_attr') }}">
                                         {{ __('Replay from start', 'uxconnector') }}
                                     </button>
                                 </form>
@@ -150,81 +150,3 @@
         </table>
     {% endif %}
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.uxconnector-run-form').forEach((runForm) => {
-        runForm.addEventListener('submit', (event) => {
-            if (runForm.dataset.uxSubmitting === '1') {
-                event.preventDefault();
-                return;
-            }
-            runForm.dataset.uxSubmitting = '1';
-            const submitter = event.submitter;
-            window.setTimeout(() => { if (submitter) submitter.disabled = true; }, 0);
-        });
-    });
-
-    const rowSelectAll = document.getElementById('uxconnector-select-all-jobs');
-    const toolbarSelectAll = document.getElementById('uxconnector-select-all-jobs-toolbar');
-    const checkboxes = Array.from(document.querySelectorAll('.uxconnector-job-checkbox'));
-    const bulkForm = document.getElementById('uxconnector-bulk-jobs');
-    const selectedInputs = document.getElementById('uxconnector-bulk-selected-inputs');
-    const selectedCount = document.getElementById('uxconnector-selected-count');
-    const bulkButtons = bulkForm ? Array.from(bulkForm.querySelectorAll('button[type="submit"]')) : [];
-
-    const refresh = () => {
-        const selected = checkboxes.filter((checkbox) => checkbox.checked);
-        const allChecked = checkboxes.length > 0 && selected.length === checkboxes.length;
-        if (rowSelectAll) {
-            rowSelectAll.checked = allChecked;
-            rowSelectAll.indeterminate = selected.length > 0 && !allChecked;
-        }
-        if (toolbarSelectAll) {
-            toolbarSelectAll.checked = allChecked;
-            toolbarSelectAll.indeterminate = selected.length > 0 && !allChecked;
-        }
-        if (selectedCount) {
-            selectedCount.textContent = `${selected.length} {{ __('selected', 'uxconnector')|e('js') }}`;
-        }
-        bulkButtons.forEach((button) => {
-            button.disabled = selected.length === 0;
-        });
-    };
-
-    const toggleAll = (checked) => {
-        checkboxes.forEach((checkbox) => {
-            checkbox.checked = checked;
-        });
-        refresh();
-    };
-
-    if (rowSelectAll) {
-        rowSelectAll.addEventListener('change', () => toggleAll(rowSelectAll.checked));
-    }
-    if (toolbarSelectAll) {
-        toolbarSelectAll.addEventListener('change', () => toggleAll(toolbarSelectAll.checked));
-    }
-    checkboxes.forEach((checkbox) => checkbox.addEventListener('change', refresh));
-
-    if (bulkForm && selectedInputs) {
-        bulkForm.addEventListener('submit', (event) => {
-            selectedInputs.innerHTML = '';
-            const selected = checkboxes.filter((checkbox) => checkbox.checked);
-            if (selected.length === 0) {
-                event.preventDefault();
-                return;
-            }
-            selected.forEach((checkbox) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'ids[]';
-                input.value = checkbox.value;
-                selectedInputs.appendChild(input);
-            });
-        });
-    }
-
-    refresh();
-});
-</script>

@@ -27,7 +27,7 @@ final class Setup
     /**
      * Plugin version exposed by this lifecycle class.
      */
-    public const VERSION = '2.18.38';
+    public const VERSION = '2.18.39';
 
     /**
      * Minimum GLPI version supported by this plugin.
@@ -128,6 +128,9 @@ final class Setup
         $retireIntegrations = require self::pluginRootDirectory() . '/sql/install/retire-integrations.php';
         $retireIntegrations($migration);
 
+        $bindLegacyCredentials = require self::pluginRootDirectory() . '/sql/install/bind-legacy-credentials.php';
+        $bindLegacyCredentials($migration);
+
         // ADR-10.10.02 : CronTask registration happens during
         // install/upgrade, never on every plugin_init() (HookManager
         // never touches CronTask - see its class doc-block).
@@ -149,7 +152,7 @@ final class Setup
         Infrastructure\CronRegistry::unregister();
 
         $rights = array_map(
-            static fn(array $definition): string => $definition['field'],
+            static fn (array $definition): string => $definition['field'],
             \PluginUxconnectorProfile::getRightDefinitions(),
         );
 

@@ -1,6 +1,6 @@
 # UXConnector pour GLPI
 
-**Version de recette 2.18.38 RC13** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
+**Version 2.18.39, préparée pour validation sur une instance de test** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
 
 UXConnector connecte GLPI à des services externes. Il configure les connexions HTTP, les mappings et les jobs de synchronisation. Selon le modèle, un job peut être exécuté manuellement, planifié, déclenché par un webhook ou par un événement GLPI.
 
@@ -33,16 +33,13 @@ Le package contient **13 connecteurs et 40 définitions de jobs, dont 31 instanc
 3. Dans **Configuration > Plugins**, installer ou mettre à jour UXConnector, puis l’activer. Pour une mise à jour, remplacer intégralement le dossier du plugin après sauvegarde.
 4. Créer une connexion avec un compte technique aux droits adaptés, tester son accès et instancier le job en pause. Configurer l’entité cible et les mappings avant le premier lancement.
 
-Les candidates RC2 à RC13 déclarent la même version GLPI. Après remplacement du dossier, exécuter ces commandes depuis la racine GLPI pour appliquer les migrations et enregistrer les nouveaux droits.
+La version 2.18.39 déclenche une mise à niveau depuis les RC2 à RC13, qui déclaraient toutes 2.18.38. Arrêter les workers de synchronisation et les émetteurs webhook pendant le remplacement des fichiers et la migration. Sauvegarder aussi la clé GLPI `config/glpicrypt.key` avec la base. Ne pas désinstaller le plugin.
 
-```bash
-php bin/console glpi:plugin:install --force uxconnector
-php bin/console cache:clear
-```
+La migration lie les anciens secrets à l’origine (protocole, hôte et port) et à la méthode d’authentification actuellement enregistrées, puis les rechiffre avec GLPIKey. Vérifier ces destinations avant la mise à niveau. Un secret déjà lié n’est jamais rattaché à une autre origine. Une erreur de déchiffrement, de vérification ou d’écriture annule cette migration et bloque la mise à niveau. Après correction de la cause, la migration peut être rejouée.
 
-Cette migration retire les anciens stockages dédiés et révoque les identifiants des connexions héritées concernées. Les connexions concernées sont désactivées et converties en fiches génériques. Leurs jobs et historiques restent consultables.
+La migration des secrets conserve les statuts des connexions. Les anciens retraits de stockages spécifiques restent applicables lors d’une mise à niveau depuis une version antérieure à la RC13. Un retour arrière nécessite la restauration cohérente du code, de la base et de la clé sauvegardés.
 
-Les nouveaux secrets et les secrets remplacés sont liés à l’origine de la connexion et à la méthode d’authentification avant chiffrement. Pour revenir à une version antérieure après une modification de credentials, restaurer la sauvegarde de base prise avant mise à jour.
+Les modifications, tests et changements de statut d’une connexion exigent désormais l’accès à toutes les entités ciblées par ses interactions, même en pause. Les écritures directes sur `AuthConfigItem` via l’API générique GLPI sont refusées ; utiliser les écrans et services du plugin.
 
 Dans l’onglet UXConnector du profil GLPI, la ligne **Webhook credentials** donne accès à deux droits distincts, **Reveal** et **Rotate**, désactivés par défaut. L’opérateur doit également pouvoir consulter la connexion et modifier le job dans les entités concernées. Les actions passent par un formulaire protégé et sont journalisées dans `uxconnector-webhook-audit.log`, avec l’action, le job et l’utilisateur.
 
@@ -51,6 +48,8 @@ La rotation du secret de signature invalide immédiatement l’ancien secret. Re
 Les listes de jobs, les fiches et les données d’exécution tiennent compte du périmètre d’entités actif du profil GLPI. La lecture d’un job et de son historique exige l’accès à toutes ses entités cibles. Un job sans périmètre fixe est accessible aux profils qui ont accès à toutes les entités.
 
 ## Documentation
+
+- [Correctifs de sécurité et mise à niveau 2.18.39](docs/SECURITY_2.18.39.md)
 
 - [Correction de la modification des jobs asset_identity](docs/releases/RELEASE_NOTES_2.18.38_RC13.md)
 - [Correctifs et précautions de la RC12](docs/SECURITY_RC12.md)
@@ -71,4 +70,4 @@ Les listes de jobs, les fiches et les données d’exécution tiennent compte du
 - [Descripteur de publication](uxconnector.xml)
 - [Licence](LICENSE)
 
-Le descripteur cible le tag `v2.18.38-rc.11` et l’archive `uxconnector-2.18.38-rc.11.tar.gz`. Après publication, vérifier le téléchargement avant de transmettre le XML à TECLIB.
+Le descripteur prépare le tag `v2.18.39` et l’archive `uxconnector-2.18.39.tar.gz`. La publication et l’autorisation Marketplace de l’instance de test restent des étapes distinctes de ces correctifs.

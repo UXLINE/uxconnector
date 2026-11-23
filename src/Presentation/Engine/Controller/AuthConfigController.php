@@ -25,6 +25,7 @@ use GlpiPlugin\Uxconnector\Application\Engine\Service\DeleteAuthConfigService;
 use GlpiPlugin\Uxconnector\Application\Engine\Service\DisableAuthConfigService;
 use GlpiPlugin\Uxconnector\Application\Engine\Service\ListAuthConfigsService;
 use GlpiPlugin\Uxconnector\Application\Engine\Service\TestAuthConfigService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\JobEntityAccess;
 use GlpiPlugin\Uxconnector\Domain\Engine\Enum\AuthMethod;
 use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
 use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigName;
@@ -58,7 +59,8 @@ final class AuthConfigController extends AbstractController
         private readonly DeleteAuthConfigService $deleteAuthConfig,
         private readonly OAuth2ClientCredentialsSecretComposer $oauth2SecretComposer,
         private readonly OAuth2PasswordSecretComposer $oauth2PasswordSecretComposer,
-        private readonly GlpiRestV1SecretComposer $glpiRestV1SecretComposer
+        private readonly GlpiRestV1SecretComposer $glpiRestV1SecretComposer,
+        private readonly JobEntityAccess $jobEntityAccess
     ) {
     }
 
@@ -90,7 +92,7 @@ final class AuthConfigController extends AbstractController
     {
         $authMethods = array_values(array_filter(
             AuthMethod::cases(),
-            static fn(AuthMethod $method): bool => $method->isImplemented(),
+            static fn (AuthMethod $method): bool => $method->isImplemented(),
         ));
 
         $requestedMethod = (string) ($defaults['auth_method'] ?? '');
@@ -109,8 +111,7 @@ final class AuthConfigController extends AbstractController
                 'endpoint' => trim((string) ($defaults['endpoint'] ?? '')),
                 'test_path' => trim((string) ($defaults['test_path'] ?? '/')) ?: '/',
                 'auth_method' => $selectedMethod,
-                'connector_id' => trim((string) ($defaults['connector'] ?? $defaults['connector_id'] ?? 'custom')) ?
-                    : 'custom',
+                'connector_id' => trim((string) ($defaults['connector'] ?? $defaults['connector_id'] ?? 'custom')) ?: 'custom',
             ],
         ]);
     }
@@ -188,6 +189,7 @@ final class AuthConfigController extends AbstractController
     {
         try {
             $id = new AuthConfigId((int) ($request['id'] ?? 0));
+            $this->jobEntityAccess->assertConnectionId($id);
             $result = $this->testAuthConfig->execute(new TestAuthConfigCommand($id));
 
             if ($result->success) {
@@ -220,6 +222,7 @@ final class AuthConfigController extends AbstractController
     {
         try {
             $id = new AuthConfigId((int) ($request['id'] ?? 0));
+            $this->jobEntityAccess->assertConnectionId($id);
             $this->activateAuthConfig->execute(new ActivateAuthConfigCommand($id));
 
             Session::addMessageAfterRedirect(__('Authentication configuration activated.', 'uxconnector'));
@@ -237,6 +240,7 @@ final class AuthConfigController extends AbstractController
     {
         try {
             $id = new AuthConfigId((int) ($request['id'] ?? 0));
+            $this->jobEntityAccess->assertConnectionId($id);
             $this->disableAuthConfig->execute(new DisableAuthConfigCommand($id));
 
             Session::addMessageAfterRedirect(__('Authentication configuration disabled.', 'uxconnector'));
@@ -256,6 +260,7 @@ final class AuthConfigController extends AbstractController
     {
         try {
             $id = new AuthConfigId((int) ($request['id'] ?? 0));
+            $this->jobEntityAccess->assertConnectionId($id);
             $this->deleteAuthConfig->execute(new DeleteAuthConfigCommand($id));
 
             Session::addMessageAfterRedirect(__('Authentication configuration deleted.', 'uxconnector'));

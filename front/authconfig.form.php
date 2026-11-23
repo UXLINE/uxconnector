@@ -18,6 +18,7 @@
 declare(strict_types=1);
 
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\EngineServiceProvider;
+use GlpiPlugin\Uxconnector\Infrastructure\Sync\SyncServiceProvider;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\AuthConfigController;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\GlpiRestV1SecretComposer;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\OAuth2ClientCredentialsSecretComposer;
@@ -35,6 +36,7 @@ $controller = new AuthConfigController(
     new OAuth2ClientCredentialsSecretComposer(),
     new OAuth2PasswordSecretComposer(),
     new GlpiRestV1SecretComposer(),
+    SyncServiceProvider::jobEntityAccess(),
 );
 
 if (isset($_POST['add'])) {

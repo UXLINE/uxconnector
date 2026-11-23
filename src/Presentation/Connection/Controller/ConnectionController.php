@@ -21,14 +21,14 @@ use GlpiPlugin\Uxconnector\Application\Engine\Service\TestAuthConfigService;
 use GlpiPlugin\Uxconnector\Application\Engine\Service\UpdateAuthConfigService;
 use GlpiPlugin\Uxconnector\Application\Sync\Command\ActivateSyncJobCommand;
 use GlpiPlugin\Uxconnector\Application\Sync\Command\DeleteSyncJobCommand;
-use GlpiPlugin\Uxconnector\Application\Sync\Command\ExecuteSyncJobCommand;
 use GlpiPlugin\Uxconnector\Application\Sync\Command\PauseSyncJobCommand;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ActivateSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\DeleteSyncJobService;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueSyncJobService;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueFullReplayService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\JobEntityAccess;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ListSyncJobsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\PauseSyncJobService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueFullReplayService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Template\Service\GetConnectorTemplateService;
 use GlpiPlugin\Uxconnector\Application\Template\Service\InstantiateJobTemplateService;
 use GlpiPlugin\Uxconnector\Application\Template\Service\ListConnectorTemplatesService;
@@ -37,13 +37,12 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
 use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigName;
 use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\TestPath;
 use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\JobEntityAccess;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Security\WebhookRequestAuthenticator;
 use GlpiPlugin\Uxconnector\Presentation\Controller\AbstractController;
+use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\GlpiRestV1SecretComposer;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\OAuth2ClientCredentialsSecretComposer;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\OAuth2PasswordSecretComposer;
-use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\GlpiRestV1SecretComposer;
 use GlpiPlugin\Uxconnector\ProfileRights;
 use Session;
 
@@ -107,7 +106,7 @@ final class ConnectionController extends AbstractController
         }
         $authMethods = array_values(array_filter(
             AuthMethod::cases(),
-            static fn(AuthMethod $m): bool => $m->isImplemented()
+            static fn (AuthMethod $m): bool => $m->isImplemented()
                  && ($connector === null || in_array($m->value, $connector['authMethods'], true)),
         ));
         $defaults = [
@@ -165,13 +164,14 @@ final class ConnectionController extends AbstractController
     public function showEditForm(int $id): void
     {
         try {
+            $this->jobEntityAccess->assertConnectionId(new AuthConfigId($id));
             $connection = $this->getConnection->execute(new AuthConfigId($id));
             $selectedConnector = $connection->connectorId !== 'custom'
                 ? $this->getConnectorTemplate->execute($connection->connectorId)
                 : null;
             $authMethods = array_values(array_filter(
                 AuthMethod::cases(),
-                static fn(AuthMethod $m): bool => $m->isImplemented()
+                static fn (AuthMethod $m): bool => $m->isImplemented()
                       && ($selectedConnector === null || in_array($m->value, $selectedConnector['authMethods'], true)),
             ));
 
@@ -200,6 +200,7 @@ final class ConnectionController extends AbstractController
     {
         $id = (int) ($request['id'] ?? 0);
         try {
+            $this->jobEntityAccess->assertConnectionId(new AuthConfigId($id));
             $authMethod = AuthMethod::from((string) ($request['auth_method'] ?? ''));
             $current = $this->getConnection->execute(new AuthConfigId($id));
             if ($current->connectorId !== 'custom') {
@@ -252,7 +253,7 @@ final class ConnectionController extends AbstractController
             if ($canReadJobs) {
                 $jobs = array_values(array_filter(
                     $this->listJobs->execute(),
-                    static fn($job): bool => (int) $job->authConfigReference === $id,
+                    static fn ($job): bool => (int) $job->authConfigReference === $id,
                 ));
                 foreach ($jobs as $job) {
                     if ($job->templateId !== null) {
@@ -290,6 +291,7 @@ final class ConnectionController extends AbstractController
     {
         $id = (int) ($request['id'] ?? 0);
         try {
+            $this->jobEntityAccess->assertConnectionId(new AuthConfigId($id));
             $result = $this->testConnection->execute(new TestAuthConfigCommand(new AuthConfigId($id)));
             Session::addMessageAfterRedirect(
                 $result->success
@@ -320,6 +322,7 @@ final class ConnectionController extends AbstractController
     {
         $id = (int) ($request['id'] ?? 0);
         try {
+            $this->jobEntityAccess->assertConnectionId(new AuthConfigId($id));
             $this->deleteConnection->execute(new DeleteAuthConfigCommand(new AuthConfigId($id)));
             Session::addMessageAfterRedirect(__('Connection deleted.', 'uxconnector'));
             $this->redirect('/plugins/uxconnector/front/connections.php');
@@ -334,6 +337,7 @@ final class ConnectionController extends AbstractController
     {
         $id = (int) ($request['id'] ?? 0);
         try {
+            $this->jobEntityAccess->assertConnectionId(new AuthConfigId($id));
             $this->assignConnector->execute(new AuthConfigId($id), (string) ($request['connector_id'] ?? 'custom'));
             Session::addMessageAfterRedirect(
                 __(
@@ -474,6 +478,7 @@ final class ConnectionController extends AbstractController
     {
         $id = (int) ($request['id'] ?? 0);
         try {
+            $this->jobEntityAccess->assertConnectionId(new AuthConfigId($id));
             $authId = new AuthConfigId($id);
             if ($action === 'activate') {
                 $this->activateConnection->execute(new ActivateAuthConfigCommand($authId));

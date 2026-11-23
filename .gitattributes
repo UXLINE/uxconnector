@@ -6,3 +6,5 @@
 /phpunit.xml.dist export-ignore
 /phpstan.neon.dist export-ignore
 /.php-cs-fixer.dist.php export-ignore
+
+/phpunit.security.xml export-ignore

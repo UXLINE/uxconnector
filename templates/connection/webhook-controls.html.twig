@@ -17,7 +17,7 @@
             {% endif %}
             {% if can_rotate_webhook %}
                 <button class="btn btn-sm btn-outline-warning" name="credential_action" value="rotate_signing"
-                    onclick="return confirm('{{ __('Replace the signing secret now? The sender must be updated immediately.', 'uxconnector')|e('js') }}')">
+                    data-uxconnector-confirm="{{ __('Replace the signing secret now? The sender must be updated immediately.', 'uxconnector')|e('html_attr') }}">
                     {{ __('Rotate signing secret', 'uxconnector') }}
                 </button>
             {% endif %}

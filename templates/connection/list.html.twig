@@ -67,7 +67,7 @@
                                         <form method="post" action="connection.php" class="d-inline">
                                             <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
                                             <input type="hidden" name="id" value="{{ connection.id }}">
-                                            <button class="btn btn-sm btn-outline-danger" name="delete" value="1" onclick="return confirm('{{ __('Permanently delete this connection?', 'uxconnector')|e('js') }}')">{{ __('Delete', 'uxconnector') }}</button>
+                                            <button class="btn btn-sm btn-outline-danger" name="delete" value="1" data-uxconnector-confirm="{{ __('Permanently delete this connection?', 'uxconnector')|e('html_attr') }}">{{ __('Delete', 'uxconnector') }}</button>
                                         </form>
                                     {% endif %}
                                 </div>
