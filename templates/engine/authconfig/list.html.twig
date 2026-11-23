@@ -93,7 +93,7 @@
                                         type="submit"
                                         name="delete"
                                         class="btn btn-sm btn-outline-danger"
-                                        onclick="return confirm('{{ __('Permanently delete this authentication configuration?', 'uxconnector')|e('js') }}');"
+                                        data-uxconnector-confirm="{{ __('Permanently delete this authentication configuration?', 'uxconnector')|e('html_attr') }}"
                                     >
                                         <i class="ti ti-trash"></i>
                                         {{ __('Delete', 'uxconnector') }}

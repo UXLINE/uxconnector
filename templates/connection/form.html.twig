@@ -21,7 +21,7 @@
             {% if mode == 'create' %}
                 <div class="mb-3">
                     <label class="form-label">{{ __('Connection type', 'uxconnector') }}</label>
-                    <select name="connector_id" class="form-select" onchange="window.location='connection.form.php?connector='+encodeURIComponent(this.value);">
+                    <select name="connector_id" class="form-select" data-uxconnector-connector-selector>
                         <option value="custom" {% if defaults.connector_id == 'custom' %}selected{% endif %}>{{ __('Custom REST', 'uxconnector') }}</option>
                         {% for connector in connectors %}<option value="{{ connector.id }}" {% if defaults.connector_id == connector.id %}selected{% endif %}>{{ connector.name }}</option>{% endfor %}
                     </select>
@@ -76,20 +76,3 @@
         {% endif %}
     </form>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const method = document.getElementById('uxconnector-auth-method');
-    const generic = document.getElementById('uxconnector-generic-credential');
-    const glpiRest = document.getElementById('uxconnector-glpi-rest-credentials');
-    if (!method || !generic || !glpiRest) return;
-    const refreshCredentials = () => {
-        const isGlpiRest = method.value === 'glpi_rest_v1';
-        generic.style.display = isGlpiRest ? 'none' : '';
-        glpiRest.style.display = isGlpiRest ? '' : 'none';
-        if (isGlpiRest) glpiRest.open = true;
-    };
-    method.addEventListener('change', refreshCredentials);
-    refreshCredentials();
-});
-</script>

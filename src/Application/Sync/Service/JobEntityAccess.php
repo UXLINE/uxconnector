@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GlpiPlugin\Uxconnector\Application\Sync\Service;
 
 use GlpiPlugin\Uxconnector\Application\Sync\Exception\SyncJobNotFoundException;
+use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigId;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\EntityAssignmentStrategy;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
@@ -34,6 +35,16 @@ final readonly class JobEntityAccess
             throw new \DomainException(
                 'The interaction targets entities outside your active GLPI scope.',
             );
+        }
+    }
+
+    /** Check every linked job, including paused jobs and jobs hidden from the current user's list. */
+    public function assertConnectionId(AuthConfigId $id): void
+    {
+        foreach ($this->jobs->findAll() as $job) {
+            if ($job->authConfigReference()->value() === $id->value()) {
+                $this->assertStrategy($job->entityAssignmentStrategy());
+            }
         }
     }
 

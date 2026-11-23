@@ -46,7 +46,7 @@
                     <form method="post" action="connection.php">
                         <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
                         <input type="hidden" name="id" value="{{ connection.id }}">
-                        <button class="btn btn-outline-danger" name="delete" value="1" onclick="return confirm('{{ __('Permanently delete this connection?', 'uxconnector')|e('js') }}')">{{ __('Delete', 'uxconnector') }}</button>
+                        <button class="btn btn-outline-danger" name="delete" value="1" data-uxconnector-confirm="{{ __('Permanently delete this connection?', 'uxconnector')|e('html_attr') }}">{{ __('Delete', 'uxconnector') }}</button>
                     </form>
                 {% endif %}
             </div>
@@ -92,7 +92,7 @@
                     <input type="checkbox" class="form-check-input" id="uxconnector-connection-select-all-jobs">
                     <span class="form-check-label fw-bold">{{ __('Select all interactions', 'uxconnector') }}</span>
                 </label>
-                <span class="badge bg-blue-lt me-2" id="uxconnector-connection-selected-count">0 {{ __('selected', 'uxconnector') }}</span>
+                <span class="badge bg-blue-lt me-2" id="uxconnector-connection-selected-count" data-uxconnector-selected-label="{{ __('selected', 'uxconnector')|e('html_attr') }}">0 {{ __('selected', 'uxconnector') }}</span>
                 <button type="submit" name="bulk_activate_jobs" value="1" class="btn btn-success" disabled>
                     <i class="ti ti-player-play"></i> {{ __('Activate selected interactions', 'uxconnector') }}
                 </button>
@@ -141,73 +141,4 @@
         <div class="alert alert-secondary">{{ __('Your profile can view this connection but does not have permission to view its interactions.', 'uxconnector') }}</div>
     {% endif %}
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.uxconnector-run-form').forEach((runForm) => {
-        runForm.addEventListener('submit', (event) => {
-            if (runForm.dataset.uxSubmitting === '1') {
-                event.preventDefault();
-                return;
-            }
-            runForm.dataset.uxSubmitting = '1';
-            const submitter = event.submitter;
-            window.setTimeout(() => { if (submitter) submitter.disabled = true; }, 0);
-        });
-    });
-
-    const form = document.getElementById('uxconnector-connection-bulk-jobs');
-    if (!form) {
-        return;
-    }
-
-    const selectAll = document.getElementById('uxconnector-connection-select-all-jobs');
-    const count = document.getElementById('uxconnector-connection-selected-count');
-    const selectedInputs = document.getElementById('uxconnector-connection-bulk-selected-inputs');
-    const checkboxes = Array.from(document.querySelectorAll('.uxconnector-connection-job-checkbox'));
-    const buttons = Array.from(form.querySelectorAll('button[type="submit"]'));
-
-    const refresh = () => {
-        const selected = checkboxes.filter((checkbox) => checkbox.checked);
-        if (selectAll) {
-            selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
-            selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
-        }
-        if (count) {
-            count.textContent = `${selected.length} {{ __('selected', 'uxconnector')|e('js') }}`;
-        }
-        buttons.forEach((button) => {
-            button.disabled = selected.length === 0;
-        });
-    };
-
-    if (selectAll) {
-        selectAll.addEventListener('change', () => {
-            checkboxes.forEach((checkbox) => {
-                checkbox.checked = selectAll.checked;
-            });
-            refresh();
-        });
-    }
-
-    checkboxes.forEach((checkbox) => checkbox.addEventListener('change', refresh));
-
-    form.addEventListener('submit', (event) => {
-        selectedInputs.innerHTML = '';
-        const selected = checkboxes.filter((checkbox) => checkbox.checked);
-        if (selected.length === 0) {
-            event.preventDefault();
-            return;
-        }
-        selected.forEach((checkbox) => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'job_ids[]';
-            input.value = checkbox.value;
-            selectedInputs.appendChild(input);
-        });
-    });
-
-    refresh();
-});
-</script>
 </div>

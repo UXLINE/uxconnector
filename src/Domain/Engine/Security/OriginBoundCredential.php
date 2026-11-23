@@ -7,7 +7,7 @@ namespace GlpiPlugin\Uxconnector\Domain\Engine\Security;
 use GlpiPlugin\Uxconnector\Domain\Engine\Enum\AuthMethod;
 use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
 
-/** Binds new encrypted credentials to the endpoint and method that can use them. */
+/** Binds encrypted credentials to the endpoint and method that can use them. */
 final class OriginBoundCredential
 {
     private const PREFIX = "UXC-CREDENTIAL-ORIGIN-1\n";
@@ -19,9 +19,8 @@ final class OriginBoundCredential
 
     public static function unwrap(Endpoint $endpoint, AuthMethod $method, #[\SensitiveParameter] string $stored): string
     {
-        if (!str_starts_with($stored, self::PREFIX)) {
-            // Existing records retain their format until the credential is replaced.
-            return $stored;
+        if (!self::isBound($stored)) {
+            throw new \RuntimeException('The credential has no origin binding. Complete the plugin upgrade or replace it.');
         }
         $binding = self::binding($endpoint, $method);
         if (!str_starts_with($stored, $binding)) {
@@ -29,6 +28,11 @@ final class OriginBoundCredential
         }
 
         return substr($stored, strlen($binding));
+    }
+
+    public static function isBound(#[\SensitiveParameter] string $stored): bool
+    {
+        return str_starts_with($stored, self::PREFIX);
     }
 
     private static function binding(Endpoint $endpoint, AuthMethod $method): string

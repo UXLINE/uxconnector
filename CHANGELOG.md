@@ -1,3 +1,13 @@
+## 2.18.39
+
+- Ferme les écritures directes sur les connexions par l’API générique GLPI.
+- Migre les anciens secrets vers une liaison origine/méthode chiffrée et refuse leur usage sans liaison.
+- Contrôle toutes les entités des jobs liés avant toute modification, test, activation ou désactivation d’une connexion.
+- Restreint les assignations de licences aux entités actives des licences GLPI associées.
+- Remplace les gestionnaires et scripts intégrés aux vues par un fichier JavaScript externe compatible CSP.
+- Ajoute une suite de régression dédiée aux quatre constats TECLIB du 23 novembre 2026.
+- Voir [les détails et prérequis de mise à niveau](docs/SECURITY_2.18.39.md).
+
 ## 2.18.38 RC13
 
 - Corrige le refus de modification des jobs utilisant `asset_identity` avec des mappings valides.

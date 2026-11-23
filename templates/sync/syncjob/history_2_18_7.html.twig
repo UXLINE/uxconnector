@@ -16,7 +16,7 @@
                 <form method="post" action="syncjob.php" class="uxconnector-run-form">
                     <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="id" value="{{ syncJobId }}">
-                    <button type="submit" name="full_replay" value="1" class="btn btn-warning" onclick="return confirm('{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('js') }}')">
+                    <button type="submit" name="full_replay" value="1" class="btn btn-warning" data-uxconnector-confirm="{{ __('Reset the source checkpoint and replay this interaction from the beginning? Existing object links are preserved to prevent duplicates.', 'uxconnector')|e('html_attr') }}">
                         <i class="ti ti-refresh"></i> {{ __('Replay from start', 'uxconnector') }}
                     </button>
                 </form>
@@ -66,7 +66,7 @@
                             {% if execution.stopRequested %}
                                 <span class="badge bg-yellow">{{ __('Stop requested', 'uxconnector') }}</span>
                             {% else %}
-                                <form method="post" action="syncexecution.stop.php" style="display:inline-block" onsubmit="return confirm('{{ __('Request a safe stop of this execution? The current item finishes before the worker stops.', 'uxconnector')|e('js') }}')">
+                                <form method="post" action="syncexecution.stop.php" style="display:inline-block" data-uxconnector-confirm="{{ __('Request a safe stop of this execution? The current item finishes before the worker stops.', 'uxconnector')|e('html_attr') }}">
                                     <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="id" value="{{ execution.id }}">
                                     <input type="hidden" name="job_id" value="{{ syncJobId }}">
@@ -75,7 +75,7 @@
                             {% endif %}
                         {% endif %}
                         {% if can_update and not execution.cancellationRequested and execution.status in ['pending', 'running', 'interrupted'] %}
-                            <form method="post" action="syncexecution.cancel.php" style="display:inline-block" onsubmit="return confirm('{{ __('Cancel this execution permanently? Changes already applied will be kept.', 'uxconnector')|e('js') }}')">
+                            <form method="post" action="syncexecution.cancel.php" style="display:inline-block" data-uxconnector-confirm="{{ __('Cancel this execution permanently? Changes already applied will be kept.', 'uxconnector')|e('html_attr') }}">
                                 <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
                                 <input type="hidden" name="id" value="{{ execution.id }}">
                                 <input type="hidden" name="job_id" value="{{ syncJobId }}">

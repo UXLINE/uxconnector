@@ -45,6 +45,16 @@ final class AuthConfigItem extends CommonDBTM
     // by convention rather than by language enforcement.
     public static $rightname = 'plugin_uxconnector_authconfig';
 
+    /** Mutations must use the plugin services, including origin binding and linked-job entity checks. */
+    public function can($ID, int $right, ?array &$input = null): bool
+    {
+        if (($right & (CREATE | UPDATE | DELETE | PURGE)) !== 0) {
+            return false;
+        }
+
+        return parent::can($ID, $right, $input);
+    }
+
     public static function getTable($classname = null): string
     {
         return 'glpi_plugin_uxconnector_authconfigs';

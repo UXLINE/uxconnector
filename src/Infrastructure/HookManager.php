@@ -43,6 +43,7 @@ final class HookManager
     {
         self::registerPluginClasses();
         self::registerMenus();
+        self::registerAssets();
         self::registerProfileRights();
         self::registerSecuredFields();
         self::registerMachineEndpoints();
@@ -100,6 +101,14 @@ final class HookManager
         $PLUGIN_HOOKS['menu_toadd']['uxconnector'] = [
             'tools' => 'PluginUxconnectorMenu',
         ];
+    }
+
+    /** Let GLPI load the external asset through its CSP-aware asset pipeline. */
+    private static function registerAssets(): void
+    {
+        global $PLUGIN_HOOKS;
+
+        $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['uxconnector'] = ['js/uxconnector.js'];
     }
 
     /**
