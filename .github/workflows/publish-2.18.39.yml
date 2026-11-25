@@ -1,4 +1,5 @@
 name: Publish UXConnector 2.18.39
+run-name: Publish 2.18.39 from production (${{ github.sha }})
 
 on:
   push:
