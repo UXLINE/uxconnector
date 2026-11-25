@@ -9,8 +9,8 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * RULE-032/AI-ENTITY-002 : purement technique, jamais utilisée par le
- * Domaine ou l'Application. Seul AuthConfigSecretStore la manipule.
+ * RULE-032/AI-ENTITY-002: persistence adapter used only by AuthConfigSecretStore.
+ * Domain and Application code do not depend on this GLPI itemtype.
  * -------------------------------------------------------------------------
  */
 

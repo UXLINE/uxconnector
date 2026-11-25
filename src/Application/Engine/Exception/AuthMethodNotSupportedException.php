@@ -17,13 +17,8 @@ namespace GlpiPlugin\Uxconnector\Application\Engine\Exception;
 use GlpiPlugin\Uxconnector\Domain\Engine\Enum\AuthMethod;
 
 /**
- * Raised when CreateAuthConfigService is asked to create an
- * AuthConfig using an AuthMethod that GenericHttpEngine cannot
- * actually execute (see AuthMethod::isImplemented()).
- *
- * CORRECTIF P0 (revue de code externe) : empêche la création d'une
- * configuration structurellement inutilisable, en complément du
- * filtrage déjà appliqué côté formulaire.
+ * Raised when configuration creation requests an unsupported authentication method.
+ * Complements the form filter with server-side enforcement.
  */
 final class AuthMethodNotSupportedException extends \InvalidArgumentException
 {

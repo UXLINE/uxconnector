@@ -35,18 +35,9 @@ use GlpiPlugin\Uxconnector\Presentation\Controller\AbstractController;
 use Session;
 
 /**
- * Presentation entry point for the Engine bounded context's
- * AuthConfig screens.
- *
- * RULE-CTRL-001/002/003 : orchestrates Application Services and hands
- * their DTOs/results to a template or a redirect - no business rule,
- * no SQL, no third-party API call ever happens here. Field validation
- * itself is never duplicated in the Controller: it happens exactly
- * once, inside the Value Objects the Command is built from
- * (AuthConfigName, Endpoint, AuthMethod) - a malformed value throws
- * there, and this Controller only decides what to do with the error
- * (RULE-CTRL : un Controller valide la présence/le format technique,
- * jamais la règle métier).
+ * Controller for connection screens. Delegates business operations to Application services
+ * and renders DTOs. Value objects validate business invariants; the controller validates
+ * request structure and handles errors without issuing SQL or third-party HTTP requests.
  */
 final class AuthConfigController extends AbstractController
 {
@@ -79,13 +70,8 @@ final class AuthConfigController extends AbstractController
     }
 
     /**
-     * Displays the creation form.
-     *
-     * CORRECTIF P0 (revue de code externe) : seules les méthodes
-     * d'authentification réellement exécutables par
-     * GenericHttpEngine sont proposées (AuthMethod::isImplemented()),
-     * pour ne jamais laisser un administrateur créer une
-     * configuration structurellement inutilisable (OAuth2).
+     * Displays the creation form with only authentication methods implemented by the engine.
+     * AuthMethod::isImplemented() is shared with server-side validation.
      */
     /** @param array<string,mixed> $defaults */
     public function showCreateForm(array $defaults = []): void
@@ -176,12 +162,7 @@ final class AuthConfigController extends AbstractController
     }
 
     /**
-     * Handles the "test this connection" action from the list screen.
-     *
-     * CYCLE D'ACTIVATION (issu des deux relectures externes) : c'est
-     * le point d'entrée qui manquait jusqu'ici - sans lui, un
-     * AuthConfig créé depuis l'UI restait bloqué en DRAFT pour
-     * toujours, ExecuteSyncJobService le rejetant à juste titre.
+     * Handles connection tests through the activation lifecycle service.
      *
      * @param array<string, mixed> $request Typically $_POST.
      */

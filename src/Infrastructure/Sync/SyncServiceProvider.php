@@ -21,56 +21,58 @@ use GlpiPlugin\Uxconnector\Application\Sync\Service\CreateSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\DeleteSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\DispatchGlpiItemEventService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ExecuteSyncJobService;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\SyncJobExecutorInterface;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\LockedSyncJobExecutor;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\FieldValueTransformer;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\GetSyncJobForEditService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\GetSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\InboundRecordProcessor;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\JsonPathValueReader;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\JobEntityAccess;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\JsonPathValueReader;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ListSyncExecutionsService;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\RetryFailedItemsService;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\ResumeSyncExecutionService;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\RequestStopSyncExecutionService;
-use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\ExecutionStopRequestRepository;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ListSyncFailuresService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ListSyncJobsService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\LockedSyncJobExecutor;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\OutboundRuntimeValueResolver;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\PageReferenceNormalizer;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\PauseSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ProcessInboundWebhookService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ProcessQueuedFailureRetriesService;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueFullReplayService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\RecoverStaleExecutionsService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\RequestStopSyncExecutionService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ResetSyncCheckpointService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\ResumeSyncExecutionService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\RetryFailedItemsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\RunActiveSyncJobsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\RunQueuedExecutionsService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\SyncJobExecutorInterface;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\UpdateSyncJobService;
+use GlpiPlugin\Uxconnector\Domain\Sync\Enum\InteractionTrigger;
+use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncJobStatus;
 use GlpiPlugin\Uxconnector\Domain\Sync\Policy\TargetFieldPolicy;
-use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncCheckpointRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\ExecutionStopRequestRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\InteractionLookupRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\ObjectLinkRepositoryInterface;
+use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncCheckpointRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncFailureRepositoryInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncJobRepositoryInterface;
-use GlpiPlugin\Uxconnector\Infrastructure\Sync\Security\WebhookRequestAuthenticator;
-use GlpiPlugin\Uxconnector\Domain\Sync\Enum\InteractionTrigger;
-use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncJobStatus;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\EngineServiceProvider;
 use GlpiPlugin\Uxconnector\Infrastructure\GlpiHl\GlpiAssetReferencePostProcessor;
 use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\GlpiRestV1LocationSearchOptionCatalog;
 use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\GlpiRestV1TelecomLocationResourcePathResolver;
 use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\GlpiTargetFieldsWriter;
+use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\IndigoMicrosoftLicenseBatchProcessor;
+use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\IndigoNetworkLocationBatchProcessor;
 use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\IndigoTelecomLocationBatchProcessor;
 use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\LegacyLocationProfileCatalog;
 use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\LegacyLocationProfilePathResolver;
-use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\IndigoNetworkLocationBatchProcessor;
-use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\IndigoMicrosoftLicenseBatchProcessor;
 use GlpiPlugin\Uxconnector\Infrastructure\Shared\Event\SynchronousEventDispatcher;
 use GlpiPlugin\Uxconnector\Infrastructure\Shared\Persistence\GlpiTransactionManager;
+use GlpiPlugin\Uxconnector\Infrastructure\Sync\Fields\FieldsTargetCatalog;
+use GlpiPlugin\Uxconnector\Infrastructure\Sync\Lock\MySqlExecutionMutex;
+use GlpiPlugin\Uxconnector\Infrastructure\Sync\Lock\MySqlSyncWorkLock;
+use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\ExecutionStopRequestRepository;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\ObjectLinkPersistenceMapper;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\ObjectLinkRepository;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\SyncCheckpointRepository;
@@ -79,13 +81,11 @@ use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\SyncExecutionReposito
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\SyncFailureRepository;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\SyncJobPersistenceMapper;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Persistence\SyncJobRepository;
-use GlpiPlugin\Uxconnector\Infrastructure\Sync\Lock\MySqlExecutionMutex;
-use GlpiPlugin\Uxconnector\Infrastructure\Sync\Lock\MySqlSyncWorkLock;
+use GlpiPlugin\Uxconnector\Infrastructure\Sync\Security\WebhookRequestAuthenticator;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Writer\GlpiItemWriter;
-use GlpiPlugin\Uxconnector\Infrastructure\Sync\Fields\FieldsTargetCatalog;
 use GlpiPlugin\Uxconnector\Infrastructure\Template\TemplateFieldTransformProvider;
-use GlpiPlugin\Uxconnector\Infrastructure\Zendesk\ZendeskTicketPostProcessor;
 use GlpiPlugin\Uxconnector\Infrastructure\Zendesk\ZendeskRetrySourceRecordRefresher;
+use GlpiPlugin\Uxconnector\Infrastructure\Zendesk\ZendeskTicketPostProcessor;
 use GlpiPlugin\Uxconnector\Infrastructure\Zendesk\ZendeskTopicCatalog;
 use GlpiPlugin\Uxconnector\Infrastructure\Zendesk\ZendeskTopicCategoryBatchProcessor;
 use GlpiPlugin\Uxconnector\Infrastructure\Zendesk\ZendeskTopicCategoryService;
@@ -505,7 +505,7 @@ final class SyncServiceProvider
     }
 
     /**
-     * CYCLE D'ACTIVATION (issu des deux relectures externes).
+     * Interaction activation lifecycle services.
      */
     public static function activateSyncJobService(): ActivateSyncJobService
     {

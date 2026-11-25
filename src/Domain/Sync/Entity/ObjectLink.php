@@ -22,38 +22,14 @@ use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ObjectLinkId;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
 /**
- * ObjectLink is the aggregate root remembering that a given external
- * record (identified by ExternalId + external object type and scoped to one
- * Connection/AuthConfig) has already been reconciled to a specific GLPI item.
- * The creating SyncJob id is retained for traceability, but it is no longer part
- * of lookup semantics: inbound and outbound interactions on the same connection
- * deliberately share the same equivalence.
+ * Stable association between an external record and a GLPI item, scoped to the connection
+ * and external object type. The creating job is retained for traceability, not lookup identity.
+ * Inbound and outbound interactions on the same connection share this association.
  *
- * CORRECTIF (réconciliation, revue de code externe) : avant cet
- * agrégat, GlpiItemWriter retrouvait un enregistrement existant par
- * une simple recherche `WHERE <matchField> = <valeur> LIMIT 1` sur la
- * table de l'itemtype cible - si plusieurs enregistrements GLPI
- * partageaient la même valeur (deux Computer de même serial dans deux
- * entités différentes, par exemple), le premier trouvé était
- * silencieusement modifié, potentiellement le mauvais.
- *
- * ObjectLink change ce comportement de fond en comble : le champ
- * métier (MatchField, ex. "serial") ne sert plus qu'à la toute
- * première tentative de rapprochement d'un ExternalId encore inconnu.
- * Une fois ce lien créé, toute synchronisation suivante retrouve
- * l'objet GLPI directement par son identifiant (`itemId`), sans plus
- * jamais interroger la valeur métier - élimine le risque de collision
- * pour tout enregistrement déjà rapproché une première fois.
- *
- * ObjectLink ne duplique volontairement pas l'entité GLPI : son
- * identité fonctionnelle est bornée par la Connection/AuthConfig, le type
- * d'objet externe et l'identifiant externe. L'affectation d'entité est résolue à chaque
- * exécution par le SyncJob puis appliquée par GlpiItemWriter ; la
- * persister aussi ici créerait deux sources de vérité.
- *
- * RULE-ENTITY-001 à 005 : propriétés privées, invariants dans cette
- * classe, aucune requête SQL, comportement réel via des méthodes
- * métier explicites.
+ * MatchField is used only for initial reconciliation. Subsequent writes use the associated
+ * GLPI identifier, avoiding ambiguous matches on duplicate business values. The target
+ * entity is resolved from the job at execution time and checked by the writer; it is not
+ * duplicated here. This aggregate enforces invariants without SQL or persistence concerns.
  */
 final class ObjectLink
 {

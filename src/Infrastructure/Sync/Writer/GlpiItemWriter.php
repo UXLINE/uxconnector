@@ -16,57 +16,26 @@ namespace GlpiPlugin\Uxconnector\Infrastructure\Sync\Writer;
 
 use DBmysql;
 use GlpiPlugin\Uxconnector\Domain\Sync\Entity\ObjectLink;
-use GlpiPlugin\Uxconnector\Domain\Sync\Policy\TargetFieldPolicy;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype;
-use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\GlpiTargetFieldsWriter;
+use GlpiPlugin\Uxconnector\Domain\Sync\Policy\TargetFieldPolicy;
 use GlpiPlugin\Uxconnector\Domain\Sync\Repository\ObjectLinkRepositoryInterface;
-use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ReconciliationContext;
-use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\LinkedTargetReference;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ExternalId;
+use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\LinkedTargetReference;
+use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ReconciliationContext;
 use GlpiPlugin\Uxconnector\Domain\Sync\Writer\ActionAwareSyncItemWriterInterface;
+use GlpiPlugin\Uxconnector\Infrastructure\GlpiRestV1\GlpiTargetFieldsWriter;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\Runtime\SyncRuntimeGuard;
 
 /**
- * Writes one mapped record into a GLPI itemtype (Computer, User, ...)
- * via that itemtype's own CommonDBTM class - never raw SQL INSERT/UPDATE
- * - so every GLPI-side behaviour a plugin is expected to respect
- * (hooks, logs) still runs normally.
+ * Writes a mapped record through a curated GLPI CommonDBTM itemtype, preserving hooks and logs.
+ * CommonDBTM add()/update() do not enforce interactive rights automatically. Application
+ * entry points enforce the plugin rights and entity scope; scheduled execution is a system actor.
  *
- * `CommonDBTM::add()`/`update()` do not themselves enforce the
- * interactive-user rights model (`can()`/`canCreateItem()`) - that
- * check is normally the calling Controller's responsibility. This
- * writer is deliberately never gated by it: UXConnector's CronTask
- * (and its "Run now" UI counterpart) acts as an explicit **system
- * actor** with its own authorization model - the plugin's own
- * `plugin_uxconnector_syncjob` right, checked once before a SyncJob
- * runs at all - not as a stand-in for an interactive GLPI user. An
- * earlier version of this doc-block implied CommonDBTM protected
- * rights automatically here; a code review correctly challenged that
- * claim, and this paragraph replaces it with the actual, intended
- * design.
- *
- * CORRECTIF (réconciliation, revue de code externe) : la stratégie de
- * rapprochement n'est plus une simple recherche
- * `WHERE <matchField> = <valeur> LIMIT 1`, qui pouvait silencieusement
- * modifier le mauvais enregistrement GLPI si plusieurs partageaient
- * la même valeur. Elle repose désormais sur `ObjectLink` :
- *
- *   1. `ObjectLink` déjà connu pour cet `ExternalId` → UPDATE direct
- *      par identifiant GLPI, aucune ambiguïté possible.
- *   2. Sinon, recherche par `MatchField` (première tentative
- *      uniquement) :
- *        - 0 résultat  → CREATE, puis mémorisation du lien ;
- *        - 1 résultat  → LINK (adoption d'un enregistrement GLPI déjà
- *          existant, créé manuellement ou par un import antérieur),
- *          puis mémorisation du lien ;
- *        - >1 résultat → COLLISION : refus d'écrire, plutôt que de
- *          deviner lequel est le bon.
- *
- * Security note: `$itemtype->glpiClassName()` only ever returns one
- * of TargetItemtype's fixed, curated cases - never a string derived
- * from the external system's response or from unvalidated
- * configuration - so the `new $className()` below can never
- * instantiate an arbitrary class (see TargetItemtype's doc-block).
+ * Reconciliation first uses a known ObjectLink and its GLPI identifier. For an unknown
+ * external identifier, the configured match field is searched within the target entity:
+ * zero matches create a record, one match adopts it, and multiple matches reject the write.
+ * Successful reconciliation stores the connection-scoped ObjectLink for subsequent runs.
+ * Only TargetItemtype's fixed allow-list supplies the class instantiated by this writer.
  */
 final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
 {
@@ -216,14 +185,9 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
             $data['is_request'] ??= 1;
         }
 
-        // CORRECTIF (gestion des entités, revue de code externe) :
-        // $context->entitiesId est déjà résolu par ExecuteSyncJobService
-        // (voir SyncJob::entityAssignmentStrategy()) - ce writer ne
-        // fait qu'appliquer la valeur reçue, jamais la calculer.
-        // null signifie "aucune stratégie configurée pour ce SyncJob",
-        // pas "entité 0" : entities_id n'est alors pas explicitement
-        // fixé, laissant GLPI appliquer son propre comportement par
-        // défaut (adapté à une instance mono-entité).
+        // The application resolves the entity strategy. This writer applies its result.
+        // A null entity means no configured strategy, not root entity 0;
+        // in that case GLPI supplies its own default behavior.
         if ($context->entitiesId !== null) {
             if (!$this->entityExists($context->entitiesId)) {
                 return false;
@@ -322,7 +286,7 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
                 $this->objectLinkRepository->delete($link->id());
             }
         }
-        $id = SyncRuntimeGuard::run(static fn() => $item->add($data));
+        $id = SyncRuntimeGuard::run(static fn () => $item->add($data));
         if ($id === false) {
             return false;
         }
@@ -378,7 +342,7 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
             $this->lastAction = 'skip';
             return true;
         }
-        return SyncRuntimeGuard::run(static fn(): bool => (bool) $item->update(['id' => $id] + $delta));
+        return SyncRuntimeGuard::run(static fn (): bool => (bool) $item->update(['id' => $id] + $delta));
     }
 
     private function writeUserEmail(ReconciliationContext $context, ?string $email): void
@@ -511,13 +475,8 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
             return false;
         }
 
-        // CORRECTIF (gestion des entités, revue de code externe) :
-        // scoper également la recherche par entities_id quand elle est
-        // connue réduit directement le risque de collision - deux
-        // enregistrements de même MatchField dans deux entités
-        // différentes (l'exemple même utilisé par la revue : deux
-        // Computer de même serial, un à Nantes, un à Paris) ne sont
-        // plus ambigus dès lors que l'entité cible est déterminée.
+        // Scope initial matching to the resolved target entity so identical business
+        // values in different entities cannot select the wrong record.
         $matchingIds = $this->findMatchingIds(
             $item->getTable(),
             $context->matchField->value(),
@@ -526,25 +485,20 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
         );
 
         if (count($matchingIds) > 1) {
-            // COLLISION : plusieurs enregistrements GLPI partagent la
-            // même valeur de MatchField - impossible de savoir lequel
-            // est le bon sans risquer de modifier l'autre. Refuser
-            // plutôt que deviner.
+            // Multiple matches are ambiguous: refuse the write instead of choosing one.
             return false;
         }
 
         if (count($matchingIds) === 1) {
-            // LINK : un enregistrement GLPI existe déjà (créé
-            // manuellement, ou par un import antérieur à ce plugin) -
-            // on l'adopte plutôt que d'en créer un doublon.
+            // Adopt the single existing record and retain its association for later runs.
             $existingId = $matchingIds[0];
             $data['id'] = $existingId;
             $this->lastAction = 'link';
             $success = $this->updateExisting($item, $data);
         } else {
-            // CREATE : aucun enregistrement ne correspond.
+            // No match exists: create the record.
             $this->lastAction = 'create';
-            $generatedId = SyncRuntimeGuard::run(static fn() => $item->add($data));
+            $generatedId = SyncRuntimeGuard::run(static fn () => $item->add($data));
             $success = $generatedId !== false;
             $existingId = $success ? (int) $generatedId : null;
         }
@@ -635,7 +589,7 @@ final class GlpiItemWriter implements ActionAwareSyncItemWriterInterface
         }
 
         $this->lastAction = 'create';
-        $generatedId = SyncRuntimeGuard::run(static fn() => $item->add($data));
+        $generatedId = SyncRuntimeGuard::run(static fn () => $item->add($data));
         if ($generatedId === false) {
             return false;
         }

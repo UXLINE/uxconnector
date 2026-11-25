@@ -1,14 +1,4 @@
-{# ---------------------------------------------------------------------
-   UXConnector plugin for GLPI
-   ---------------------------------------------------------------------
-   Fragment HTML pur : aucun {% extends %} (REX résolu - cf.
-   AbstractController et templates/engine/authconfig/list.html.twig
-   pour le même principe appliqué au bounded context Engine).
-
-   Contexte attendu : `syncjobs` (list<SyncJobDTO>) fourni par
-   SyncJobController::index(). Vue passive uniquement (RULE-048) :
-   aucun accès Repository, aucun calcul métier, aucune Entité exposée.
-   --------------------------------------------------------------------- #}
+{# HTML fragment expecting syncjobs from SyncJobController::index(). Renders DTOs without persistence or business logic. #}
 
 <div class="uxconnector-syncjob-list">
     <h2>{{ __('Synchronization jobs', 'uxconnector') }}</h2>
@@ -102,12 +92,7 @@
                         </td>
                         <td>{{ syncjob.updatedAt }}</td>
                         <td>
-                            {# ---------------------------------------------------
-                               CYCLE D'ACTIVATION (issu de deux relectures externes) :
-                               sans ces actions, un SyncJob créé depuis l'UI
-                               restait bloqué en DRAFT pour toujours - le CronTask
-                               ne reprend que les jobs retournés par findRunnable().
-                               --------------------------------------------------- #}
+                            {# Explicit activation makes draft interactions eligible for scheduling. #}
                             {% if syncjob.status == 'draft' or syncjob.status == 'paused' %}
                                 <form method="post" action="syncjob.php" class="d-inline">
                                     <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">

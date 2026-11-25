@@ -1,5 +1,19 @@
 ## 2.18.39
 
+Publication stable du 25 novembre 2026 sur la branche `production`, après confirmation de la recette par le mainteneur. Le code exécutable est identique à la livraison corrigée `audit-20261124.1`. Le descripteur XML passe à `stable` ; les notes de version et l’ordre activation/inventaire de la procédure sont actualisés.
+
+Complément du 24 novembre 2026 (`audit-20261124.1`, numéro de version inchangé) :
+
+- Ferme les accès API génériques aux jobs, exécutions et liens internes, y compris listes et recherches.
+- Retire l’action et le bouton de révélation du bearer webhook devenu interne.
+- Ajoute un repli IPv6/IPv4 borné des transports stream avec conservation de la validation TLS et des adresses approuvées.
+- Aligne la clé primaire de la table anti-rejeu sur un `id` numérique et conserve l’unicité des empreintes et les réservations existantes.
+- Produit un inventaire des jobs actifs à revoir lors d’une migration, avec commande CLI native en lecture seule.
+- Traduit les commentaires du code livré et supprime l’outil Copilot obsolète du dépôt.
+- Complète les tests et la [procédure de réinstallation à version identique](docs/SECURITY_2.18.39_FOLLOWUP.md).
+
+Premier lot du 23 novembre 2026 :
+
 - Ferme les écritures directes sur les connexions par l’API générique GLPI.
 - Migre les anciens secrets vers une liaison origine/méthode chiffrée et refuse leur usage sans liaison.
 - Contrôle toutes les entités des jobs liés avant toute modification, test, activation ou désactivation d’une connexion.

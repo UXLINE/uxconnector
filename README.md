@@ -1,6 +1,8 @@
 # UXConnector pour GLPI
 
-**Version 2.18.39, préparée pour validation sur une instance de test** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
+**Version stable 2.18.39** · HELPLINE by EVERIENCE · Licence GPL-3.0-or-later
+
+[Télécharger l’archive installable](https://github.com/UXLINE/uxconnector/releases/download/v2.18.39/uxconnector-2.18.39.tar.gz) · [Notes de version](docs/releases/RELEASE_NOTES_2.18.39.md) · [XML de production](https://raw.githubusercontent.com/UXLINE/uxconnector/refs/heads/production/uxconnector.xml)
 
 UXConnector connecte GLPI à des services externes. Il configure les connexions HTTP, les mappings et les jobs de synchronisation. Selon le modèle, un job peut être exécuté manuellement, planifié, déclenché par un webhook ou par un événement GLPI.
 
@@ -27,6 +29,10 @@ Le package contient **13 connecteurs et 40 définitions de jobs, dont 31 instanc
 | REST générique | Connexions configurables selon l’usage, sans job préconfiguré. |
 
 ## Installation et mise à jour
+
+**Complément du 24 novembre 2026, révision `audit-20261124.1` : numéro maintenu à 2.18.39.** Si 2.18.39 est déjà installée, relancer explicitement `plugin:install --force` après remplacement des fichiers. Ne pas désinstaller. La [procédure et la réponse complète aux remarques TECLIB](docs/SECURITY_2.18.39_FOLLOWUP.md) détaillent la migration, le rapport des jobs actifs et la fermeture de l’API CRUD des objets internes.
+
+**Anciens webhooks :** la migration de clés historiques génère de nouveaux secrets de signature. Le bearer/jeton seul est refusé. Le droit **Webhook credentials** n’est attribué automatiquement à aucun profil : déléguer Reveal/Rotate et reconfigurer les émetteurs concernés avant leur remise en service. Une installation déjà migrée ne subit pas de nouvelle rotation automatique.
 
 1. Sauvegarder la base GLPI et le dossier du plugin avant une mise à jour.
 2. Extraire le fichier `.tar.gz` sous `<GLPI_ROOT>/plugins/`. Le fichier `setup.php` doit se trouver dans `plugins/uxconnector/`.
@@ -70,4 +76,4 @@ Les listes de jobs, les fiches et les données d’exécution tiennent compte du
 - [Descripteur de publication](uxconnector.xml)
 - [Licence](LICENSE)
 
-Le descripteur prépare le tag `v2.18.39` et l’archive `uxconnector-2.18.39.tar.gz`. La publication et l’autorisation Marketplace de l’instance de test restent des étapes distinctes de ces correctifs.
+La branche `production` distribue la version stable 2.18.39. Le descripteur référence le tag `v2.18.39` et l’archive installable `uxconnector-2.18.39.tar.gz`. L’autorisation de distribution sur le Marketplace privé reste administrée par TECLIB.

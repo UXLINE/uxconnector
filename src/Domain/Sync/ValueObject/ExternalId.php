@@ -15,16 +15,10 @@ declare(strict_types=1);
 namespace GlpiPlugin\Uxconnector\Domain\Sync\ValueObject;
 
 /**
- * The stable, external-system-issued identifier of a single record
- * (e.g. a remote record ID) - the actual value
- * `ObjectLink` uses to remember which GLPI item a given external
- * record was already reconciled to.
- *
- * CORRECTIF (réconciliation, revue de code externe) : distinct de
- * `MatchField`, qui ne sert plus qu'à la toute première tentative de
- * rapprochement (voir `ObjectLink`'s doc-block). `ExternalId` est la
- * valeur brute lue dans la réponse du système tiers, jamais une
- * colonne GLPI.
+ * Stable identifier issued by the external system for one source record.
+ * ObjectLink uses it with the connection and external object type to identify the GLPI target.
+ * Unlike MatchField, which supports initial reconciliation, this is a source identifier,
+ * not a GLPI column name.
  */
 final readonly class ExternalId
 {

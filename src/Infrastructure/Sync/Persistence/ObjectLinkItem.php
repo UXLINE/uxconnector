@@ -9,8 +9,8 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * RULE-032/AI-ENTITY-002 : purement technique, jamais utilisée par le
- * Domaine ou l'Application. Seul ObjectLinkRepository la manipule.
+ * RULE-032/AI-ENTITY-002: persistence adapter used only by ObjectLinkRepository.
+ * Domain and Application code do not depend on this GLPI itemtype.
  * -------------------------------------------------------------------------
  */
 
@@ -32,6 +32,8 @@ use CommonDBTM;
  */
 final class ObjectLinkItem extends CommonDBTM
 {
+    use InternalSyncItemAccess;
+
     public static $rightname = 'plugin_uxconnector_syncjob';
 
     public static function getTable($classname = null): string

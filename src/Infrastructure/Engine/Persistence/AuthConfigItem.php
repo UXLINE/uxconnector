@@ -9,16 +9,9 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * RULE-COMPOSER-005 : ce fichier respecte le namespace obligatoire
- * `GlpiPlugin\Uxconnector\`, y compris pour cette classe technique de
- * persistance - GLPI 11 résout nativement les itemtypes namespacés
- * (FQCN), la convention legacy `PluginUxconnectorXxx` sans namespace
- * n'est donc plus nécessaire.
- *
- * RULE-032 / AI-ENTITY-002 : cette classe n'est jamais utilisée
- * directement par le Domaine ou l'Application. Elle est un détail
- * d'implémentation exclusif de AuthConfigRepository. L'agrégat
- * `Domain\Engine\Entity\AuthConfig` n'hérite jamais de CommonDBTM.
+ * RULE-COMPOSER-005: namespaced persistence itemtype supported by GLPI 11.
+ * RULE-032/AI-ENTITY-002: used only by AuthConfigRepository. The Domain
+ * AuthConfig aggregate does not extend CommonDBTM.
  * -------------------------------------------------------------------------
  */
 

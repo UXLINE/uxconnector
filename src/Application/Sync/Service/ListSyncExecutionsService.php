@@ -19,17 +19,8 @@ use GlpiPlugin\Uxconnector\Domain\Sync\Repository\SyncExecutionRepositoryInterfa
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
 
 /**
- * Read-only use case: lists the execution history of a given SyncJob
- * as DTOs, most recent first.
- *
- * CQRS (adapted) : a pure Query never opens a transaction and never
- * dispatches a Domain Event - same convention as ListSyncJobsService.
- *
- * Écran de consultation de l'historique (§3 du document de synthèse
- * projet) : jusqu'ici, chaque SyncExecution était persistée mais
- * uniquement consultable en base de données - ce Service est le
- * premier maillon applicatif de l'écran qui les rend visibles depuis
- * l'interface GLPI.
+ * Read-only use case returning a job's execution history as DTOs, most recent first.
+ * As a query service, it neither opens a transaction nor dispatches a domain event.
  */
 final class ListSyncExecutionsService
 {
@@ -44,7 +35,7 @@ final class ListSyncExecutionsService
     public function execute(SyncJobId $syncJobId): array
     {
         return array_map(
-            static fn($execution): SyncExecutionDTO => SyncExecutionDTO::fromEntity($execution),
+            static fn ($execution): SyncExecutionDTO => SyncExecutionDTO::fromEntity($execution),
             $this->repository->findBySyncJobId($syncJobId),
         );
     }

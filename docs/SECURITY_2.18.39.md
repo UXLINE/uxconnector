@@ -1,5 +1,7 @@
 # UXConnector 2.18.39 : réponse aux quatre constats TECLIB
 
+**Document historique du premier lot. Voir le [complément du 24 novembre](SECURITY_2.18.39_FOLLOWUP.md) pour la livraison actuelle et la migration à numéro inchangé.**
+
 Date : 23 novembre 2026. Base : `v2.18.38-rc.13`, commit `33882b7bc7cc033500048f0c6c66f4a4a5f1db06`.
 
 Les quatre corrections sont implémentées et testées localement. Ce document ne constitue pas une validation de mise en production par TECLIB. La version sans suffixe RC est préparée pour la validation sur une instance de test via le Marketplace privé.

@@ -9,9 +9,8 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * RULE-CRON-001/RULE-10.10.011/012 : cette classe ne contient aucune
- * logique métier, aucun SQL, aucun appel HTTP. Elle adapte
- * uniquement l'appel du planificateur GLPI vers RunActiveSyncJobsService.
+ * RULE-CRON-001/RULE-10.10.011/012: adapts GLPI's scheduler to
+ * RunActiveSyncJobsService, without business logic, SQL or HTTP calls.
  * -------------------------------------------------------------------------
  */
 

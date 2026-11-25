@@ -44,6 +44,8 @@ DOCUMENTS = (
     'docs/releases/RELEASE_NOTES_2.18.38.md',
     'docs/releases/RELEASE_NOTES_2.18.38_RC13.md',
     'docs/SECURITY_2.18.39.md',
+    'docs/SECURITY_2.18.39_FOLLOWUP.md',
+    'docs/releases/RELEASE_NOTES_2.18.39.md',
 )
 
 

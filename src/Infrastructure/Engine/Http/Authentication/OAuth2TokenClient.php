@@ -14,10 +14,11 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication;
 
-use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
 use GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
 use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedStreamOpener;
 
 /**
  * Exchanges a client_id/client_secret pair for a bearer access token,
@@ -155,11 +156,11 @@ final class OAuth2TokenClient
 
         $body = http_build_query(array_filter(
             $fields,
-            static fn(mixed $value): bool => $value !== null && $value !== '',
+            static fn (mixed $value): bool => $value !== null && $value !== '',
         ));
         $headers = [$destination->hostHeader(), 'Content-Type: application/x-www-form-urlencoded', ...$extraHeaders];
-        $context = stream_context_create([
-            'http' => [
+        $deadline = hrtime(true) + self::TIMEOUT_SECONDS * 1_000_000_000;
+        $stream = (new PinnedStreamOpener())->open($destination, [
                 'method' => 'POST',
                 'header' => implode("\r\n", $headers),
                 'content' => $body,
@@ -167,12 +168,7 @@ final class OAuth2TokenClient
                 'ignore_errors' => true,
                 'follow_location' => 0,
                 'max_redirects' => 0,
-            ],
-            'ssl' => $destination->tlsOptions(),
-        ]);
-
-        $deadline = hrtime(true) + self::TIMEOUT_SECONDS * 1_000_000_000;
-        $stream = @fopen($destination->streamUrl(), 'rb', false, $context);
+            ], $deadline, true);
         if ($stream === false) {
             throw \GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException::transportFailure(
                 'Unable to contact the OAuth2 token endpoint.',
@@ -244,7 +240,7 @@ final class OAuth2TokenClient
             }
             stream_set_timeout($stream, intdiv($remaining, 1_000_000), $remaining % 1_000_000);
             $chunk = fread($stream, min(self::READ_CHUNK_BYTES, self::MAX_RESPONSE_BYTES + 1 - $bytesRead));
-            if (hrtime(true) >= $deadline || (stream_get_meta_data($stream)['timed_out'] ?? false)) {
+            if (hrtime(true) >= $deadline || stream_get_meta_data($stream)['timed_out']) {
                 throw HttpEngineException::transportFailure('OAuth2 token response exceeded the time limit.');
             }
             if ($chunk === false || ($chunk === '' && !feof($stream))) {

@@ -48,7 +48,7 @@ final class WebhookRequestAuthenticator
 
     public static function requiresHmac(): bool
     {
-        // Compatibility accessor for the UI. A server variable cannot disable signatures anymore.
+        // Compatibility accessor for integrations. A server variable cannot disable signatures.
         return true;
     }
 

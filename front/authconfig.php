@@ -9,9 +9,9 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * RULE-043 : ce fichier initialise GLPI, contrôle les droits, et
- * délègue immédiatement à un contrôleur. Aucun SQL, aucun Repository,
- * aucune Entité, aucun calcul métier ici (RULE-CTRL-001/002/003).
+ * RULE-043: GLPI bootstraps this route. It checks rights and delegates
+ * immediately to a controller. No SQL, repository or domain logic belongs
+ * in this entry point (RULE-CTRL-001/002/003).
  * -------------------------------------------------------------------------
  */
 
@@ -39,9 +39,7 @@ $controller = new AuthConfigController(
     SyncServiceProvider::jobEntityAccess(),
 );
 
-// Les actions du cycle d'activation modifient l'état d'une
-// configuration existante : droit UPDATE requis, distinct du droit
-// READ qui suffit pour la simple consultation de la liste.
+// Connection lifecycle actions require UPDATE; list consultation only requires READ.
 if (isset($_POST['test'])) {
     Session::checkRight('plugin_uxconnector_authconfig', UPDATE);
     $controller->test($_POST);

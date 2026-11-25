@@ -45,21 +45,8 @@ use GlpiPlugin\Uxconnector\Infrastructure\Shared\Persistence\GlpiTransactionMana
 use GlpiPlugin\Uxconnector\Infrastructure\Template\TemplateServiceProvider;
 
 /**
- * Single wiring point for the Engine bounded context's dependency
- * graph, shared by every entry point that needs it
- * (front/authconfig.php, front/authconfig.form.php,
- * SyncJobCronTask, and any future one).
- *
- * This is exactly the centralization promised in front/authconfig.php's
- * original comment ("Ce câblage sera centralisé dès qu'un deuxième
- * front/*.php en aura également besoin.") - a second call site
- * (front/authconfig.form.php) now exists, so the poor man's DI is
- * replaced by this provider rather than duplicated.
- *
- * Deliberately not a full DI container: each method simply builds
- * and returns a fresh, correctly-wired instance. GLPI's request
- * lifecycle is one PHP process per HTTP request, so there is no
- * shared-instance/singleton concern to solve here.
+ * Shared wiring for Engine entry points, including connection screens and scheduled jobs.
+ * Each factory returns a newly wired service; no global singleton state is introduced.
  */
 final class EngineServiceProvider
 {
@@ -87,10 +74,7 @@ final class EngineServiceProvider
     }
 
     /**
-     * CORRECTIF SÉCURITÉ (SSRF, revue de code externe) : source unique
-     * de la politique de destination, partagée par GenericHttpEngine
-     * (vérification à chaque exécution) et CreateAuthConfigService
-     * (rejet immédiat à la création).
+     * Shared destination policy for request-time checks and configuration-time rejection.
      */
     public static function destinationPolicy(): DestinationPolicyInterface
     {
@@ -154,7 +138,7 @@ final class EngineServiceProvider
     }
 
     /**
-     * CYCLE D'ACTIVATION (issu des deux relectures externes).
+     * Connection activation lifecycle services.
      */
     public static function testAuthConfigService(): TestAuthConfigService
     {

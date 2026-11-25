@@ -96,7 +96,7 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
                 }
                 [$action, $targetId, $type,
                     $externalType] = \GlpiPlugin\Uxconnector\Infrastructure\Sync\Runtime\SyncRuntimeGuard::run(
-                        fn(): array => $this->processRecord($job, $row, $map, $sourceId)
+                        fn (): array => $this->processRecord($job, $row, $map, $sourceId)
                     );
                 if ($targetId > 0) {
                     $this->rememberLink($job, $sourceId, $type, $targetId, $externalType);
@@ -160,7 +160,7 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
         }
         // Search APIs must return display labels for Fields dropdowns. A raw
         // integer is an instance-local dropdown option ID, not a GLPI target
-        // status, licence price or métier code; fail rather than corrupt it.
+        // status, licence price or business code; fail rather than corrupt it.
         if (
             is_int($raw) && in_array($logical, [
             'status', 'entity_code', 'amount_ht', 'monthly_amount',
@@ -205,7 +205,7 @@ abstract class AbstractLegacyLocationBatchProcessor implements ExecutionAwareBat
     /** @param array<string,mixed> $values @return array<string,mixed> */
     protected function nonempty(array $values): array
     {
-        return array_filter($values, static fn($v): bool => $v !== null && $v !== '');
+        return array_filter($values, static fn ($v): bool => $v !== null && $v !== '');
     }
 
     protected function resolveDropdown(string $table, string $className, string $name): int

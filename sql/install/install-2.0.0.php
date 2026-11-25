@@ -154,11 +154,8 @@ return static function (Migration $migration): void {
         $DB->runFile(__DIR__ . '/schema/sync_checkpoints.sql');
     }
 
-    // CORRECTIF (réconciliation, revue de code externe) : mémorise le
-    // rapprochement entre un enregistrement externe et un objet GLPI,
-    // pour ne plus jamais retomber sur une recherche ambiguë par
-    // valeur métier (`match_field`) une fois ce rapprochement établi
-    // une première fois - voir Domain\Sync\Entity\ObjectLink.
+    // Persist the source-to-GLPI association after initial reconciliation so later
+    // writes do not depend on potentially ambiguous business values.
     $objectLinkTable = 'glpi_plugin_uxconnector_objectlinks';
 
     if (!$DB->tableExists($objectLinkTable)) {
@@ -167,12 +164,8 @@ return static function (Migration $migration): void {
         $DB->runFile(__DIR__ . '/schema/objectlinks.sql');
     }
 
-    // RULE-MIGRATION additive : une instance déjà installée en
-    // 2.x avant l'introduction d'ObjectLink porte une table
-    // `syncjobs` sans la colonne `external_id_field` - l'ajouter
-    // sans détruire les lignes existantes (Migration::addField()
-    // est elle-même idempotente : elle ne réapplique rien si la
-    // colonne existe déjà).
+    // Add the external identifier field without changing existing rows.
+    // Migration::addField() is idempotent when the column already exists.
     if ($DB->tableExists($syncJobTable) && !$DB->fieldExists($syncJobTable, 'external_id_field')) {
         $migration->addField(
             $syncJobTable,
@@ -182,11 +175,8 @@ return static function (Migration $migration): void {
         );
     }
 
-    // RULE-MIGRATION additive : gestion des entités (§3.11 du document
-    // de synthèse projet) - colonne nullable, aucune valeur par défaut
-    // requise : NULL signifie explicitement "aucune stratégie
-    // configurée", un comportement neutre pour toute instance
-    // mono-entité et pour tout SyncJob existant avant ce correctif.
+    // Add a nullable entity strategy. NULL preserves the legacy GLPI-default
+    // behavior and must never be interpreted as an explicit root entity.
     if ($DB->tableExists($syncJobTable) && !$DB->fieldExists($syncJobTable, 'entity_assignment_strategy')) {
         $migration->addField(
             $syncJobTable,

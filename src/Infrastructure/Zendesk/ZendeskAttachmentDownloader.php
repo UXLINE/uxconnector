@@ -11,9 +11,10 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Zendesk;
 
-use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
 use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedStreamOpener;
 
 /**
  * Downloads a Zendesk attachment without forwarding API credentials to a CDN.
@@ -123,7 +124,7 @@ final class ZendeskAttachmentDownloader
                 &$location,
                 &$contentType,
                 &$advertisedBytes
-): int {
+            ): int {
                 if (str_starts_with(strtolower($line), 'location:')) {
                     $location = trim(substr($line, 9));
                 } elseif (str_starts_with(strtolower($line), 'content-type:')) {
@@ -142,7 +143,7 @@ final class ZendeskAttachmentDownloader
                 &$length,
                 &$tooLarge,
                 &$diskFailure
-): int {
+            ): int {
                 $len = strlen($chunk);
                 $length += $len;
                 if ($length > self::MAX_BYTES) {
@@ -233,16 +234,13 @@ final class ZendeskAttachmentDownloader
     {
         $destination = PinnedHttpDestination::resolve($url, $this->destinationPolicy);
         $destination->requirePublicAddresses();
-        $context = stream_context_create([
-            'http' => [
+        $deadline = hrtime(true) + self::TIMEOUT_SECONDS * 1_000_000_000;
+        $stream = (new PinnedStreamOpener())->open($destination, [
                 'method' => 'GET', 'timeout' => self::TIMEOUT_SECONDS,
                 'ignore_errors' => true, 'follow_location' => 0, 'max_redirects' => 0,
                 'header' => 'User-Agent: UXConnector/' . PLUGIN_UXCONNECTOR_VERSION
                     . "\r\n" . $destination->hostHeader(),
-            ],
-            'ssl' => $destination->tlsOptions(),
-        ]);
-        $stream = @fopen($destination->streamUrl(), 'rb', false, $context);
+            ], $deadline);
         if ($stream === false) {
             $this->error(
                 'ATTACHMENT_STREAM_FAILURE',
@@ -295,7 +293,17 @@ final class ZendeskAttachmentDownloader
         $bytes = 0;
         $good = true;
         while (!feof($stream)) {
+            $remaining = (int) (($deadline - hrtime(true)) / 1000);
+            if ($remaining <= 0) {
+                $good = false;
+                break;
+            }
+            stream_set_timeout($stream, intdiv($remaining, 1_000_000), $remaining % 1_000_000);
             $chunk = fread($stream, 8192);
+            if (hrtime(true) >= $deadline || stream_get_meta_data($stream)['timed_out']) {
+                $good = false;
+                break;
+            }
             if ($chunk === false || ($chunk === '' && !feof($stream))) {
                 $good = false;
                 break;

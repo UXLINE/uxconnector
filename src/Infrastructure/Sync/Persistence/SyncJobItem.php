@@ -9,8 +9,8 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * RULE-032/AI-ENTITY-002 : purement technique, jamais utilisée par le
- * Domaine ou l'Application. Seul SyncJobRepository la manipule.
+ * RULE-032/AI-ENTITY-002: persistence adapter used only by SyncJobRepository.
+ * Domain and Application code do not depend on this GLPI itemtype.
  * -------------------------------------------------------------------------
  */
 
@@ -26,6 +26,8 @@ use CommonDBTM;
  */
 final class SyncJobItem extends CommonDBTM
 {
+    use InternalSyncItemAccess;
+
     // Must stay in sync with PluginUxconnectorProfile::getRightDefinitions()
     // (inc/profile.class.php) - see AuthConfigItem::$rightname's comment
     // for why this cannot be derived automatically.
@@ -35,16 +37,6 @@ final class SyncJobItem extends CommonDBTM
     public static $undisclosedFields = [
         'webhook_key', 'webhook_key_hash', 'webhook_token_secret', 'webhook_signing_secret',
     ];
-
-    /** Job mutations must use the plugin services that check both current and requested entity scopes. */
-    public function can($ID, int $right, ?array &$input = null): bool
-    {
-        if (in_array($right, [CREATE, UPDATE, DELETE, PURGE], true)) {
-            return false;
-        }
-
-        return parent::can($ID, $right, $input);
-    }
 
     public static function getTable($classname = null): string
     {

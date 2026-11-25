@@ -18,23 +18,10 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Exception\ForbiddenDestinationException
 use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
 
 /**
- * Port through which any code about to contact an Endpoint - at
- * configuration time (CreateAuthConfigService) or at request time
- * (GenericHttpEngine) - asserts that its destination is actually safe
- * to reach.
- *
- * CORRECTIF SÉCURITÉ (revue de code externe, SSRF) : ni la validation
- * de format d'`Endpoint` (schéma, longueur) ni le durcissement des
- * redirections HTTP du lot P0 ne protègent contre une requête
- * délibérément dirigée vers une adresse dangereuse dès le premier
- * appel (boucle locale, lien-local - qui inclut les métadonnées
- * cloud sur 169.254.169.254). `Endpoint` reste volontairement
- * permissif sur le choix de l'hôte : ce plugin a précisément vocation
- * à contacter des systèmes internes légitimes (Zabbix, API métier sur
- * réseau privé) - la décision de sécurité (quel hôte est acceptable)
- * ne peut donc pas être une simple validation de format, elle doit
- * vivre dans une politique dédiée, invoquée à chaque utilisation
- * réelle d'un Endpoint.
+ * Destination policy shared by configuration validation and each outbound HTTP attempt.
+ * URL syntax validation alone cannot prevent SSRF. Legitimate internal APIs may be
+ * allowed by a dedicated policy, but loopback, metadata and other prohibited destinations
+ * must be rejected before connection. Each transport uses the approved resolved addresses.
  */
 interface DestinationPolicyInterface
 {

@@ -2,7 +2,7 @@
 <root>
     <name>UXConnector</name>
     <key>uxconnector</key>
-    <state>dev</state>
+    <state>stable</state>
     <description>
         <short>
             <fr>Moteur de connecteurs générique et configurable pour GLPI.</fr>
@@ -14,6 +14,9 @@
         </long>
     </description>
     <homepage>https://www.helpline.fr</homepage>
+    <download>https://github.com/UXLINE/uxconnector/releases/tag/v2.18.39</download>
+    <issues>https://github.com/UXLINE/uxconnector/issues</issues>
+    <readme>https://raw.githubusercontent.com/UXLINE/uxconnector/refs/heads/production/README.md</readme>
     <authors>
         <author>HELPLINE</author>
     </authors>

@@ -17,7 +17,6 @@ namespace GlpiPlugin\Uxconnector\Presentation\Sync\Controller;
 use GlpiPlugin\Uxconnector\Application\Engine\Service\ListAuthConfigsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Command\ActivateSyncJobCommand;
 use GlpiPlugin\Uxconnector\Application\Sync\Command\CreateSyncJobCommand;
-use GlpiPlugin\Uxconnector\Application\Sync\Command\ExecuteSyncJobCommand;
 use GlpiPlugin\Uxconnector\Application\Sync\Command\PauseSyncJobCommand;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ActivateSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\CreateSyncJobService;
@@ -25,13 +24,13 @@ use GlpiPlugin\Uxconnector\Application\Sync\Service\GetSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ListSyncExecutionsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\ListSyncJobsService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\PauseSyncJobService;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueSyncJobService;
 use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueFullReplayService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\QueueSyncJobService;
+use GlpiPlugin\Uxconnector\Application\Sync\Service\TargetFieldsCatalogInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\InteractionTrigger;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncDirection;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\TargetItemtype;
 use GlpiPlugin\Uxconnector\Domain\Sync\Policy\TargetFieldPolicy;
-use GlpiPlugin\Uxconnector\Application\Sync\Service\TargetFieldsCatalogInterface;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\AuthConfigReference;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\CollectionPath;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\ExternalIdField;
@@ -86,18 +85,9 @@ final class SyncJobController extends AbstractController
     }
 
     /**
-     * Displays the creation form.
-     *
-     * The AuthConfig dropdown is populated from ListAuthConfigsService
-     * (Engine bounded context) - the same cross-context Application-layer
-     * meeting point already used by ExecuteSyncJobService, here for
-     * reading rather than resolving a reference at execution time.
-     *
-     * CORRECTIF P0 (revue de code externe) : seule la direction
-     * réellement exécutée par ExecuteSyncJobService (INBOUND) est
-     * proposée (SyncDirection::isImplemented()) - avant ce correctif,
-     * OUTBOUND et BIDIRECTIONAL étaient sélectionnables mais
-     * s'exécutaient silencieusement comme INBOUND.
+     * Displays the creation form. ListAuthConfigsService supplies the connection choices.
+     * SyncDirection::isImplemented() limits the choices to directions supported by the runtime;
+     * the same rule also applies during server-side creation and execution.
      */
     /** @param array<string,mixed> $defaults */
     public function showCreateForm(array $defaults = []): void
@@ -180,7 +170,8 @@ final class SyncJobController extends AbstractController
                 null,
                 $trigger,
                 trim((string) ($request['external_object_type'] ?? '')) ?: (string) (
-                    $request['target_itemtype'] ?? 'record'),
+                    $request['target_itemtype'] ?? 'record'
+                ),
                 $outbound,
                 $trigger === InteractionTrigger::WEBHOOK ? bin2hex(random_bytes(32)) : null,
             );
@@ -205,7 +196,8 @@ final class SyncJobController extends AbstractController
 
             $connectionId = (int) ($request['auth_config_reference'] ?? 0);
             $this->redirect('/plugins/uxconnector/front/syncjob.form.php' . (
-                    $connectionId > 0 ? '?auth_config_id=' . $connectionId : ''));
+                $connectionId > 0 ? '?auth_config_id=' . $connectionId : ''
+            ));
         }
     }
 
@@ -246,10 +238,7 @@ final class SyncJobController extends AbstractController
     }
 
     /**
-     * CYCLE D'ACTIVATION (issu des deux relectures externes) : sans ce
-     * point d'entrée, un SyncJob créé depuis l'UI restait bloqué en
-     * DRAFT pour toujours - SyncJobCronTask ne reprend que les jobs
-     * retournés par findRunnable().
+     * Activates an interaction explicitly. Draft interactions are not scheduled by findRunnable().
      *
      * @param array<string, mixed> $request Typically $_POST.
      */

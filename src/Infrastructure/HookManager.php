@@ -85,14 +85,9 @@ final class HookManager
     }
 
     /**
-     * Declares the plugin's entry in GLPI's main navigation.
-     *
-     * REX empirique (voir inc/menu.class.php) : contrairement aux
-     * classes CommonDBTM métier, la classe de menu doit être une
-     * classe legacy sans namespace ('PluginUxconnectorMenu'), et sa
-     * déclaration dans $PLUGIN_HOOKS['menu_toadd'] doit utiliser le
-     * nom de classe directement sous forme de chaîne - jamais
-     * '::class' sur une classe namespacée, jamais de FQCN.
+     * Declares the plugin entry in GLPI navigation.
+     * The menu adapter uses the legacy PluginUxconnectorMenu class (inc/menu.class.php).
+     * Persistence itemtypes use namespaced classes independently of this menu registration.
      */
     private static function registerMenus(): void
     {

@@ -6,7 +6,6 @@ use Glpi\Application\View\TemplateRenderer;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\InteractionTrigger;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncDirection;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
-use GlpiPlugin\Uxconnector\Infrastructure\Sync\Security\WebhookRequestAuthenticator;
 use GlpiPlugin\Uxconnector\Infrastructure\Sync\SyncServiceProvider;
 use GlpiPlugin\Uxconnector\ProfileRights;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -21,10 +20,7 @@ Session::checkRight('plugin_uxconnector_authconfig', READ);
 Session::checkRight('plugin_uxconnector_syncjob', READ);
 Session::checkRight('plugin_uxconnector_syncjob', UPDATE);
 $action = $_POST['credential_action'] ?? null;
-if (!in_array($action, ['reveal_signing', 'reveal_bearer', 'rotate_signing'], true)) {
-    throw new BadRequestHttpException();
-}
-if ($action === 'reveal_bearer' && WebhookRequestAuthenticator::requiresHmac()) {
+if (!in_array($action, ['reveal_signing', 'rotate_signing'], true)) {
     throw new BadRequestHttpException();
 }
 Session::checkRight(ProfileRights::WEBHOOK_CREDENTIALS, $action === 'rotate_signing' ? UPDATE : READ);
@@ -48,7 +44,7 @@ try {
     $returnUrl = '/plugins/uxconnector/front/connection.php?id='
         . $job->authConfigReference()->value() . '#interactions';
 
-    $value = $action === 'reveal_bearer' ? $job->webhookKey() : $job->webhookSigningSecret();
+    $value = $job->webhookSigningSecret();
     if ($value === null) {
         throw new \DomainException('Webhook credential unavailable.');
     }
@@ -72,7 +68,6 @@ header('Referrer-Policy: no-referrer');
 Html::header(__('Webhook credentials', 'uxconnector'), $_SERVER['PHP_SELF'], 'tools', 'PluginUxconnectorMenu');
 TemplateRenderer::getInstance()->display('@uxconnector/connection/webhook-credential.html.twig', [
     'job_id' => $id,
-    'bearer' => $action === 'reveal_bearer',
     'rotated' => $action === 'rotate_signing',
     'credential' => $value,
     'return_url' => $returnUrl,

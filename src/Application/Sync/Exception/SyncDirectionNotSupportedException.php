@@ -17,16 +17,8 @@ namespace GlpiPlugin\Uxconnector\Application\Sync\Exception;
 use GlpiPlugin\Uxconnector\Domain\Sync\Enum\SyncDirection;
 
 /**
- * Raised when a SyncJob's direction is not one ExecuteSyncJobService
- * can actually run (see SyncDirection::isImplemented()).
- *
- * CORRECTIF P0 (revue de code externe) : avant ce correctif, aucune
- * vérification n'existait - un SyncJob OUTBOUND/BIDIRECTIONAL était
- * exécuté exactement comme un SyncJob INBOUND. Cette exception est
- * levée à deux endroits (défense en profondeur) : à la création
- * (CreateSyncJobService) et, à nouveau, à chaque exécution
- * (ExecuteSyncJobService) - un SyncJob créé avant ce correctif ne
- * peut donc plus s'exécuter silencieusement de travers.
+ * Rejects directions unsupported by the runtime at creation and again at execution.
+ * Persisted jobs cannot silently execute in a different direction after an upgrade.
  */
 final class SyncDirectionNotSupportedException extends \InvalidArgumentException
 {

@@ -1,15 +1,4 @@
-{# ---------------------------------------------------------------------
-   UXConnector plugin for GLPI
-   ---------------------------------------------------------------------
-   Fragment HTML pur : aucun {% extends %} (REX résolu - GLPI 11 ne
-   fournit pas de layout de plugin utilisable pour l'héritage Twig).
-   Le point d'entrée front/*.php appelle Html::header()/Html::footer()
-   autour de ce fragment.
-
-   Contexte attendu : `authconfigs` (list<AuthConfigDTO>) fourni par
-   AuthConfigController::index(). Vue passive uniquement (RULE-048) :
-   aucun accès Repository, aucun calcul métier, aucune Entité exposée.
-   --------------------------------------------------------------------- #}
+{# HTML fragment wrapped by the front route. Expects authconfigs from AuthConfigController::index(); renders DTOs without persistence or business logic. #}
 
 <div class="uxconnector-authconfig-list">
     <h2>{{ __('Authentication configurations', 'uxconnector') }}</h2>
@@ -54,11 +43,7 @@
                         </td>
                         <td>{{ authconfig.updatedAt }}</td>
                         <td>
-                            {# ---------------------------------------------------
-                               CYCLE D'ACTIVATION (issu de deux relectures externes) :
-                               sans ces actions, un AuthConfig créé depuis l'UI
-                               restait bloqué en DRAFT pour toujours.
-                               --------------------------------------------------- #}
+                            {# Connection lifecycle actions allow explicit activation after validation. #}
                             {% if authconfig.status == 'draft' or authconfig.status == 'error' %}
                                 <form method="post" action="authconfig.php" class="d-inline">
                                     <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">

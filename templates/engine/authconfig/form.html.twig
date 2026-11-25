@@ -1,14 +1,4 @@
-{# ---------------------------------------------------------------------
-   UXConnector plugin for GLPI
-   ---------------------------------------------------------------------
-   Fragment HTML pur : aucun {% extends %} (même REX que
-   templates/engine/authconfig/list.html.twig).
-
-   Contexte attendu : `authMethods` (list<AuthMethod>) fourni par
-   AuthConfigController::showCreateForm(). Vue passive uniquement
-   (RULE-048) : la validation métier vit exclusivement dans les Value
-   Objects consommés par AuthConfigController::create(), jamais ici.
-   --------------------------------------------------------------------- #}
+{# HTML fragment expecting authMethods from AuthConfigController::showCreateForm(). Business validation remains in Application services and Value Objects. #}
 
 <div class="uxconnector-authconfig-form">
     <h2>{{ __('New authentication configuration', 'uxconnector') }}</h2>

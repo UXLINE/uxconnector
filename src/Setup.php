@@ -122,6 +122,9 @@ final class Setup
 
         $migration->executeMigration();
 
+        $migrateWebhookRequestId = require self::pluginRootDirectory() . '/sql/install/migrate-webhook-request-id.php';
+        $migrateWebhookRequestId($migration);
+
         $migrateWebhookCredentials = require self::pluginRootDirectory() . '/sql/install/migrate-webhook-keys.php';
         $migrateWebhookCredentials($migration);
 
@@ -130,6 +133,9 @@ final class Setup
 
         $bindLegacyCredentials = require self::pluginRootDirectory() . '/sql/install/bind-legacy-credentials.php';
         $bindLegacyCredentials($migration);
+
+        $reportLegacyScopes = require self::pluginRootDirectory() . '/sql/install/report-legacy-job-scopes.php';
+        $reportLegacyScopes($migration);
 
         // ADR-10.10.02 : CronTask registration happens during
         // install/upgrade, never on every plugin_init() (HookManager

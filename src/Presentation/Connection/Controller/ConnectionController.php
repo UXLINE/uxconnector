@@ -38,7 +38,6 @@ use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\AuthConfigName;
 use GlpiPlugin\Uxconnector\Domain\Engine\ValueObject\TestPath;
 use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
 use GlpiPlugin\Uxconnector\Domain\Sync\ValueObject\SyncJobId;
-use GlpiPlugin\Uxconnector\Infrastructure\Sync\Security\WebhookRequestAuthenticator;
 use GlpiPlugin\Uxconnector\Presentation\Controller\AbstractController;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\GlpiRestV1SecretComposer;
 use GlpiPlugin\Uxconnector\Presentation\Engine\Controller\OAuth2ClientCredentialsSecretComposer;
@@ -267,7 +266,6 @@ final class ConnectionController extends AbstractController
                 'connectors' => $this->listConnectorTemplates->execute(),
                 'jobs' => $jobs,
                 'jobs_by_template' => $jobsByTemplate,
-                'allow_webhook_bearer' => !WebhookRequestAuthenticator::requiresHmac(),
                 'can_reveal_webhook' => Session::haveRight('plugin_uxconnector_syncjob', UPDATE)
                     && Session::haveRight(ProfileRights::WEBHOOK_CREDENTIALS, READ),
                 'can_rotate_webhook' => Session::haveRight('plugin_uxconnector_syncjob', UPDATE)

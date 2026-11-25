@@ -73,31 +73,10 @@ enum AuthMethod: string
     }
 
     /**
-     * Whether GenericHttpEngine can actually execute this method
-     * today (see AuthenticationStrategyFactory, which throws for
-     * every case where this returns false).
-     *
-     * CORRECTIF P0 (revue de code externe) : avant ce correctif, le
-     * formulaire de création listait AuthMethod::cases() sans filtre
-     * - un administrateur pouvait donc créer une AuthConfig en OAuth2
-     * qui échouerait systématiquement à la première exécution. Cette
-     * méthode est l'unique source de vérité utilisée à la fois pour
-     * filtrer les choix affichés (Presentation) et pour refuser la
-     * création côté serveur (Application), afin que les deux ne
-     * puissent jamais diverger.
-     *
-     * OAUTH2_CLIENT_CREDENTIALS est désormais implémenté
-     * (AuthenticationStrategyFactory + OAuth2TokenClient) : c'est un
-     * flux purement machine-à-machine (identifiant + secret client),
-     * sans interaction utilisateur, compatible avec une exécution
-     * planifiée (CronTask) - voir OAuth2ClientCredentialsAuthenticationStrategy.
-     *
-     * OAUTH2_AUTHORIZATION_CODE reste délibérément non implémenté :
-     * ce flux nécessite une redirection navigateur et un consentement
-     * utilisateur interactif, structurellement incompatible avec une
-     * tâche planifiée headless - ce n'est pas un manque temporaire
-     * mais une incompatibilité de nature avec le cas d'usage de ce
-     * plugin.
+     * Whether the engine implements this authentication method. The same predicate gates
+     * form choices and server-side creation. OAuth2 client credentials and password flows
+     * are supported for unattended execution. Authorization code is not implemented because
+     * this plugin has no interactive consent/callback lifecycle.
      */
     public function isImplemented(): bool
     {

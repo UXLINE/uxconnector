@@ -9,8 +9,8 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * RULE-032/AI-ENTITY-002 : purement technique, jamais utilisée par le
- * Domaine ou l'Application. Seul SyncExecutionRepository la manipule.
+ * RULE-032/AI-ENTITY-002: persistence adapter used only by SyncExecutionRepository.
+ * Domain and Application code do not depend on this GLPI itemtype.
  * -------------------------------------------------------------------------
  */
 
@@ -32,19 +32,11 @@ use CommonDBTM;
  */
 final class SyncExecutionItem extends CommonDBTM
 {
+    use InternalSyncItemAccess;
+
     // See AuthConfigItem::$rightname's comment: must stay in sync
     // with PluginUxconnectorProfile::getRightDefinitions().
     public static $rightname = 'plugin_uxconnector_syncjob';
-
-    /** Execution states are changed through the plugin, including requests to queue a job. */
-    public function can($ID, int $right, ?array &$input = null): bool
-    {
-        if (in_array($right, [CREATE, UPDATE, DELETE, PURGE], true)) {
-            return false;
-        }
-
-        return parent::can($ID, $right, $input);
-    }
 
     public static function getTable($classname = null): string
     {

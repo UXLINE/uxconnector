@@ -1,0 +1,63 @@
+name: Publish UXConnector 2.18.39
+
+on:
+  push:
+    branches: [production]
+    paths: [.github/workflows/publish-2.18.39.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-uxconnector-2.18.39
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'UXLINE/uxconnector' && github.ref == 'refs/heads/production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Check release metadata and build installation archive
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+          xml = ElementTree.parse('uxconnector.xml')
+          assert Path('VERSION').read_text().strip() == '2.18.39'
+          assert xml.findtext('state') == 'stable'
+          assert xml.findtext('./versions/version/num') == '2.18.39'
+          assert xml.findtext('./versions/version/compatibility') == '>=11.0.0 <12.0.0'
+          assert xml.findtext('./versions/version/download_url') == 'https://github.com/UXLINE/uxconnector/releases/download/v2.18.39/uxconnector-2.18.39.tar.gz'
+          PY
+          python3 tools/build-release.py dist
+          cd dist
+          sha256sum --check uxconnector-2.18.39.tar.gz.sha256
+      - name: Upload and verify the draft, then publish the stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view v2.18.39 >/dev/null 2>&1; then
+            echo 'Release v2.18.39 already exists. Refusing to replace published assets.' >&2
+            exit 1
+          fi
+          gh release create v2.18.39 \
+            dist/uxconnector-2.18.39.tar.gz \
+            dist/uxconnector-2.18.39.tar.gz.sha256 \
+            --target "$GITHUB_SHA" \
+            --title 'UXConnector 2.18.39' \
+            --notes-file docs/releases/RELEASE_NOTES_2.18.39.md \
+            --draft
+          gh release download v2.18.39 --dir verified \
+            --pattern uxconnector-2.18.39.tar.gz \
+            --pattern uxconnector-2.18.39.tar.gz.sha256
+          cmp dist/uxconnector-2.18.39.tar.gz verified/uxconnector-2.18.39.tar.gz
+          cmp dist/uxconnector-2.18.39.tar.gz.sha256 verified/uxconnector-2.18.39.tar.gz.sha256
+          (cd verified && sha256sum --check uxconnector-2.18.39.tar.gz.sha256)
+          gh release edit v2.18.39 --draft=false --prerelease=false --latest
+          gh release view v2.18.39 --json url,isDraft,isPrerelease,tagName

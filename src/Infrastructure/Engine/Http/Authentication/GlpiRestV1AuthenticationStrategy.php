@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication;
 
-use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
 use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpRequest;
 use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpResponse;
-use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
 use GlpiPlugin\Uxconnector\Domain\Engine\Resilience\ErrorClassification;
 use GlpiPlugin\Uxconnector\Domain\Engine\Resilience\RetryPolicy;
+use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
 use GlpiPlugin\Uxconnector\Domain\Shared\ValueObject\Endpoint;
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedStreamOpener;
 
 /** GLPI 9/10 REST v1 session authentication. Session-Token is memory-only. */
 final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenticationStrategy
@@ -117,19 +118,15 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
 
         for ($attempt = 1; $attempt <= $maxAttempts; ++$attempt) {
             $destination = PinnedHttpDestination::resolve($url, $this->destinationPolicy);
-            $context = stream_context_create([
-                'http' => [
+            $deadline = hrtime(true) + $timeout * 1_000_000_000;
+            $stream = (new PinnedStreamOpener())->open($destination, [
                     'method' => 'GET', 'header' => implode("\r\n", [...$headerLines, $destination->hostHeader()]),
                     'timeout' => $timeout,
                     'ignore_errors' => true, 'follow_location' => 0, 'max_redirects' => 0,
                     'protocol_version' => 1.1,
-                ],
-                'ssl' => $destination->tlsOptions(),
-            ]);
-            $deadline = hrtime(true) + $timeout * 1_000_000_000;
-            $stream = @fopen($destination->streamUrl(), 'rb', false, $context);
+                ], $deadline);
             if ($stream === false) {
-                $lastError = (string) (error_get_last()['message'] ?? 'unknown stream error');
+                $lastError = 'Unable to connect to the approved destination addresses.';
                 if ($attempt < $maxAttempts) {
                     $this->sleepBackoff($attempt);
                     continue;
@@ -182,7 +179,7 @@ final class GlpiRestV1AuthenticationStrategy implements RenewableSessionAuthenti
             }
             stream_set_timeout($stream, intdiv($remaining, 1_000_000), $remaining % 1_000_000);
             $chunk = fread($stream, min(8192, self::MAX_RESPONSE_BYTES + 1 - strlen($body)));
-            if (hrtime(true) >= $deadline || (stream_get_meta_data($stream)['timed_out'] ?? false)) {
+            if (hrtime(true) >= $deadline || stream_get_meta_data($stream)['timed_out']) {
                 throw new \RuntimeException('GLPI REST v1 session response exceeded the time limit.');
             }
             if ($chunk === false || ($chunk === '' && !feof($stream))) {

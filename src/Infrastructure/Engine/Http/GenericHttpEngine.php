@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Uxconnector\Infrastructure\Engine\Http;
 
-use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
 use GlpiPlugin\Uxconnector\Domain\Engine\Entity\AuthConfig;
 use GlpiPlugin\Uxconnector\Domain\Engine\Exception\HttpEngineException;
 use GlpiPlugin\Uxconnector\Domain\Engine\Http\HttpEngineInterface;
@@ -19,6 +18,8 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Security\DestinationPolicyInterface;
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\OriginBoundCredential;
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication\AuthenticationStrategyFactory;
 use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Authentication\RenewableSessionAuthenticationStrategy;
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedHttpDestination;
+use GlpiPlugin\Uxconnector\Infrastructure\Engine\Http\Security\PinnedStreamOpener;
 
 /**
  * Generic resilient HTTP transport shared by every connector.
@@ -247,8 +248,8 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
         if ($request->requirePublicDestination) {
             $destination->requirePublicAddresses();
         }
-        $context = stream_context_create([
-            'http' => [
+        $deadline = hrtime(true) + self::TIMEOUT_SECONDS * 1_000_000_000;
+        $stream = (new PinnedStreamOpener())->open($destination, [
                 'method' => $request->method->value,
                 'header' => $this->formatHeaders($request) . "\r\n" . $destination->hostHeader(),
                 'content' => $request->body ?? '',
@@ -257,15 +258,12 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
                 'follow_location' => 0,
                 'max_redirects' => 0,
                 'protocol_version' => 1.1,
-            ],
-            'ssl' => $destination->tlsOptions(),
-        ]);
-        $stream = @fopen($destination->streamUrl(), 'rb', false, $context);
+            ], $deadline);
         if ($stream === false) {
-            throw HttpEngineException::transportFailure(error_get_last()['message'] ?? 'unknown stream error');
+            throw HttpEngineException::transportFailure('Unable to connect to the approved destination addresses.');
         }
         try {
-            $body = $this->readWithSizeLimit($stream);
+            $body = $this->readWithSizeLimit($stream, $deadline);
             $meta = stream_get_meta_data($stream);
         } finally {
             fclose($stream);
@@ -291,13 +289,22 @@ final class GenericHttpEngine implements HttpEngineInterface, SessionLifecycleHt
     }
 
     /** @param resource $stream */
-    private function readWithSizeLimit($stream): string
+    private function readWithSizeLimit($stream, ?float $deadline = null): string
     {
+        $deadline ??= hrtime(true) + self::TIMEOUT_SECONDS * 1_000_000_000;
         $body = '';
         $bytes = 0;
         while (!feof($stream)) {
+            $remaining = (int) (($deadline - hrtime(true)) / 1000);
+            if ($remaining <= 0) {
+                throw HttpEngineException::transportFailure('HTTP response exceeded the time limit.');
+            }
+            stream_set_timeout($stream, intdiv($remaining, 1_000_000), $remaining % 1_000_000);
             $chunk = fread($stream, self::READ_CHUNK_BYTES);
-            if ($chunk === false) {
+            if (hrtime(true) >= $deadline || stream_get_meta_data($stream)['timed_out']) {
+                throw HttpEngineException::transportFailure('HTTP response exceeded the time limit.');
+            }
+            if ($chunk === false || ($chunk === '' && !feof($stream))) {
                 throw HttpEngineException::transportFailure('Unable to read HTTP response stream.');
             }
             $bytes += strlen($chunk);

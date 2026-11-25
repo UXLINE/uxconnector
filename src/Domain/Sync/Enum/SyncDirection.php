@@ -43,19 +43,9 @@ enum SyncDirection: string
     }
 
     /**
-     * Whether UXConnector has a runtime for this direction. Bidirectional
-     * behaviour is deliberately represented by two independently controllable
-     * interactions rather than one ambiguous job.
-     *
-     * CORRECTIF P0 (revue de code externe) : avant ce correctif,
-     * OUTBOUND et BIDIRECTIONAL étaient sélectionnables dans le
-     * formulaire de création, mais ExecuteSyncJobService exécutait
-     * systématiquement un GET vers le système externe suivi d'une
-     * écriture GLPI, quelle que soit la direction choisie -
-     * c'est-à-dire qu'il se comportait comme INBOUND en silence.
-     * Cette méthode est l'unique source de vérité utilisée à la fois
-     * pour filtrer les choix affichés (Presentation) et pour refuser
-     * la création/l'exécution côté serveur (Application).
+     * Whether the runtime supports this direction. Used for form choices, creation and execution.
+     * Bidirectional synchronization uses two independently controlled interactions;
+     * the ambiguous single-job BIDIRECTIONAL mode is not implemented.
      */
     public function isImplemented(): bool
     {

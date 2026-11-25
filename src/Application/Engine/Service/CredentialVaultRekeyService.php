@@ -20,24 +20,11 @@ use GlpiPlugin\Uxconnector\Domain\Engine\Repository\AuthConfigSecretStoreInterfa
 use GlpiPlugin\Uxconnector\Domain\Engine\Security\CredentialVaultInterface;
 
 /**
- * Re-encrypts every stored AuthConfig secret from an old
- * CredentialVaultInterface to a new one.
- *
- * CORRECTIF SÉCURITÉ (revue de code externe) : UXConnector delegates credential encryption to GLPIKey. In normal
- * runtime,
- * GLPI's `security:change_key` command handles rotation because the plugin
- * declares its encrypted database field through `secured_fields`. This
- * service remains available only for explicit maintenance/migration cases.
- *
- * Doit être exécuté avec **les deux clés simultanément disponibles**
- * (avant l'ancienne configuration `GLPI_INSTANCE_KEY` ait été
- * définitivement écrasée) - voir tools/rekey-credential-vault.php
- * pour le point d'entrée opérationnel destiné à un administrateur.
- *
- * RULE-STRUCTURE-002 : responsabilité unique - orchestre uniquement
- * la boucle de re-chiffrement ; ni la dérivation des clés
- * (`OpenSslCredentialVault`), ni la lecture de `GLPI_INSTANCE_KEY`
- * n'est de son ressort.
+ * Re-encrypts stored credentials between two explicitly supplied vault implementations.
+ * Normal GLPIKey rotation uses GLPI's security:change_key command and secured_fields hook.
+ * This service is reserved for controlled migrations with both vaults available. It does
+ * not derive keys or read environment key settings. The retired standalone CLI utility
+ * points administrators to GLPI's native key rotation command.
  */
 final class CredentialVaultRekeyService
 {

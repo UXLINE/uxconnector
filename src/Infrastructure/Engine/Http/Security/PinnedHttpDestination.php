@@ -69,7 +69,7 @@ final readonly class PinnedHttpDestination
     public function curlOptions(): array
     {
         $addresses = array_map(
-            static fn(string $ip): string => str_contains($ip, ':') ? '[' . $ip . ']' : $ip,
+            static fn (string $ip): string => str_contains($ip, ':') ? '[' . $ip . ']' : $ip,
             $this->addresses,
         );
         return [
@@ -83,14 +83,17 @@ final readonly class PinnedHttpDestination
         ];
     }
 
-    /** Returns a literal-IP URL, so the PHP wrapper cannot perform a second DNS lookup. */
-    public function streamUrl(): string
+    /** @return non-empty-list<string> Literal-IP URLs from the single, policy-approved resolution. */
+    public function streamUrls(): array
     {
         $parts = parse_url($this->url);
-        $ip = $this->addresses[0];
-        $authority = str_contains($ip, ':') ? '[' . $ip . ']' : $ip;
-        return $this->scheme . '://' . $authority . ':' . $this->port
-            . ($parts['path'] ?? '/') . (isset($parts['query']) ? '?' . $parts['query'] : '');
+        $urls = [];
+        foreach (array_unique($this->addresses) as $ip) {
+            $authority = str_contains($ip, ':') ? '[' . $ip . ']' : $ip;
+            $urls[] = $this->scheme . '://' . $authority . ':' . $this->port
+                . ($parts['path'] ?? '/') . (isset($parts['query']) ? '?' . $parts['query'] : '');
+        }
+        return $urls;
     }
 
     /** Original authority, independent of the numeric address used by the connection. */

@@ -9,20 +9,10 @@
  * @license   GPL-3.0-or-later
  * -------------------------------------------------------------------------
  *
- * REX-GLPI (résolu lors des tests en production) :
- * - AbstractController::render() DOIT auto-préfixer "@uxconnector/" :
- *   les contrôleurs concrets ne passent que le chemin relatif du
- *   template (ex. "engine/authconfig/list.html.twig").
- * - Les templates restent des fragments HTML purs. Les points d'entrée
- *   legacy front/*.php sont responsables d'appeler Html::header() puis
- *   Html::footer() autour du rendu GET. Un simple include de
- *   inc/includes.php n'émet aucun layout GLPI.
- *
- * CORRECTIF GLPI 11 : les formulaires POST portent un jeton CSRF généré
- * par GLPI. Le Kernel GLPI 11 valide ce jeton avant de déléguer aux
- * points d'entrée legacy front/*.php ; les contrôleurs du plugin ne
- * doivent donc pas rappeler Session::checkCSRF(), car les jetons de
- * formulaire sont consommables et une seconde validation échoue.
+ * Rendering prefixes relative template paths with @uxconnector/.
+ * Templates are HTML fragments; front entry points wrap GET rendering in
+ * Html::header()/Html::footer(). GLPI 11 validates the form CSRF token in
+ * the kernel before dispatch; controllers must not consume it a second time.
  * -------------------------------------------------------------------------
  */
 
